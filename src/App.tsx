@@ -21,7 +21,7 @@ import { ToastContainer } from './components/ToastContainer'
 import { JobDetailModal, ProofModal, ConfirmModal, EditProfileModal, DisputeModal } from './components/Modals'
 import { WorkerProfileModal } from './components/WorkerProfileModal'
 import type { Job, NewJobForm, ConfirmAction, DisputeState, Tab, PostSubTab, SortBy, LeaderboardEntry, WorkerEvent } from './types'
-import { saveProfile, loadProfiles, loadProfilesRemote } from './hooks/useWorkerProfiles'
+import { saveProfile, loadProfiles } from './hooks/useWorkerProfiles'
 import { handleTxError } from './utils'
 
 const USDC_DECIMALS = 6
