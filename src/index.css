@@ -1,0 +1,168 @@
+:root {
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --social-bg: rgba(244, 243, 236, 0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 14px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #9ca3af;
+    --text-h: #f3f4f6;
+    --bg: #16171d;
+    --border: #2e303a;
+    --code-bg: #1f2028;
+    --accent: #c084fc;
+    --accent-bg: rgba(192, 132, 252, 0.15);
+    --accent-border: rgba(192, 132, 252, 0.5);
+    --social-bg: rgba(47, 48, 58, 0.5);
+    --shadow:
+      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  }
+
+  #social .button-icon {
+    filter: invert(1) brightness(2);
+  }
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(ellipse at 20% 80%, #0d001a 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, #001a11 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 60%, #000033 0%, transparent 50%),
+    radial-gradient(ellipse at 10% 40%, #1a0033 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 70%, #002211 0%, transparent 50%),
+    #000000;
+  min-height: 100vh;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 25% 8%, rgba(220,200,255,0.5), transparent),
+    radial-gradient(1.5px 1.5px at 40% 22%, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 55% 12%, rgba(200,220,255,0.4), transparent),
+    radial-gradient(1px 1px at 70% 18%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1.5px 1.5px at 85% 25%, rgba(220,200,255,0.6), transparent),
+    radial-gradient(1px 1px at 15% 35%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 33% 45%, rgba(180,200,255,0.5), transparent),
+    radial-gradient(1px 1px at 50% 38%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1.5px 1.5px at 68% 50%, rgba(220,220,255,0.6), transparent),
+    radial-gradient(1px 1px at 78% 42%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 92% 55%, rgba(200,200,255,0.5), transparent),
+    radial-gradient(1px 1px at 5% 60%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1.5px 1.5px at 22% 70%, rgba(220,220,255,0.5), transparent),
+    radial-gradient(1px 1px at 45% 65%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 60% 75%, rgba(200,210,255,0.5), transparent),
+    radial-gradient(1px 1px at 75% 80%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 88% 72%, rgba(180,200,255,0.3), transparent),
+    radial-gradient(1px 1px at 32% 85%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1.5px 1.5px at 52% 90%, rgba(220,200,255,0.5), transparent),
+    radial-gradient(1px 1px at 8% 92%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 95% 92%, rgba(200,220,255,0.5), transparent),
+    radial-gradient(1px 1px at 42% 95%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 65% 95%, rgba(220,200,255,0.3), transparent);
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  text-align: center;
+  border-inline: none;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 36px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+  @media (max-width: 1024px) {
+    font-size: 28px;
+    margin: 20px 0;
+  }
+}
+h2 {
+  font-size: 20px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1024px) {
+    font-size: 18px;
+  }
+}
+p {
+  margin: 0;
+}
+
+code,
+.counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
+}
+
+/* App Container - Dark Cyber Theme */
+.app-container {
+  background: 
+    radial-gradient(ellipse at 20% 80%, #0d001a 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, #001a11 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 60%, #000033 0%, transparent 50%),
+    radial-gradient(ellipse at 10% 40%, #1a0033 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 70%, #002211 0%, transparent 50%),
+    #000000;
+  color: #c0c0c0;
+  font-family: 'Space Mono', monospace;
+  min-height: 100vh;
+  position: relative;
+}

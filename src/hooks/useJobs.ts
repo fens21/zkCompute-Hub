@@ -1,0 +1,82 @@
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { readContract } from '@wagmi/core'
+import abi from '../abi/JobMarketplace.json'
+import { config, CONTRACT_ADDRESS } from '../config/chain'
+import type { Job } from '../types'
+
+// Demo jobs removed for clean testing. Marketplace will only show on-chain jobs.
+const DEMO_JOBS: Job[] = []
+
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+
+function parseJob(raw: [bigint, string, string, bigint, string, string, bigint, bigint, boolean]): Job {
+  const tokenAddr = (raw[4] as string).toLowerCase()
+  const isNative = tokenAddr === ZERO_ADDRESS.toLowerCase()
+  const decimals = isNative ? 18 : 6
+  const rewardNum = Number(raw[3]) / 10 ** decimals
+  const tokenSymbol = isNative ? 'zkLTC' : 'USDC'
+  const difficulty = rewardNum >= 150 ? 'Expert' : rewardNum >= 80 ? 'Hard' : 'Medium'
+  return {
+    id: Number(raw[0]),
+    title: raw[1],
+    type: raw[2],
+    reward: rewardNum,
+    deadline: 'N/A',
+    description: `${raw[2]} job — ${rewardNum} ${tokenSymbol} reward`,
+    requirements: `Posted by ${(raw[5] as string).slice(0, 6)}...`,
+    poster: raw[5] as string,
+    claimedCount: Number(raw[7]),
+    maxWorkers: Number(raw[6]),
+    difficulty,
+    tokenSymbol,
+  }
+}
+
+export function useJobs(autoFetch: boolean) {
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [onChainJobs, setOnChainJobs] = useState<Job[]>([])
+  const hasFetched = useRef(false)
+
+  const fetchOnChainJobs = useCallback(async () => {
+    if (hasFetched.current) return
+    hasFetched.current = true
+    try {
+      const count = await readContract(config, {
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi,
+        functionName: 'jobCount',
+      }) as bigint
+
+      const onChain: Job[] = []
+      for (let i = 1; i <= Number(count); i++) {
+        try {
+          const job = await readContract(config, {
+            address: CONTRACT_ADDRESS as `0x${string}`,
+            abi,
+            functionName: 'jobs',
+            args: [BigInt(i)],
+          }) as [bigint, string, string, bigint, string, string, bigint, bigint, boolean]
+
+          if (job[8]) {
+            onChain.push(parseJob(job))
+          }
+        } catch (e) {
+          console.error(`Failed to fetch on-chain job #${i}:`, e)
+        }
+      }
+      setOnChainJobs(Object.values(Object.fromEntries(onChain.map(j => [String(j.id), j]))))
+      setJobs(Object.values(Object.fromEntries([...onChain, ...DEMO_JOBS].map(j => [String(j.id), j]))))
+    } catch (e) {
+      console.error('Failed to fetch on-chain jobs:', e)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (autoFetch) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchOnChainJobs()
+    }
+  }, [autoFetch, fetchOnChainJobs])
+
+  return { jobs, setJobs, onChainJobs }
+}
