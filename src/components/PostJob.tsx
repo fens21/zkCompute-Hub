@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Job, NewJobForm, PostSubTab } from '../types'
 import { PostedJobCard } from './PostedJobCard'
 
@@ -11,7 +11,7 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
   postSubTab: PostSubTab
   setPostSubTab: (v: PostSubTab) => void
   newJob: NewJobForm
-  setNewJob: (v: NewJobForm) => void
+  setNewJob: React.Dispatch<React.SetStateAction<NewJobForm>>
   postedJobs: Job[]
   onPost: () => void
   onReleaseWorker: (worker: string, j: Job) => void
@@ -31,7 +31,15 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
   onSaveEdit: () => void
   onCancelEdit: () => void
 }) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const [postedViewMode, setPostedViewMode] = useState<ViewMode>('grid')
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+
   return (
     <div>
       <div style={{ marginBottom: 24, textAlign: 'center' }}>
@@ -82,7 +90,7 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
                 <button onClick={() => setPostedViewMode('grid')} aria-label="Grid view" style={{ background: postedViewMode === 'grid' ? '#ffd700' : '#222', color: postedViewMode === 'grid' ? '#000' : '#888', border: 'none', width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Grid view">▦</button>
                 <button onClick={() => setPostedViewMode('list')} aria-label="List view" style={{ background: postedViewMode === 'list' ? '#ffd700' : '#222', color: postedViewMode === 'list' ? '#000' : '#888', border: 'none', width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="List view">☰</button>
               </div>
-              <div style={postedViewMode === 'grid' ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 } : { background: '#111', border: '1px solid #444', borderRadius: 12, overflow: 'hidden' }}>
+              <div style={postedViewMode === 'grid' ? { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: isMobile ? 12 : 20 } : { background: '#111', border: '1px solid #444', borderRadius: 12, overflow: 'hidden' }}>
                 {postedJobs.map((job, i) => (
                   postedViewMode === 'list' ? (
                     <div key={job.id} style={{ borderBottom: i < postedJobs.length - 1 ? '1px solid #444' : 'none' }}>
@@ -144,10 +152,20 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
 
 function NewJobForm({ newJob, setNewJob, onPost, loading }: {
   newJob: NewJobForm
-  setNewJob: (v: NewJobForm) => void
+  setNewJob: React.Dispatch<React.SetStateAction<NewJobForm>>
   onPost: () => void
   loading: boolean
 }) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+
+  const flexRow = (gap = 12) => ({ display: 'flex', gap, flexDirection: isMobile ? 'column' as const : 'row' as const })
+
   const reward = isNaN(newJob.reward) ? 0 : newJob.reward
   const workers = isNaN(newJob.maxWorkers) ? 0 : newJob.maxWorkers
   const total = reward * workers
@@ -155,15 +173,15 @@ function NewJobForm({ newJob, setNewJob, onPost, loading }: {
   const deadlineMs = newJob.deadline ? Date.parse(newJob.deadline) : NaN
   const deadlinePast = !isNaN(deadlineMs) && deadlineMs <= Date.now()
 
-  const update = (partial: Partial<NewJobForm>) => setNewJob({ ...newJob, ...partial })
+  const update = (partial: Partial<NewJobForm>) => setNewJob((prev: NewJobForm) => ({ ...prev, ...partial }))
   const tokenColor = TOKEN_COLORS[newJob.token] || '#ffd700'
   const tokenSymbol = TOKEN_SYMBOLS[newJob.token] || 'zkLTC'
 
   return (
     <div style={{ maxWidth: 600, margin: '0 auto' }}>
       <form onSubmit={e => { e.preventDefault(); onPost() }} style={{ background: '#111', padding: 24, border: '1px solid #333', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-        <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-          <div style={{ flex: 1 }}>
+        <div style={{ ...flexRow(10), marginBottom: 14 }}>
+          <div style={{ flex: isMobile ? 'none' : 1 }}>
             <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Payment Token</div>
             <select
               value={newJob.token}
@@ -176,7 +194,7 @@ function NewJobForm({ newJob, setNewJob, onPost, loading }: {
             </select>
           </div>
           {newJob.token === 'custom' && (
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: isMobile ? 'none' : 1 }}>
               <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Token Contract (CA)</div>
               <input
                 placeholder="0x..."
@@ -191,8 +209,8 @@ function NewJobForm({ newJob, setNewJob, onPost, loading }: {
       <input placeholder="Job Title" value={newJob.title} onChange={e => update({ title: e.target.value })} aria-label="Job title" style={{ width: '100%', background: '#000', border: '1px solid #444', padding: 10, color: '#fff', marginBottom: 10, fontSize: 13, boxSizing: 'border-box' }} />
       <textarea placeholder="Job Description" value={newJob.description} onChange={e => update({ description: e.target.value })} aria-label="Job description" style={{ width: '100%', background: '#000', border: '1px solid #444', padding: 10, color: '#fff', marginBottom: 10, fontSize: 13, minHeight: 70, boxSizing: 'border-box', resize: 'none' }} />
       <textarea placeholder="Requirements (CPU/GPU/RAM)" value={newJob.requirements} onChange={e => update({ requirements: e.target.value })} aria-label="Job requirements" style={{ width: '100%', background: '#000', border: '1px solid #444', padding: 10, color: '#fff', marginBottom: 10, fontSize: 13, minHeight: 70, boxSizing: 'border-box', resize: 'none' }} />
-      <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
-        <div style={{ flex: 1 }}>
+      <div style={{ ...flexRow(), marginBottom: 10 }}>
+        <div style={{ flex: isMobile ? 'none' : 1 }}>
           <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Job Type</div>
           <select
             value={newJob.type}
@@ -212,18 +230,18 @@ function NewJobForm({ newJob, setNewJob, onPost, loading }: {
             <option value="Custom">Custom</option>
           </select>
         </div>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: isMobile ? 'none' : 1 }}>
           <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Reward Amount ({tokenSymbol})</div>
           <input type="number" step="0.01" min="0.01" required placeholder="e.g. 0.5" value={isNaN(newJob.reward) ? '' : newJob.reward} onChange={e => update({ reward: e.target.value === '' ? NaN : parseFloat(e.target.value) })} aria-label="Reward amount" style={{ width: '100%', background: '#000', border: '1px solid #444', padding: 10, color: '#fff', fontSize: 12, boxSizing: 'border-box' }} />
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
-        <div style={{ flex: 1 }}>
+      <div style={{ ...flexRow(), marginBottom: 14 }}>
+        <div style={{ flex: isMobile ? 'none' : 1 }}>
           <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Number of Workers</div>
           <input type="number" min={1} max={100} required placeholder="e.g. 3" value={isNaN(newJob.maxWorkers) ? '' : newJob.maxWorkers} onChange={e => { const v = e.target.value.replace(/^0+/, ''); update({ maxWorkers: v === '' ? NaN : parseInt(v) || 1 }) }} aria-label="Number of workers" style={{ width: '100%', background: '#000', border: '1px solid #444', padding: 10, color: '#fff', fontSize: 12, boxSizing: 'border-box' }} />
         </div>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: isMobile ? 'none' : 1 }}>
           <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Deadline</div>
           <input
             type="datetime-local"

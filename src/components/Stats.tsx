@@ -26,9 +26,16 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
   error?: string | null
   onRetry?: () => void
 }) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const [rewardPage, setRewardPage] = useState(0)
   const [claimedPage, setClaimedPage] = useState(0)
   const PER_PAGE = 20
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
 
   const totalEscrowedZkltc = onChainJobs.filter(j => j.tokenSymbol !== 'USDC').reduce((s, j) => s + j.reward * j.maxWorkers, 0)
   const totalEscrowedUsdc = onChainJobs.filter(j => j.tokenSymbol === 'USDC').reduce((s, j) => s + j.reward * j.maxWorkers, 0)
@@ -93,19 +100,19 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
-        <div style={{ background: '#111', padding: 20, border: earnedZkltc + earnedUsdc > 0 ? '1px solid #ffd700' : '1px solid #333', borderRadius: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: isMobile ? 10 : 16, marginBottom: 28 }}>
+        <div style={{ background: '#111', padding: isMobile ? 14 : 20, border: earnedZkltc + earnedUsdc > 0 ? '1px solid #ffd700' : '1px solid #333', borderRadius: 12 }}>
           <div style={{ fontSize: 12, opacity: 0.45, textTransform: 'uppercase', letterSpacing: 0.5 }}>My Earned</div>
-          <div style={{ fontSize: 22, color: '#4ade80', fontWeight: 700, marginTop: 4 }}>{ltcPrice === null ? '...' : formatUsd(earnedUsd)}</div>
+          <div style={{ fontSize: isMobile ? 18 : 22, color: '#4ade80', fontWeight: 700, marginTop: 4 }}>{ltcPrice === null ? '...' : formatUsd(earnedUsd)}</div>
           {earnedZkltc > 0 && <div style={{ fontSize: 11, color: '#ffd700', fontWeight: 600, marginTop: 4 }}>{rewardStr(earnedZkltc)} zkLTC</div>}
           {earnedUsdc > 0 && <div style={{ fontSize: 11, color: '#2775ca', fontWeight: 600, marginTop: 2 }}>{rewardStr(earnedUsdc)} USDC</div>}
           {earnedZkltc === 0 && earnedUsdc === 0 && <div style={{ fontSize: 11, opacity: 0.4, marginTop: 4 }}>No earnings yet</div>}
         </div>
-        <StatCard label="My Completed" value={`${jobsPaid}`} />
-        <StatCard label="On-Chain Jobs" value={`${onChainJobs.length}`} />
-        <div style={{ background: '#111', padding: 20, border: '1px solid #333', borderRadius: 12 }}>
+        <StatCard label="My Completed" value={`${jobsPaid}`} isMobile={isMobile} />
+        <StatCard label="On-Chain Jobs" value={`${onChainJobs.length}`} isMobile={isMobile} />
+        <div style={{ background: '#111', padding: isMobile ? 14 : 20, border: '1px solid #333', borderRadius: 12 }}>
           <div style={{ fontSize: 12, opacity: 0.45, textTransform: 'uppercase', letterSpacing: 0.5 }}>Total Escrowed</div>
-          <div style={{ fontSize: 22, color: '#4ade80', fontWeight: 700, marginTop: 4 }}>
+          <div style={{ fontSize: isMobile ? 18 : 22, color: '#4ade80', fontWeight: 700, marginTop: 4 }}>
             {totalEscrowedUsd !== null ? formatUsd(totalEscrowedUsd) : '...'}
           </div>
           {totalEscrowedZkltc > 0 && <div style={{ fontSize: 11, color: '#ffd700', fontWeight: 600, marginTop: 4 }}>{rewardStr(totalEscrowedZkltc)} zkLTC</div>}
@@ -113,7 +120,7 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(280px, 1fr))', gap: isMobile ? 16 : 20 }}>
 
         <div style={{ minWidth: 0 }}>
           <h3 style={{ fontSize: 14, marginBottom: 12, color: '#e0e0e0' }}>Top Jobs by Reward</h3>
@@ -185,11 +192,11 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
   )
 }
 
-function StatCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function StatCard({ label, value, highlight, isMobile }: { label: string; value: string; highlight?: boolean; isMobile?: boolean }) {
   return (
-    <div style={{ background: '#111', padding: 20, border: '1px solid #333', borderRadius: 12 }}>
+    <div style={{ background: '#111', padding: isMobile ? 14 : 20, border: '1px solid #333', borderRadius: 12 }}>
       <div style={{ fontSize: 12, opacity: 0.45, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
-      <div style={{ fontSize: 22, color: highlight ? '#ffd700' : '#e0e0e0', fontWeight: 700, marginTop: 6 }}>{value}</div>
+      <div style={{ fontSize: isMobile ? 18 : 22, color: highlight ? '#ffd700' : '#e0e0e0', fontWeight: 700, marginTop: 6 }}>{value}</div>
     </div>
   )
 }

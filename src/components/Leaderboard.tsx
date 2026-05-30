@@ -32,9 +32,16 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
   onChainJobs?: Job[]
   onRetry?: () => void
 }) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const PER_PAGE = 20
   const [page, setPage] = useState(1)
   const sliced = leaderboard.slice(3)
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
   const totalPages = Math.max(1, Math.ceil(sliced.length / PER_PAGE))
 
   useEffect(() => { setPage(1) }, [leaderboard.length])
@@ -68,14 +75,14 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
       {hasData && (
         <div style={{ marginBottom: 32 }}>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <PodiumCard rank={1} entry={leaderboard[0]} onView={onViewWorker} ltcPrice={ltcPrice} />
+            <PodiumCard rank={1} entry={leaderboard[0]} onView={onViewWorker} ltcPrice={ltcPrice} isMobile={isMobile} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <div style={{ width: 2, height: 20, background: '#2a2a2a' }} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
-            <PodiumCard rank={2} entry={leaderboard[1]} onView={onViewWorker} ltcPrice={ltcPrice} />
-            <PodiumCard rank={3} entry={leaderboard[2]} onView={onViewWorker} ltcPrice={ltcPrice} />
+            <PodiumCard rank={2} entry={leaderboard[1]} onView={onViewWorker} ltcPrice={ltcPrice} isMobile={isMobile} />
+            <PodiumCard rank={3} entry={leaderboard[2]} onView={onViewWorker} ltcPrice={ltcPrice} isMobile={isMobile} />
           </div>
         </div>
       )}
@@ -152,18 +159,19 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
   )
 }
 
-function PodiumCard({ rank, entry, onView, ltcPrice }: {
+function PodiumCard({ rank, entry, onView, ltcPrice, isMobile }: {
   rank: number
   entry?: LeaderboardEntry
   onView: (worker: string, entry: LeaderboardEntry, rank: number) => void
   ltcPrice: number | null
+  isMobile?: boolean
 }) {
   const medal = rank === 1 ? '\u{1F947}' : rank === 2 ? '\u{1F948}' : '\u{1F949}'
   const border = rank === 1 ? '#ffd700' : rank === 2 ? '#c0c0c0' : '#cd7f32'
   const bg = rank === 1 ? '#1a1a0a' : rank === 2 ? '#1a1a1a' : '#1a0a0a'
   const glow = rank === 1 ? '0 0 14px rgba(255, 215, 0, 0.12)' : rank === 2 ? '0 0 8px rgba(192, 192, 192, 0.08)' : '0 0 8px rgba(205, 127, 50, 0.08)'
   return (
-    <div style={{ background: bg, border: `2px solid ${border}`, borderRadius: 10, padding: '10px 20px', textAlign: 'center', minWidth: 220, opacity: entry ? 1 : 0.25, boxShadow: glow }}>
+    <div style={{ background: bg, border: `2px solid ${border}`, borderRadius: 10, padding: isMobile ? '8px 12px' : '10px 20px', textAlign: 'center', minWidth: isMobile ? 140 : 220, opacity: entry ? 1 : 0.25, boxShadow: glow }}>
       <div style={{ fontSize: 22, marginBottom: 2 }}>{medal}</div>
       {entry ? (
         <>

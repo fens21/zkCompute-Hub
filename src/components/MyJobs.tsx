@@ -23,7 +23,14 @@ export function MyJobs({ myJobs, address, onOpenProof, onUnclaim, onRelease, loa
 }) {
   const [now, setNow] = useState(Date.now())
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -68,10 +75,10 @@ export function MyJobs({ myJobs, address, onOpenProof, onUnclaim, onRelease, loa
             <div style={{ width: 3, height: 16, background: '#ffd700', borderRadius: 2 }} />
             <div style={{ fontSize: 12, opacity: 0.6 }}>In Progress ({activeJobs.length})</div>
           </div>
-          <JobsContainer viewMode={viewMode}>
+          <JobsContainer viewMode={viewMode} isMobile={isMobile}>
             {activeJobs.map((job, i) => (
               <div key={job.id} style={viewMode === 'list' ? { borderBottom: i < activeJobs.length - 1 ? '1px solid #444' : 'none' } : {}}>
-                <JobCard_ job={job} now={now} viewMode={viewMode}>
+                <JobCard_ job={job} now={now} viewMode={viewMode} isMobile={isMobile}>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button onClick={() => onOpenProof(job)} aria-label={`Submit proof for ${job.title}`} style={{ flex: 1, background: '#ffd700', color: '#000', border: 'none', padding: 12, fontWeight: 700, borderRadius: 6, cursor: 'pointer' }}>SUBMIT PROOF</button>
                     <button onClick={() => onUnclaim(job.id)} aria-label={`Unclaim ${job.title}`} style={{ flex: 1, background: 'transparent', color: '#ff6b6b', border: '1px solid #ff6b6b', padding: 12, fontWeight: 600, borderRadius: 6, cursor: 'pointer' }}>UNCLAIM</button>
@@ -89,7 +96,7 @@ export function MyJobs({ myJobs, address, onOpenProof, onUnclaim, onRelease, loa
             <div style={{ width: 3, height: 16, background: '#4ade80', borderRadius: 2 }} />
             <div style={{ fontSize: 12, opacity: 0.6 }}>Proof Submitted &mdash; Awaiting Payment ({completedJobs.length})</div>
           </div>
-          <JobsContainer viewMode={viewMode}>
+          <JobsContainer viewMode={viewMode} isMobile={isMobile}>
             {completedJobs.map((job, i) => {
               const isPoster = address?.toLowerCase() === job.poster.toLowerCase()
               const rewardStr = job.reward.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -108,9 +115,9 @@ export function MyJobs({ myJobs, address, onOpenProof, onUnclaim, onRelease, loa
                       </div>
                     </div>
                   ) : (
-                    <div style={cardStyle(false)}>
+                    <div style={cardStyle(false, isMobile)}>
                       <CardHeader job={job} now={now} />
-                      <div style={{ margin: '16px 0', fontSize: 20, color: '#ffd700', fontWeight: 700 }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
+                      <div style={{ margin: isMobile ? '12px 0' : '16px 0', fontSize: 20, color: '#ffd700', fontWeight: 700 }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
                       {isPoster ? (
                         <button onClick={() => onRelease(job)} disabled={loading} aria-label={`Release payment for ${job.title}`} style={{ width: '100%', background: '#4ade80', color: '#000', border: 'none', padding: 12, fontWeight: 700, borderRadius: 6, cursor: 'pointer', marginBottom: 8 }}>
                           {loading ? 'PROCESSING...' : `RELEASE PAYMENT (+${rewardStr} ${job.tokenSymbol || 'zkLTC'})`}
@@ -146,7 +153,7 @@ export function MyJobs({ myJobs, address, onOpenProof, onUnclaim, onRelease, loa
             <div style={{ width: 3, height: 16, background: '#f97316', borderRadius: 2 }} />
             <div style={{ fontSize: 12, opacity: 0.6, color: '#f97316' }}>Disputed ({disputedJobs.length})</div>
           </div>
-          <JobsContainer viewMode={viewMode}>
+          <JobsContainer viewMode={viewMode} isMobile={isMobile}>
             {disputedJobs.map((job, i) => {
               const rewardStr = job.reward.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
               return (
@@ -161,9 +168,9 @@ export function MyJobs({ myJobs, address, onOpenProof, onUnclaim, onRelease, loa
                       </div>
                     </div>
                   ) : (
-                    <div style={{ ...cardStyle(false), border: '1px solid #f97316' }}>
+                    <div style={{ ...cardStyle(false, isMobile), border: '1px solid #f97316' }}>
                       <CardHeader job={job} now={now} />
-                      <div style={{ margin: '16px 0', fontSize: 20, color: '#ffd700', fontWeight: 700 }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
+                      <div style={{ margin: isMobile ? '12px 0' : '16px 0', fontSize: 20, color: '#ffd700', fontWeight: 700 }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
                       <div style={{ background: '#2a1a0a', color: '#f97316', padding: '10px 14px', borderRadius: 6, textAlign: 'center', fontWeight: 600, fontSize: 11, marginBottom: 8 }}>
                         DISPUTE ACTIVE
                       </div>
@@ -190,7 +197,7 @@ export function MyJobs({ myJobs, address, onOpenProof, onUnclaim, onRelease, loa
             <div style={{ width: 3, height: 16, background: '#4ade80', borderRadius: 2 }} />
             <div style={{ fontSize: 12, opacity: 0.6 }}>Paid ({paidJobs.length})</div>
           </div>
-          <JobsContainer viewMode={viewMode}>
+          <JobsContainer viewMode={viewMode} isMobile={isMobile}>
             {paidJobs.map((job, i) => {
               const rewardStr = job.reward.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
               return (
@@ -203,9 +210,9 @@ export function MyJobs({ myJobs, address, onOpenProof, onUnclaim, onRelease, loa
                       </div>
                     </div>
                   ) : (
-                    <div style={{ ...cardStyle(false), opacity: 0.85 }}>
+                    <div style={{ ...cardStyle(false, isMobile), opacity: 0.85 }}>
                       <CardHeader job={job} now={now} />
-                      <div style={{ margin: '16px 0', fontSize: 20, color: '#ffd700', fontWeight: 700 }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
+                      <div style={{ margin: isMobile ? '12px 0' : '16px 0', fontSize: 20, color: '#ffd700', fontWeight: 700 }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
                       <div style={{ background: '#1a3c1a', color: '#4ade80', padding: '10px 14px', borderRadius: 6, textAlign: 'center', fontWeight: 600 }}>PAID</div>
                     </div>
                   )}
@@ -219,12 +226,12 @@ export function MyJobs({ myJobs, address, onOpenProof, onUnclaim, onRelease, loa
   )
 }
 
-function cardStyle(active: boolean): React.CSSProperties {
+function cardStyle(active: boolean, isMobile?: boolean): React.CSSProperties {
   return {
     background: '#111',
     border: active ? '1px solid #ffd700' : '1px solid #333',
     borderRadius: 12,
-    padding: 24,
+    padding: isMobile ? 16 : 24,
   }
 }
 
@@ -236,9 +243,9 @@ function listRowStyle(): React.CSSProperties {
   }
 }
 
-function JobsContainer({ viewMode, children }: { viewMode: ViewMode; children: React.ReactNode }) {
+function JobsContainer({ viewMode, children, isMobile }: { viewMode: ViewMode; children: React.ReactNode; isMobile: boolean }) {
   return viewMode === 'grid' ? (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: isMobile ? 12 : 20 }}>
       {children}
     </div>
   ) : (
@@ -291,11 +298,11 @@ function CountdownValue({ createdAt, deadline, now }: { createdAt?: number; dead
   return <span style={{ color: '#777' }}>{formatDeadlineDate(createdAt, deadline)} ({formatTimeRemaining(remaining)} left)</span>
 }
 
-function JobCard_({ job, now, children, viewMode }: { job: Job; now: number; children: React.ReactNode; viewMode: ViewMode }) {
+function JobCard_({ job, now, children, viewMode, isMobile }: { job: Job; now: number; children: React.ReactNode; viewMode: ViewMode; isMobile?: boolean }) {
   const rewardStr = job.reward.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const s = sep()
   return viewMode === 'list' ? (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', fontSize: 12 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', fontSize: 12, overflowX: 'auto' }}>
       <div style={{ fontWeight: 700, flex: '1 1 160px', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.title}</div>
       {s}
       <div style={{ flex: '0 0 80px', color: '#ffd700', fontSize: 11, fontWeight: 600 }}>{JOB_TYPE_ICONS[job.type] || '📋'} {job.type}</div>
@@ -311,9 +318,9 @@ function JobCard_({ job, now, children, viewMode }: { job: Job; now: number; chi
       </div>
     </div>
   ) : (
-    <div style={cardStyle(true)}>
+    <div style={cardStyle(true, isMobile)}>
       <CardHeader job={job} now={now} />
-      <div style={{ margin: '16px 0', fontSize: 20, color: '#ffd700', fontWeight: 700 }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
+      <div style={{ margin: isMobile ? '12px 0' : '16px 0', fontSize: 20, color: '#ffd700', fontWeight: 700 }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
       {children}
     </div>
   )

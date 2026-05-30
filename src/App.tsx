@@ -54,10 +54,17 @@ function AppContent() {
   const tab = TAB_PATHS[location.pathname.replace('/', '')] || 'market'
   const setTab = (t: Tab) => navigate(t === 'market' ? '/' : '/' + (t === 'my' ? 'my-jobs' : t))
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const [entered, setEntered] = useState(false)
   const [sessionChecked, setSessionChecked] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showWalletMenu, setShowWalletMenu] = useState(false)
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
 
   useEffect(() => {
     const wasEntered = sessionStorage.getItem('zkcompute_session') === 'true'
@@ -636,7 +643,7 @@ function AppContent() {
         setShowNotifications={setShowNotifications}
       />
 
-      <div style={{ padding: '20px 24px' }}>
+      <div style={{ padding: isMobile ? '14px 14px' : '20px 24px' }}>
         <Routes>
           <Route path="/" element={
             <Marketplace
