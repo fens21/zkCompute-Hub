@@ -93,8 +93,8 @@ function AppContent() {
   useEffect(() => {
     if (!window.ethereum) return
 
-    const handleAccountsChanged = (accounts: string[]) => {
-      if (!accounts || accounts.length === 0) {
+    const handleAccountsChanged = (accounts: unknown) => {
+      if (!accounts || (accounts as string[]).length === 0) {
         // User disconnect dari wallet extension langsung
         localStorage.removeItem('zkcompute_entered')
         setEntered(false)
