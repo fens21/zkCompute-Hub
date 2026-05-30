@@ -59,7 +59,10 @@ function AppContent() {
   const [showWalletMenu, setShowWalletMenu] = useState(false)
 
   useEffect(() => {
-    localStorage.removeItem('zkcompute_entered')
+    const wasEntered = sessionStorage.getItem('zkcompute_session') === 'true'
+    if (wasEntered) {
+      setEntered(true)
+    }
     setSessionChecked(true)
   }, [])
 
@@ -69,12 +72,10 @@ function AppContent() {
 
     const handleAccountsChanged = (accounts: unknown) => {
       if (!accounts || (accounts as string[]).length === 0) {
-        // User disconnect dari wallet extension langsung
-        localStorage.removeItem('zkcompute_entered')
+        sessionStorage.removeItem('zkcompute_session')
         setEntered(false)
         setShowWalletMenu(false)
       }
-      // Jika ganti akun tapi masih ada, biarkan Wagmi handle address-nya
     }
 
     window.ethereum.on('accountsChanged', handleAccountsChanged)
@@ -188,7 +189,7 @@ function AppContent() {
         return
       }
 
-      localStorage.setItem('zkcompute_entered', 'true')
+      sessionStorage.setItem('zkcompute_session', 'true')
       setEntered(true)
       showToast(`Connected: ${accounts[0].slice(0,6)}...${accounts[0].slice(-4)}`, 'success')
       navigate('/')
@@ -214,7 +215,7 @@ function AppContent() {
   }
 
   const disconnect = () => {
-    localStorage.removeItem('zkcompute_entered')
+    sessionStorage.removeItem('zkcompute_session')
     setEntered(false)
     setShowWalletMenu(false)
   }
