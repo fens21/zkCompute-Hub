@@ -56,7 +56,6 @@ function AppContent() {
   const tab = TAB_PATHS[location.pathname.replace('/', '')] || 'market'
   const setTab = (t: Tab) => navigate(t === 'market' ? '/' : '/' + (t === 'my' ? 'my-jobs' : t))
 
-  const [account, setAccount] = useState('')
   const [entered, setEntered] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showWalletMenu, setShowWalletMenu] = useState(false)
@@ -577,7 +576,7 @@ function AppContent() {
     <div className="app-container">
       <Navbar
         tab={tab} setTab={setTab}
-        account={account || address || ''} entered={entered}
+        account={address || ''} entered={entered}
         balance={balance}
         loading={loading} showWalletMenu={showWalletMenu}
         setShowWalletMenu={setShowWalletMenu}
@@ -654,7 +653,7 @@ function AppContent() {
           } />
           <Route path="/profile" element={
             <Profile
-              account={account || address || ''}
+              account={address || ''}
               myJobs={myJobs}
               bio={bio} skills={skills} avatarUrl={avatarUrl}
               setEditBio={setEditBio} setShowEditProfile={setShowEditProfile}
@@ -692,7 +691,7 @@ function AppContent() {
           skills={skills} setSkills={setSkills}
           onClose={() => setShowEditProfile(false)}
           onSave={() => { setBio(editBio); setShowEditProfile(false); if (address) saveProfile(address, editBio, skills, avatarUrl) }}
-          account={account || address || ''}
+          account={address || ''}
           currentAvatarUrl={avatarUrl}
           onAvatarChange={(url) => setAvatarUrl(url)}
         />
