@@ -53,9 +53,33 @@ function AppContent() {
   const tab = TAB_PATHS[location.pathname.replace('/', '')] || 'market'
   const setTab = (t: Tab) => navigate(t === 'market' ? '/' : '/' + (t === 'my' ? 'my-jobs' : t))
 
-  const [entered, setEntered] = useState(false)
+  const [entered, setEntered] = useState(() => {
+    return localStorage.getItem('zkcompute_entered') === 'true'
+  })
   const [loading, setLoading] = useState(false)
   const [showWalletMenu, setShowWalletMenu] = useState(false)
+
+  // Auto-restore session jika wallet masih connected
+  useEffect(() => {
+    const wasEntered = localStorage.getItem('zkcompute_entered') === 'true'
+    if (!wasEntered) return
+
+    const checkSession = async () => {
+      if (!window.ethereum) {
+        localStorage.removeItem('zkcompute_entered')
+        setEntered(false)
+        return
+      }
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+      if (!accounts || accounts.length === 0) {
+        // Wallet sudah disconnect dari MetaMask, cleanup
+        localStorage.removeItem('zkcompute_entered')
+        setEntered(false)
+      }
+      // Jika masih ada akun, entered sudah true dari useState initializer
+    }
+    checkSession()
+  }, [])
 
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
@@ -150,10 +174,20 @@ function AppContent() {
         setLoading(false)
         return
       }
-      await window.ethereum.request({
-        method: 'wallet_requestPermissions',
-        params: [{ eth_accounts: {} }]
+
+      // Cek apakah sudah ada akun connected (TANPA popup)
+      const existingAccounts = await window.ethereum.request({
+        method: 'eth_accounts'
       })
+
+      if (!existingAccounts || existingAccounts.length === 0) {
+        // Belum connected — baru request (ini yang trigger popup sekali)
+        await window.ethereum.request({
+          method: 'eth_requestAccounts'
+        })
+      }
+
+      localStorage.setItem('zkcompute_entered', 'true')
       setEntered(true)
       navigate('/')
       showToast('Switching to LitForge Testnet...', 'info')
@@ -179,6 +213,7 @@ function AppContent() {
   }
 
   const disconnect = () => {
+    localStorage.removeItem('zkcompute_entered')
     setEntered(false)
     setShowWalletMenu(false)
   }
