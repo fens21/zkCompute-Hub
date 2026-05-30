@@ -33,6 +33,13 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
   const [page, setPage] = useState(1)
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [dismissed, setDismissed] = useState(carouselDismissed)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
 
   const totalPages = Math.max(1, Math.ceil(jobs.length / PER_PAGE))
   const pagedJobs = jobs.slice((page - 1) * PER_PAGE, page * PER_PAGE)
@@ -89,7 +96,7 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
       </div>
 
       {jobsLoading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
           {Array.from({ length: 6 }).map((_, i) => <SkeletonJobCard key={i} />)}
         </div>
       ) : jobsError ? (
@@ -128,7 +135,7 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
               ))}
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
               {pagedJobs.map(job => (
                 <JobCard key={job.id} job={job} onClaim={onClaim} onDetail={onDetail} loading={loading} now={now} />
               ))}
