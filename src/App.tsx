@@ -59,34 +59,8 @@ function AppContent() {
   const [showWalletMenu, setShowWalletMenu] = useState(false)
 
   useEffect(() => {
-    const checkSession = async () => {
-      const wasEntered = localStorage.getItem('zkcompute_entered') === 'true'
-
-      if (!wasEntered) {
-        setSessionChecked(true)
-        return
-      }
-
-      try {
-        // Brave & MetaMask: eth_accounts tidak trigger popup
-        const accounts = await window.ethereum?.request({ method: 'eth_accounts' }) as string[] | undefined
-
-        if (accounts && accounts.length > 0) {
-          setEntered(true)  // wallet masih connected, restore session
-        } else {
-          // Wallet sudah di-disconnect dari extension-nya
-          localStorage.removeItem('zkcompute_entered')
-          setEntered(false)
-        }
-      } catch {
-        localStorage.removeItem('zkcompute_entered')
-        setEntered(false)
-      }
-
-      setSessionChecked(true)
-    }
-
-    checkSession()
+    localStorage.removeItem('zkcompute_entered')
+    setSessionChecked(true)
   }, [])
 
   // Dengarkan perubahan akun dari wallet extension (Brave, MetaMask, dll)
@@ -204,22 +178,20 @@ function AppContent() {
         return
       }
 
-      // Cek apakah sudah ada akun connected (TANPA popup)
-      const existingAccounts = await window.ethereum.request({
-        method: 'eth_accounts'
+      const accounts = await window.ethereum.request({
+        method: 'eth_requestAccounts'
       }) as string[]
 
-      if (!existingAccounts || existingAccounts.length === 0) {
-        // Belum connected — baru request (ini yang trigger popup sekali)
-        await window.ethereum.request({
-          method: 'eth_requestAccounts'
-        })
+      if (!accounts || accounts.length === 0) {
+        showToast('No accounts found', 'info')
+        setLoading(false)
+        return
       }
 
       localStorage.setItem('zkcompute_entered', 'true')
       setEntered(true)
+      showToast(`Connected: ${accounts[0].slice(0,6)}...${accounts[0].slice(-4)}`, 'success')
       navigate('/')
-      showToast('Switching to LitForge Testnet...', 'info')
       try {
         switchChain({ chainId: 4441 })
       } catch {
