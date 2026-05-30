@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
-import { useAccount, useBalance, useWriteContract, useSwitchChain, useChainId } from 'wagmi'
+import { useAccount, useDisconnect, useBalance, useWriteContract, useSwitchChain, useChainId } from 'wagmi'
 import { readContract } from '@wagmi/core'
 import abi from './abi/JobMarketplace.json'
 import { config, CONTRACT_ADDRESS, USDC_ADDRESS } from './config/chain'
@@ -36,6 +36,7 @@ const queryClient = new QueryClient()
 
 function AppContent() {
   const { address } = useAccount()
+  const { disconnect: wagmiDisconnect } = useDisconnect()
   const chainId = useChainId()
   const { switchChain } = useSwitchChain()
   const { data: balance } = useBalance({ address, chainId: 4441 })
@@ -182,6 +183,7 @@ function AppContent() {
     setAccount('')
     setEntered(false)
     setShowWalletMenu(false)
+    wagmiDisconnect()
   }
 
   const postJob = async () => {
