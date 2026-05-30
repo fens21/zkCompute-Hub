@@ -108,7 +108,7 @@ function AppContent() {
 
   const [postSubTab, setPostSubTab] = useState<PostSubTab>('new')
   const [newJob, setNewJob] = useState<NewJobForm>({
-    title: '', type: 'ML', reward: 50, deadline: '', description: '', requirements: '', maxWorkers: 3, token: 'zkLTC', customToken: ''
+    title: '', type: 'ML', reward: 50, deadline: '', description: '', requirements: '', maxWorkers: 3, token: 'zkLTC', customToken: '', difficulty: 'Medium'
   })
 
   const [bio, setBio] = useState('')
@@ -132,6 +132,7 @@ function AppContent() {
   const [editType, setEditType] = useState('')
   const [editDesc, setEditDesc] = useState('')
   const [editReqs, setEditReqs] = useState('')
+  const [editDeadline, setEditDeadline] = useState('')
 
   useEffect(() => {
     if (address) {
@@ -292,7 +293,7 @@ function AppContent() {
         poster: address || '0x0000000000000000000000000000000000000000',
         claimedCount: 0,
         maxWorkers,
-        difficulty: 'Medium',
+        difficulty: newJob.difficulty,
         tokenSymbol: newJob.token === 'USDC' ? 'USDC' : 'zkLTC',
       }
       setJobs(prev => [...prev, job])
@@ -308,7 +309,7 @@ function AppContent() {
         difficulty: job.difficulty,
       })
       const tokenLabel = newJob.token === 'USDC' ? 'USDC' : 'zkLTC'
-      setNewJob({ title: '', type: 'ML', reward: 50, deadline: '', description: '', requirements: '', maxWorkers: 3, token: 'zkLTC', customToken: '' })
+      setNewJob({ title: '', type: 'ML', reward: 50, deadline: '', description: '', requirements: '', maxWorkers: 3, token: 'zkLTC', customToken: '', difficulty: 'Medium' })
       showToast(`Job posted! ${rewardPerWorker * maxWorkers} ${tokenLabel} escrowed | Tx: ${hash.slice(0, 10)}...`, 'success')
       addNotification(`Job posted: "${job.title}" — ${rewardPerWorker * maxWorkers} ${tokenLabel} escrowed`, 'post', job.title)
     } catch (e: unknown) {
@@ -583,11 +584,12 @@ function AppContent() {
     setEditType(job.type)
     setEditDesc(job.description)
     setEditReqs(job.requirements)
+    setEditDeadline(job.deadline && job.deadline !== 'N/A' ? job.deadline : '')
   }
 
   const saveEditedJob = () => {
     if (!editingPostedJob) return
-    setJobs(prev => prev.map(j => j.id === editingPostedJob.id ? { ...j, title: editTitle, type: editType, description: editDesc, requirements: editReqs } : j))
+    setJobs(prev => prev.map(j => j.id === editingPostedJob.id ? { ...j, title: editTitle, type: editType, description: editDesc, requirements: editReqs, deadline: editDeadline || j.deadline } : j))
     saveJobMetadata({
       job_id: editingPostedJob.id,
       poster: editingPostedJob.poster.toLowerCase(),
@@ -595,7 +597,7 @@ function AppContent() {
       type: editType,
       description: editDesc,
       requirements: editReqs,
-      deadline: editingPostedJob.deadline,
+      deadline: editDeadline || editingPostedJob.deadline,
       token_symbol: editingPostedJob.tokenSymbol || 'zkLTC',
       difficulty: editingPostedJob.difficulty,
     })
@@ -609,6 +611,7 @@ function AppContent() {
     setEditType('')
     setEditDesc('')
     setEditReqs('')
+    setEditDeadline('')
   }
 
   const handleViewWorker = (workerAddr: string, entry: LeaderboardEntry, rank: number) => {
@@ -671,8 +674,9 @@ function AppContent() {
               editType={editType} setEditType={setEditType}
               editDesc={editDesc} setEditDesc={setEditDesc}
               editReqs={editReqs} setEditReqs={setEditReqs}
-              onSaveEdit={saveEditedJob}
-              onCancelEdit={cancelEdit}
+               editDeadline={editDeadline} setEditDeadline={setEditDeadline}
+               onSaveEdit={saveEditedJob}
+               onCancelEdit={cancelEdit}
             />
           } />
           <Route path="/my-jobs" element={

@@ -7,7 +7,7 @@ type ViewMode = 'grid' | 'list'
 const TOKEN_SYMBOLS: Record<string, string> = { zkLTC: 'zkLTC', USDC: 'USDC', custom: 'CUSTOM' }
 const TOKEN_COLORS: Record<string, string> = { zkLTC: '#ffd700', USDC: '#2775ca', custom: '#a855f7' }
 
-export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJobs, onPost, onReleaseWorker, onDeactivate, onDispute, loading, onEditPostedJob, editingPostedJob, editTitle, setEditTitle, editType, setEditType, editDesc, setEditDesc, editReqs, setEditReqs, onSaveEdit, onCancelEdit }: {
+export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJobs, onPost, onReleaseWorker, onDeactivate, onDispute, loading, onEditPostedJob, editingPostedJob, editTitle, setEditTitle, editType, setEditType, editDesc, setEditDesc, editReqs, setEditReqs, editDeadline, setEditDeadline, onSaveEdit, onCancelEdit }: {
   postSubTab: PostSubTab
   setPostSubTab: (v: PostSubTab) => void
   newJob: NewJobForm
@@ -28,6 +28,8 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
   setEditDesc: (v: string) => void
   editReqs: string
   setEditReqs: (v: string) => void
+  editDeadline: string
+  setEditDeadline: (v: string) => void
   onSaveEdit: () => void
   onCancelEdit: () => void
 }) {
@@ -135,9 +137,18 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
               <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4 }}>Description</div>
               <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} style={{ width: '100%', background: '#000', border: '1px solid #444', padding: 10, color: '#fff', borderRadius: 8, fontSize: 12, minHeight: 70, boxSizing: 'border-box', resize: 'none' }} />
             </div>
-            <div style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4 }}>Requirements</div>
               <textarea value={editReqs} onChange={e => setEditReqs(e.target.value)} style={{ width: '100%', background: '#000', border: '1px solid #444', padding: 10, color: '#fff', borderRadius: 8, fontSize: 12, minHeight: 70, boxSizing: 'border-box', resize: 'none' }} />
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4 }}>Deadline</div>
+              <input
+                type="datetime-local"
+                value={editDeadline ? editDeadline.slice(0, 16) : ''}
+                onChange={e => setEditDeadline(e.target.value)}
+                style={{ width: '100%', background: '#000', border: '1px solid #444', padding: 10, color: '#fff', borderRadius: 8, fontSize: 12, boxSizing: 'border-box' }}
+              />
             </div>
             <div style={{ display: 'flex', gap: 12 }}>
               <button onClick={() => onSaveEdit()} aria-label="Save edited job" style={{ flex: 1, padding: 12, background: '#ffd700', color: '#000', fontWeight: 700, border: 'none', borderRadius: 8 }}>SAVE</button>
@@ -228,6 +239,18 @@ function NewJobForm({ newJob, setNewJob, onPost, loading }: {
             <option value="RAG Pipeline">RAG Pipeline</option>
             <option value="FHE">FHE Computation</option>
             <option value="Custom">Custom</option>
+          </select>
+        </div>
+        <div style={{ flex: isMobile ? 'none' : 1 }}>
+          <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Difficulty</div>
+          <select
+            value={newJob.difficulty}
+            onChange={e => update({ difficulty: e.target.value })}
+            aria-label="Difficulty level"
+            style={{ width: '100%', background: '#000', border: '1px solid #444', padding: 10, color: '#fff', fontSize: 12, boxSizing: 'border-box' }}>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+            <option value="Expert">Expert</option>
           </select>
         </div>
         <div style={{ flex: isMobile ? 'none' : 1 }}>

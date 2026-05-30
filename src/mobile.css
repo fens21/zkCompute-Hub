@@ -100,6 +100,14 @@
     min-height: 44px !important;
     font-size: 13px !important;
   }
+
+  /* Carousel dot indicators — tetap lingkaran, jangan kena min-height */
+  div[style*="gap: 5"] > button {
+    min-height: 7px !important;
+    width: 7px !important;
+    height: 7px !important;
+    padding: 0 !important;
+  }
 }
 
 /* ── Stats grid ── */

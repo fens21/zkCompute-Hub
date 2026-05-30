@@ -73,6 +73,7 @@ export interface NewJobForm {
   maxWorkers: number
   token: 'zkLTC' | 'USDC' | 'custom'
   customToken?: string
+  difficulty: string
 }
 
 export interface ConfirmAction {

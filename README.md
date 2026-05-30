@@ -13,8 +13,8 @@ A decentralized verifiable compute marketplace built on the **LitForge Testnet**
 ## Features
 
 - **Job Marketplace** — Browse, search, filter by type, sort by reward/deadline with grid/list toggle and pagination
-- **Job Lifecycle** — Post, edit (title, type, description, requirements), claim, submit proof, release payment, deactivate
-- **Job Metadata** — Title, type, description, requirements, deadlines, token symbol persisted via Supabase
+- **Job Lifecycle** — Post, edit (title, type, description, requirements, deadline, difficulty), claim, submit proof, release payment, deactivate
+- **Job Metadata** — Title, type, description, requirements, deadlines, difficulty, token symbol persisted via Supabase
 - **Dual Token** — Pay in native zkLTC or USDC
 - **Dispute System** — Raise & resolve disputes on-chain
 - **Leaderboard** — Worker rankings with podium, points, and gamified badges
@@ -23,6 +23,8 @@ A decentralized verifiable compute marketplace built on the **LitForge Testnet**
 - **Notifications** — Toast system with type icons and navbar dropdown with relative timestamps
 - **Carousel Banner** — Rotating showcase of latest jobs with dot navigation and dismiss
 - **Live Countdowns** — Deadline timers with color-coded urgency (expired, < 1h, normal)
+- **Mobile Responsive** — Adaptive layout, hamburger menu, touch-friendly targets, and mobile-optimized cards across all pages
+- **Difficulty Levels** — Manual difficulty selector (Medium / Hard / Expert) when posting jobs
 
 ## Prerequisites
 
