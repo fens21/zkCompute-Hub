@@ -5,9 +5,7 @@ import { config, CONTRACT_ADDRESS } from '../config/chain'
 import type { Job } from '../types'
 import { fetchJobMetadata } from './useJobMetadata'
 
-// Demo jobs removed for clean testing. Marketplace will only show on-chain jobs.
 const DEMO_JOBS: Job[] = []
-
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 function parseJob(raw: [bigint, string, string, bigint, string, string, bigint, bigint, boolean]): Job {
@@ -37,8 +35,39 @@ function mergeMetadata(jobs: Job[], metaMap: Map<number, import('./useJobMetadat
   return jobs.map(j => {
     const meta = metaMap.get(j.id)
     if (!meta) return j
-    return { ...j, title: meta.title ?? j.title, type: meta.type ?? j.type, description: meta.description, requirements: meta.requirements, deadline: meta.deadline, difficulty: meta.difficulty || j.difficulty }
+    return {
+      ...j,
+      title: meta.title ?? j.title,
+      type: meta.type ?? j.type,
+      description: meta.description,
+      requirements: meta.requirements,
+      deadline: meta.deadline,
+      difficulty: meta.difficulty || j.difficulty,
+    }
   })
+}
+
+const BATCH_SIZE = 10
+
+async function fetchJobsBatch(ids: number[]): Promise<Job[]> {
+  const results = await Promise.allSettled(
+    ids.map(i =>
+      readContract(config, {
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi,
+        functionName: 'jobs',
+        args: [BigInt(i)],
+      }) as Promise<[bigint, string, string, bigint, string, string, bigint, bigint, boolean]>
+    )
+  )
+
+  const jobs: Job[] = []
+  for (const result of results) {
+    if (result.status === 'fulfilled' && result.value[8]) {
+      jobs.push(parseJob(result.value))
+    }
+  }
+  return jobs
 }
 
 export function useJobs(autoFetch: boolean) {
@@ -59,30 +88,27 @@ export function useJobs(autoFetch: boolean) {
         functionName: 'jobCount',
       }) as bigint
 
-      const onChain: Job[] = []
-      for (let i = 1; i <= Number(count); i++) {
-        try {
-          const job = await readContract(config, {
-            address: CONTRACT_ADDRESS as `0x${string}`,
-            abi,
-            functionName: 'jobs',
-            args: [BigInt(i)],
-          }) as [bigint, string, string, bigint, string, string, bigint, bigint, boolean]
+      const total = Number(count)
+      const ids = Array.from({ length: total }, (_, i) => i + 1)
 
-          if (job[8]) {
-            onChain.push(parseJob(job))
-          }
-        } catch (e) {
-          console.error(`Failed to fetch on-chain job #${i}:`, e)
-        }
+      const onChain: Job[] = []
+      for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+        const batch = ids.slice(i, i + BATCH_SIZE)
+        const batchJobs = await fetchJobsBatch(batch)
+        onChain.push(...batchJobs)
       }
+
       let metaMap = new Map<number, import('./useJobMetadata').JobMetadata>()
       try {
         const idList = onChain.map(j => j.id)
         metaMap = await fetchJobMetadata(idList)
       } catch { /* table may not exist yet */ }
-      setOnChainJobs(mergeMetadata(onChain, metaMap))
-      setJobs(mergeMetadata([...onChain, ...DEMO_JOBS], metaMap))
+
+      const merged = mergeMetadata(onChain, metaMap)
+      const mergedWithDemo = mergeMetadata([...onChain, ...DEMO_JOBS], metaMap)
+
+      setOnChainJobs(merged)
+      setJobs(mergedWithDemo)
     } catch (e) {
       console.error('Failed to fetch on-chain jobs:', e)
       setError('Failed to load jobs. Please check your wallet connection.')
@@ -92,7 +118,6 @@ export function useJobs(autoFetch: boolean) {
 
   useEffect(() => {
     if (autoFetch) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchOnChainJobs()
     }
   }, [autoFetch, fetchOnChainJobs])

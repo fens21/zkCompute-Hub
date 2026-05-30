@@ -85,7 +85,7 @@ export async function uploadAvatar(worker: string, file: File): Promise<string |
     const ext = file.name.split('.').pop()
     const filename = `${worker.toLowerCase()}.${ext}`
 
-    // Upload ke Supabase Storage
+    // Upload to Supabase Storage
     const res = await fetch(
       `${SUPABASE_URL}/storage/v1/object/avatars/${filename}`,
       {
@@ -94,7 +94,7 @@ export async function uploadAvatar(worker: string, file: File): Promise<string |
           apikey: SUPABASE_KEY,
           Authorization: `Bearer ${SUPABASE_KEY}`,
           'Content-Type': file.type,
-          'x-upsert': 'true', // overwrite kalau sudah ada
+          'x-upsert': 'true', // overwrite if already exists
         },
         body: file,
       }

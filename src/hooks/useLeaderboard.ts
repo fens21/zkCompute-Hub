@@ -6,7 +6,7 @@ import { loadProfilesRemote } from './useWorkerProfiles'
 import type { LeaderboardEntry, Job } from '../types'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
-const CACHE_DURATION = 60 * 1000 // 1 menit
+const CACHE_DURATION = 60 * 1000
 
 export function useLeaderboard() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
@@ -14,7 +14,6 @@ export function useLeaderboard() {
   const cacheRef = useRef<{ data: LeaderboardEntry[]; time: number } | null>(null)
 
   const fetchLeaderboard = useCallback(async (onChainJobs: Job[], forceRefresh = false) => {
-    // Kalau cache masih fresh dan tidak force refresh, pakai cache
     if (!forceRefresh && cacheRef.current) {
       const age = Date.now() - cacheRef.current.time
       if (age < CACHE_DURATION) {
@@ -22,55 +21,73 @@ export function useLeaderboard() {
         return
       }
     }
+
     setLoading(true)
     try {
       const profiles = await loadProfilesRemote()
+      const chainMap = new Map<string, {
+        claimed: Set<number>
+        paid: Set<number>
+        earnedZkltc: number
+        earnedUsdc: number
+      }>()
 
-      const chainMap = new Map<string, { claimed: Set<number>; paid: Set<number>; earnedZkltc: number; earnedUsdc: number }>()
+      await Promise.allSettled(
+        onChainJobs
+          .filter(job => job.claimedCount > 0)
+          .map(async job => {
+            const jobId = BigInt(job.id)
+            const isUsdc = job.tokenSymbol === 'USDC'
 
-      for (const job of onChainJobs) {
-        if (job.claimedCount <= 0) continue
-        const jobId = BigInt(job.id)
-        const isUsdc = job.tokenSymbol === 'USDC'
+            const claimantResults = await Promise.allSettled(
+              Array.from({ length: job.claimedCount }, (_, idx) =>
+                readContract(config, {
+                  address: CONTRACT_ADDRESS as `0x${string}`,
+                  abi,
+                  functionName: 'claimants',
+                  args: [jobId, BigInt(idx)],
+                }) as Promise<string>
+              )
+            )
 
-        for (let idx = 0; idx < job.claimedCount; idx++) {
-          try {
-            const claimant = await readContract(config, {
-              address: CONTRACT_ADDRESS as `0x${string}`,
-              abi,
-              functionName: 'claimants',
-              args: [jobId, BigInt(idx)],
-            }) as string
-            if (!claimant || claimant === ZERO_ADDRESS) continue
+            const claimants = claimantResults
+              .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
+              .map(r => r.value)
+              .filter(c => c && c !== ZERO_ADDRESS)
 
-            const w = claimant.toLowerCase()
-            if (!chainMap.has(w)) chainMap.set(w, { claimed: new Set(), paid: new Set(), earnedZkltc: 0, earnedUsdc: 0 })
-            const rec = chainMap.get(w)!
+            const paidResults = await Promise.allSettled(
+              claimants.map(claimant =>
+                readContract(config, {
+                  address: CONTRACT_ADDRESS as `0x${string}`,
+                  abi,
+                  functionName: 'paid',
+                  args: [jobId, claimant as `0x${string}`],
+                }) as Promise<boolean>
+              )
+            )
 
-            if (!rec.claimed.has(job.id)) {
-              rec.claimed.add(job.id)
-
-              const isPaid = await readContract(config, {
-                address: CONTRACT_ADDRESS as `0x${string}`,
-                abi,
-                functionName: 'paid',
-                args: [jobId, claimant as `0x${string}`],
-              }) as boolean
-
-              if (isPaid) {
-                rec.paid.add(job.id)
-                if (isUsdc) rec.earnedUsdc += job.reward
-                else rec.earnedZkltc += job.reward
+            claimants.forEach((claimant, i) => {
+              const w = claimant.toLowerCase()
+              if (!chainMap.has(w)) {
+                chainMap.set(w, { claimed: new Set(), paid: new Set(), earnedZkltc: 0, earnedUsdc: 0 })
               }
-            }
-          } catch (e) {
-            console.error(`Failed to fetch claimant ${idx} for job ${job.id}:`, e)
-          }
-        }
-      }
+              const rec = chainMap.get(w)!
+
+              if (!rec.claimed.has(job.id)) {
+                rec.claimed.add(job.id)
+
+                const paidResult = paidResults[i]
+                if (paidResult.status === 'fulfilled' && paidResult.value) {
+                  rec.paid.add(job.id)
+                  if (isUsdc) rec.earnedUsdc += job.reward
+                  else rec.earnedZkltc += job.reward
+                }
+              }
+            })
+          })
+      )
 
       const merged = new Map<string, LeaderboardEntry>()
-
       for (const [worker, rec] of chainMap) {
         const p = profiles[worker]
         merged.set(worker, {
@@ -83,12 +100,11 @@ export function useLeaderboard() {
           points: rec.claimed.size * 10 + rec.paid.size * 25,
           bio: p?.bio,
           skills: p?.skills,
+          avatarUrl: p?.avatarUrl,
         })
       }
 
       const sorted = [...merged.values()].sort((a, b) => b.points - a.points)
-      
-      // Simpan ke cache
       cacheRef.current = { data: sorted, time: Date.now() }
       setLeaderboard(sorted)
     } catch (e) {

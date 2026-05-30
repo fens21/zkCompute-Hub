@@ -4,7 +4,7 @@ const PRICE_CACHE_KEY = 'zkcompute_ltc_price'
 
 export function usePrices() {
   const [ltcPrice, setLtcPrice] = useState<number | null>(() => {
-    // Load dari cache dulu supaya tidak null di awal
+    // Load from cache first so it's not null initially
     try {
       const cached = localStorage.getItem(PRICE_CACHE_KEY)
       if (cached) return parseFloat(cached)
@@ -29,7 +29,7 @@ export function usePrices() {
     }
 
     fetchPrice()
-    // Update setiap 5 menit
+    // Update every 5 minutes
     const interval = setInterval(fetchPrice, 5 * 60 * 1000)
 
     return () => {

@@ -33,6 +33,7 @@ const ERC20_ABI = [
 ] as const
 
 const queryClient = new QueryClient()
+let notifIdCounter = 0
 
 function AppContent() {
   const { address } = useAccount()
@@ -66,12 +67,13 @@ function AppContent() {
     setSessionChecked(true)
   }, [])
 
-  // Dengarkan perubahan akun dari wallet extension (Brave, MetaMask, dll)
+  // Listen for account changes from wallet extension (Brave, MetaMask, etc.)
   useEffect(() => {
     if (!window.ethereum) return
 
     const handleAccountsChanged = (accounts: unknown) => {
-      if (!accounts || (accounts as string[]).length === 0) {
+      const list = Array.isArray(accounts) ? accounts : typeof accounts === 'string' ? [accounts] : []
+      if (list.length === 0) {
         sessionStorage.removeItem('zkcompute_session')
         setEntered(false)
         setShowWalletMenu(false)
@@ -115,7 +117,7 @@ function AppContent() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [showNotifications, setShowNotifications] = useState(false)
   const addNotification = (message: string, type: Notification['type'], jobTitle?: string) => {
-    setNotifications(prev => [{ id: Date.now(), message, time: Date.now(), read: false, type, jobTitle }, ...prev].slice(0, 50))
+    setNotifications(prev => [{ id: ++notifIdCounter, message, time: Date.now(), read: false, type, jobTitle }, ...prev].slice(0, 50))
   }
 
   const [editingPostedJob, setEditingPostedJob] = useState<Job | null>(null)
@@ -609,7 +611,7 @@ function AppContent() {
   }
 
   if (!sessionChecked) {
-    // Tunggu cek session selesai dulu — hindari flash landing page saat reload
+    // Wait for session check to finish — prevent landing page flash on reload
     return null
   }
 
