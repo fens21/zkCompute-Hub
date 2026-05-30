@@ -53,32 +53,61 @@ function AppContent() {
   const tab = TAB_PATHS[location.pathname.replace('/', '')] || 'market'
   const setTab = (t: Tab) => navigate(t === 'market' ? '/' : '/' + (t === 'my' ? 'my-jobs' : t))
 
-  const [entered, setEntered] = useState(() => {
-    return localStorage.getItem('zkcompute_entered') === 'true'
-  })
+  const [entered, setEntered] = useState(false)
+  const [sessionChecked, setSessionChecked] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showWalletMenu, setShowWalletMenu] = useState(false)
 
-  // Auto-restore session jika wallet masih connected
   useEffect(() => {
-    const wasEntered = localStorage.getItem('zkcompute_entered') === 'true'
-    if (!wasEntered) return
-
     const checkSession = async () => {
-      if (!window.ethereum) {
-        localStorage.removeItem('zkcompute_entered')
-        setEntered(false)
+      const wasEntered = localStorage.getItem('zkcompute_entered') === 'true'
+
+      if (!wasEntered) {
+        setSessionChecked(true)
         return
       }
-      const accounts = await window.ethereum.request({ method: 'eth_accounts' }) as string[]
-      if (!accounts || accounts.length === 0) {
-        // Wallet sudah disconnect dari MetaMask, cleanup
+
+      try {
+        // Brave & MetaMask: eth_accounts tidak trigger popup
+        const accounts = await window.ethereum?.request({ method: 'eth_accounts' }) as string[] | undefined
+
+        if (accounts && accounts.length > 0) {
+          setEntered(true)  // wallet masih connected, restore session
+        } else {
+          // Wallet sudah di-disconnect dari extension-nya
+          localStorage.removeItem('zkcompute_entered')
+          setEntered(false)
+        }
+      } catch {
         localStorage.removeItem('zkcompute_entered')
         setEntered(false)
       }
-      // Jika masih ada akun, entered sudah true dari useState initializer
+
+      setSessionChecked(true)
     }
+
     checkSession()
+  }, [])
+
+  // Dengarkan perubahan akun dari wallet extension (Brave, MetaMask, dll)
+  useEffect(() => {
+    if (!window.ethereum) return
+
+    const handleAccountsChanged = (accounts: string[]) => {
+      if (!accounts || accounts.length === 0) {
+        // User disconnect dari wallet extension langsung
+        localStorage.removeItem('zkcompute_entered')
+        setEntered(false)
+        setShowWalletMenu(false)
+      }
+      // Jika ganti akun tapi masih ada, biarkan Wagmi handle address-nya
+    }
+
+    window.ethereum.on('accountsChanged', handleAccountsChanged)
+
+    return () => {
+      window.ethereum?.removeListener('accountsChanged', handleAccountsChanged)
+    }
   }, [])
 
   const [search, setSearch] = useState('')
@@ -604,6 +633,11 @@ function AppContent() {
     setViewedWorker(workerAddr)
     setViewedWorkerEntry(entry)
     setViewedWorkerRank(rank)
+  }
+
+  if (!sessionChecked) {
+    // Tunggu cek session selesai dulu — hindari flash landing page saat reload
+    return null
   }
 
   if (!entered) {
