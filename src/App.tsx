@@ -99,6 +99,7 @@ function AppContent() {
 
   useEffect(() => {
     if (address) {
+      setEntered(true)
       const profile = loadProfiles()[address.toLowerCase()]
       if (profile) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -571,7 +572,7 @@ function AppContent() {
     setViewedWorkerRank(rank)
   }
 
-  if (!entered) {
+  if (!entered && !address) {
     return <LandingPage onConnect={connectWallet} loading={loading} />
   }
 
