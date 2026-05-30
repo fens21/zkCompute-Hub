@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
-import { useAccount, useDisconnect, useBalance, useWriteContract, useSwitchChain, useChainId } from 'wagmi'
+import { useAccount, useConnect, useDisconnect, useBalance, useWriteContract, useSwitchChain, useChainId } from 'wagmi'
+import { injected } from 'wagmi/connectors'
 import { readContract } from '@wagmi/core'
 import abi from './abi/JobMarketplace.json'
 import { config, CONTRACT_ADDRESS, USDC_ADDRESS } from './config/chain'
@@ -36,6 +37,7 @@ const queryClient = new QueryClient()
 
 function AppContent() {
   const { address } = useAccount()
+  const { connect: wagmiConnect } = useConnect()
   const { disconnect: wagmiDisconnect } = useDisconnect()
   const chainId = useChainId()
   const { switchChain } = useSwitchChain()
@@ -100,7 +102,6 @@ function AppContent() {
 
   useEffect(() => {
     if (address) {
-      setEntered(true)
       const profile = loadProfiles()[address.toLowerCase()]
       if (profile) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -146,16 +147,13 @@ function AppContent() {
   const isWrongNetwork = entered && chainId !== 4441
 
   const connectWallet = async () => {
-    console.log('Connect wallet button clicked')
+    if (address) {
+      setEntered(true)
+      return
+    }
     setLoading(true)
     try {
-      const accounts = await window.ethereum?.request({ method: 'eth_requestAccounts' }) as string[]
-      if (!accounts || accounts.length === 0) {
-        showToast('No accounts found', 'info')
-        setLoading(false)
-        return
-      }
-      setAccount(accounts[0])
+      await wagmiConnect({ connector: injected() })
       setEntered(true)
       showToast('Switching to LitForge Testnet...', 'info')
       try {
@@ -165,7 +163,7 @@ function AppContent() {
       }
     } catch (e) {
       console.error('Wallet connection failed:', e)
-      alert('Please install MetaMask or Brave Wallet')
+      showToast('Wallet connection cancelled or failed', 'error')
     }
     setLoading(false)
   }
@@ -574,7 +572,7 @@ function AppContent() {
     setViewedWorkerRank(rank)
   }
 
-  if (!entered && !address) {
+  if (!entered) {
     return <LandingPage onConnect={connectWallet} loading={loading} />
   }
 
