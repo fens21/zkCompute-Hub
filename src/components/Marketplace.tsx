@@ -57,6 +57,9 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
     return () => clearInterval(id)
   }, [])
 
+  // Grid columns: 1 kolom di mobile, auto-fill di desktop
+  const gridCols = isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))'
+
   return (
     <>
       {!dismissed && (() => {
@@ -64,18 +67,40 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
         return recentJobs.length > 0 ? <JobCarousel jobs={recentJobs} onDetail={onDetail} onClose={() => { carouselDismissed = true; setDismissed(true) }} /> : null
       })()}
 
-      <div style={{ textAlign: 'center', marginBottom: 20 }}>
-        <h1 style={{ fontSize: fontSizes.heading, margin: 0, color: colors.textPrimary }}>Verifiable Compute Marketplace</h1>
+      <div style={{ textAlign: 'center', marginBottom: isMobile ? 16 : 20 }}>
+        <h1 style={{ fontSize: isMobile ? 20 : fontSizes.heading, margin: 0, color: colors.textPrimary, lineHeight: 1.3 }}>
+          Verifiable Compute Marketplace
+        </h1>
         <p style={{ opacity: 0.7, marginTop: 4, fontSize: fontSizes.base }}>Earn zkLTC by running verified compute jobs</p>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
+      {/* Filter bar - stack vertically di mobile */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        marginBottom: 20,
+        flexWrap: 'wrap',
+        gap: isMobile ? 8 : 10,
+      }}>
         <div style={{ display: 'flex', gap: 4, marginRight: 'auto' }}>
           <button onClick={() => setViewMode('grid')} aria-label="Grid view" style={{ background: viewMode === 'grid' ? colors.gold : '#222', color: viewMode === 'grid' ? '#000' : '#888', border: 'none', width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Grid view">▦</button>
           <button onClick={() => setViewMode('list')} aria-label="List view" style={{ background: viewMode === 'list' ? colors.gold : '#222', color: viewMode === 'list' ? '#000' : '#888', border: 'none', width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="List view">☰</button>
         </div>
-        <input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} aria-label="Search jobs" style={{ ...input, width: 200 }} />
-        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} aria-label="Filter by job type" style={input}>
+        {/* Di mobile: search full width di baris sendiri */}
+        <input
+          placeholder="Search..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          aria-label="Search jobs"
+          style={{ ...input, width: isMobile ? '100%' : 200, flexBasis: isMobile ? '100%' : 'auto', order: isMobile ? 3 : 0 }}
+        />
+        <select
+          value={typeFilter}
+          onChange={e => setTypeFilter(e.target.value)}
+          aria-label="Filter by job type"
+          style={{ ...input, flex: isMobile ? '1' : 'none', minWidth: 0 }}
+        >
           <option value="">All Types</option>
           <option value="ML">{JOB_TYPE_ICONS.ML} ML</option>
           <option value="ZK">{JOB_TYPE_ICONS.ZK} ZK Proof</option>
@@ -89,14 +114,19 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
           <option value="FHE">{JOB_TYPE_ICONS.FHE} FHE</option>
           <option value="Custom">{JOB_TYPE_ICONS.Custom} Custom</option>
         </select>
-        <select value={sortBy} onChange={e => setSortBy(e.target.value as SortBy)} aria-label="Sort jobs" style={input}>
+        <select
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value as SortBy)}
+          aria-label="Sort jobs"
+          style={{ ...input, flex: isMobile ? '1' : 'none', minWidth: 0 }}
+        >
           <option value="reward">Sort: Reward</option>
           <option value="deadline">Sort: Deadline</option>
         </select>
       </div>
 
       {jobsLoading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 12 : 20 }}>
           {Array.from({ length: 6 }).map((_, i) => <SkeletonJobCard key={i} />)}
         </div>
       ) : jobsError ? (
@@ -130,12 +160,12 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
             <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: radii.xl, overflow: 'hidden' }}>
               {pagedJobs.map((job, i) => (
                 <div key={job.id} style={{ borderBottom: i < pagedJobs.length - 1 ? `1px solid ${colors.border}` : 'none' }}>
-                  <JobCardList job={job} onClaim={onClaim} onDetail={onDetail} loading={loading} now={now} />
+                  <JobCardList job={job} onClaim={onClaim} onDetail={onDetail} loading={loading} now={now} isMobile={isMobile} />
                 </div>
               ))}
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 12 : 20 }}>
               {pagedJobs.map(job => (
                 <JobCard key={job.id} job={job} onClaim={onClaim} onDetail={onDetail} loading={loading} now={now} />
               ))}
@@ -261,8 +291,19 @@ function JobCard({ job, onClaim, onDetail, loading, now }: { job: Job; onClaim: 
         </div>
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={() => onDetail(job)} aria-label={`View details for ${job.title}`} style={{ flex: 1, background: 'transparent', border: `1px solid ${colors.textDim}`, padding: '9px', color: colors.textSecondary, cursor: 'pointer', borderRadius: radii.sm, fontWeight: 600, fontSize: fontSizes.base }}>DETAILS</button>
-        <button onClick={() => onClaim(job)} disabled={loading} aria-label={`Claim job: ${job.title}`} style={{ flex: 1, background: colors.gold, color: '#000', border: 'none', padding: '9px', fontWeight: 700, cursor: 'pointer', borderRadius: radii.sm, fontSize: fontSizes.base }}>
+        <button
+          onClick={() => onDetail(job)}
+          aria-label={`View details for ${job.title}`}
+          style={{ flex: 1, background: 'transparent', border: `1px solid ${colors.textDim}`, padding: '11px 9px', color: colors.textSecondary, cursor: 'pointer', borderRadius: radii.sm, fontWeight: 600, fontSize: fontSizes.base, minHeight: 44 }}
+        >
+          DETAILS
+        </button>
+        <button
+          onClick={() => onClaim(job)}
+          disabled={loading}
+          aria-label={`Claim job: ${job.title}`}
+          style={{ flex: 1, background: colors.gold, color: '#000', border: 'none', padding: '11px 9px', fontWeight: 700, cursor: 'pointer', borderRadius: radii.sm, fontSize: fontSizes.base, minHeight: 44 }}
+        >
           {loading ? 'CLAIMING...' : 'CLAIM'}
         </button>
       </div>
@@ -270,11 +311,33 @@ function JobCard({ job, onClaim, onDetail, loading, now }: { job: Job; onClaim: 
   )
 }
 
-function JobCardList({ job, onClaim, onDetail, loading, now }: { job: Job; onClaim: (job: Job) => void; onDetail: (job: Job) => void; loading: boolean; now: number }) {
+// Di mobile, list view jadi card sederhana agar mudah dibaca
+function JobCardList({ job, onClaim, onDetail, loading, now, isMobile }: { job: Job; onClaim: (job: Job) => void; onDetail: (job: Job) => void; loading: boolean; now: number; isMobile: boolean }) {
   const rewardStr = job.reward.toLocaleString(undefined, { minimumFractionDigits: 2 })
   const claimedRatio = job.maxWorkers > 0 ? job.claimedCount / job.maxWorkers : 0
 
   const sep = <div style={{ width: 1, height: 22, background: colors.border, flexShrink: 0 }} />
+
+  // Di mobile, list view tampil sebagai mini card agar lebih readable
+  if (isMobile) {
+    return (
+      <div style={{ padding: '12px 14px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, flex: 1, marginRight: 8 }}>{job.title}</div>
+          <div style={{ color: colors.gold, fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap' }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 11, color: colors.gold }}>{JOB_TYPE_ICONS[job.type] || '📋'} {job.type}</div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={() => onDetail(job)} style={{ background: 'transparent', border: `1px solid ${colors.textDim}`, color: colors.textSecondary, padding: '5px 10px', borderRadius: radii.sm, cursor: 'pointer', fontSize: 11, fontWeight: 600, minHeight: 34 }}>DETAILS</button>
+            <button onClick={() => onClaim(job)} disabled={loading} style={{ background: colors.gold, color: '#000', border: 'none', padding: '5px 12px', borderRadius: radii.sm, fontWeight: 700, cursor: 'pointer', fontSize: 11, minHeight: 34 }}>
+              {loading ? '...' : 'CLAIM'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ background: 'transparent', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10, fontSize: fontSizes.base }}>
