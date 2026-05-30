@@ -147,14 +147,12 @@ function AppContent() {
   const isWrongNetwork = entered && chainId !== 4441
 
   const connectWallet = async () => {
-    if (address) {
-      setEntered(true)
-      return
-    }
     setLoading(true)
     try {
+      try { wagmiDisconnect() } catch {}
       await wagmiConnect({ connector: injected() })
       setEntered(true)
+      navigate('/')
       showToast('Switching to LitForge Testnet...', 'info')
       try {
         switchChain({ chainId: 4441 })
@@ -178,10 +176,9 @@ function AppContent() {
   }
 
   const disconnect = () => {
-    setAccount('')
     setEntered(false)
     setShowWalletMenu(false)
-    wagmiDisconnect()
+    try { wagmiDisconnect() } catch {}
   }
 
   const postJob = async () => {
