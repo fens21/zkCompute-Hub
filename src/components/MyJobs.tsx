@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Job } from '../types'
-import { shorten, getDeadlineMs, formatTimeRemaining, formatDeadlineDate, COUNTDOWN_REFRESH } from '../utils'
+import { getDeadlineMs, formatTimeRemaining, formatDeadlineDate, COUNTDOWN_REFRESH } from '../utils'
 
 const JOB_TYPE_ICONS: Record<string, string> = {
   ML: '🧠', ZK: '🔐', Render: '🎬', 'AI Inference': '🤖',

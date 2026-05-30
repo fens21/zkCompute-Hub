@@ -50,9 +50,6 @@ export function WorkerProfileModal({ worker, leaderboardEntry, rank, onClose, lt
   }, [onClose])
 
   const rankColor = rank === 1 ? '#ffd700' : rank === 2 ? '#c0c0c0' : rank === 3 ? '#cd7f32' : '#888'
-  const earnedSub = leaderboardEntry && (leaderboardEntry.earnedZkltc > 0 || leaderboardEntry.earnedUsdc > 0)
-    ? `${leaderboardEntry.earnedZkltc > 0 ? leaderboardEntry.earnedZkltc + ' zkLTC' : ''}${leaderboardEntry.earnedZkltc > 0 && leaderboardEntry.earnedUsdc > 0 ? ' + ' : ''}${leaderboardEntry.earnedUsdc > 0 ? leaderboardEntry.earnedUsdc + ' USDC' : ''}`
-    : undefined
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }} role="dialog" aria-modal="true" aria-label={`Worker profile: ${shorten(worker)}`}>
