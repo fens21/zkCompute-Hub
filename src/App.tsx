@@ -70,7 +70,7 @@ function AppContent() {
         setEntered(false)
         return
       }
-      const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' }) as string[]
       if (!accounts || accounts.length === 0) {
         // Wallet sudah disconnect dari MetaMask, cleanup
         localStorage.removeItem('zkcompute_entered')
@@ -178,7 +178,7 @@ function AppContent() {
       // Cek apakah sudah ada akun connected (TANPA popup)
       const existingAccounts = await window.ethereum.request({
         method: 'eth_accounts'
-      })
+      }) as string[]
 
       if (!existingAccounts || existingAccounts.length === 0) {
         // Belum connected — baru request (ini yang trigger popup sekali)
