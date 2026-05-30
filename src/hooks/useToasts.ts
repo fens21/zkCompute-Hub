@@ -4,7 +4,7 @@ import type { Toast } from '../types'
 export function useToasts() {
   const [toasts, setToasts] = useState<Toast[]>([])
 
-  const showToast = useCallback((message: string, type: 'success' | 'info' = 'success') => {
+  const showToast = useCallback((message: string, type: 'success' | 'info' | 'error' = 'success') => {
     const id = Date.now()
     setToasts(prev => [...prev, { id, message, type }])
     setTimeout(() => {

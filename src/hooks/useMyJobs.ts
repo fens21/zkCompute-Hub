@@ -1,8 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { watchContractEvent } from 'wagmi/actions'
 import type { Job, WorkerEvent } from '../types'
-import { config, CONTRACT_ADDRESS } from '../config/chain'
-import abi from '../abi/JobMarketplace.json'
 
 const MYJOBS_KEY = 'zkcompute_myjobs_v2'
 const WORKER_KEY = 'zkcompute_workers'
@@ -43,7 +40,7 @@ function saveMyJobs(address: string, jobs: Job[]) {
 // ── Supabase activity sync ────────────────────────────────────────────────
 async function saveActivityToSupabase(status: string, job: Job, workerAddr: string) {
   try {
-    // Cek apakah sudah ada entry untuk job ini
+    // Check if activity already exists for this job
     const checkRes = await fetch(
       `${SUPABASE_URL}/rest/v1/activities?worker=eq.${workerAddr.toLowerCase()}&job_id=eq.${job.id}&select=id`,
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
@@ -51,7 +48,7 @@ async function saveActivityToSupabase(status: string, job: Job, workerAddr: stri
     const existing = await checkRes.json()
 
     if (Array.isArray(existing) && existing.length > 0) {
-      // Update status yang sudah ada
+      // Update existing status
       await fetch(
         `${SUPABASE_URL}/rest/v1/activities?worker=eq.${workerAddr.toLowerCase()}&job_id=eq.${job.id}`,
         {
@@ -65,7 +62,7 @@ async function saveActivityToSupabase(status: string, job: Job, workerAddr: stri
         }
       )
     } else {
-      // Insert baru
+      // Insert new record
       await fetch(`${SUPABASE_URL}/rest/v1/activities`, {
         method: 'POST',
         headers: {
@@ -113,7 +110,7 @@ export async function fetchWorkerActivities(workerAddr: string): Promise<WorkerE
 
 export function saveWorkerEvent(status: 'claimed' | 'completed' | 'paid', job: Job, workerAddr?: string) {
   if (!workerAddr) return
-  // Save lokal
+  // Save locally
   const events: WorkerEvent[] = JSON.parse(localStorage.getItem(WORKER_KEY) || '[]')
   events.push({
     worker: workerAddr.toLowerCase(),
@@ -125,7 +122,7 @@ export function saveWorkerEvent(status: 'claimed' | 'completed' | 'paid', job: J
     time: Date.now()
   })
   localStorage.setItem(WORKER_KEY, JSON.stringify(events))
-  // Save ke Supabase (background)
+  // Save to Supabase (background)
   saveActivityToSupabase(status, job, workerAddr)
 }
 
@@ -155,7 +152,8 @@ export function getLeaderboardLocal() {
     .sort((a, b) => b.points - a.points)
 }
 
-export function useMyJobs(address: string | undefined, syncEnabled: boolean = true) {
+export function useMyJobs(address: string | undefined, _syncEnabled: boolean = true) {
+  void _syncEnabled
   const [myJobs, setMyJobsState] = useState<Job[]>([])
   const loadedRef = useRef(false)
   const addressRef = useRef<string | undefined>(undefined)
@@ -167,46 +165,23 @@ export function useMyJobs(address: string | undefined, syncEnabled: boolean = tr
       addressRef.current = undefined
       return
     }
-    // Load dari localStorage
+    // Load from localStorage
     const cached = loadMyJobs(address)
     setMyJobsState(cached)
     loadedRef.current = true
     addressRef.current = address.toLowerCase()
   }, [address])
 
-  useEffect(() => {
-    if (!address || !syncEnabled) return
-    const unwatchClaimed = watchContractEvent(config, {
-      address: CONTRACT_ADDRESS as `0x${string}`,
-      abi,
-      eventName: 'JobClaimed',
-      onLogs: () => {},
-    })
-    const unwatchDispute = watchContractEvent(config, {
-      address: CONTRACT_ADDRESS as `0x${string}`,
-      abi,
-      eventName: 'DisputeRaised',
-      onLogs: () => {},
-    })
-    const unwatchResolved = watchContractEvent(config, {
-      address: CONTRACT_ADDRESS as `0x${string}`,
-      abi,
-      eventName: 'DisputeResolved',
-      onLogs: () => {},
-    })
-    return () => {
-      unwatchClaimed()
-      unwatchDispute()
-      unwatchResolved()
-    }
-  }, [address, syncEnabled])
+  // Note: watchContractEvent watchers removed — they used empty onLogs handlers
+  // which wasted RPC resources. Event-driven UI updates can be re-added later
+  // with meaningful handlers if needed.
 
-  // setMyJobs — langsung save ke localStorage saat dipanggil
+  // setMyJobs — immediately persist to localStorage
   const setMyJobs = useCallback((updater: Job[] | ((prev: Job[]) => Job[])) => {
     if (!address) return
     setMyJobsState(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater
-      // Langsung save di sini, bukan di useEffect
+      // Persist immediately instead of in a useEffect
       if (loadedRef.current) {
         saveMyJobs(address, next)
       }

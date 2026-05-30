@@ -14,12 +14,22 @@ export interface Job {
   escrow?: boolean
   tokenSymbol?: string
   claimedBy?: string
+  createdAt?: number
+}
+
+export interface Notification {
+  id: number
+  message: string
+  time: number
+  read: boolean
+  type: 'claim' | 'proof' | 'payment' | 'dispute' | 'post'
+  jobTitle?: string
 }
 
 export interface Toast {
   id: number
   message: string
-  type: 'success' | 'info'
+  type: 'success' | 'info' | 'error'
 }
 
 export interface WorkerEvent {
@@ -73,7 +83,7 @@ export interface ConfirmAction {
 }
 
 export interface DisputeState {
-  job: Job
+  job: Job | null
   worker?: string
   reason: string
 }

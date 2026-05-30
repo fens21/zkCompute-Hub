@@ -1,6 +1,7 @@
-import type { Tab } from '../types'
+import { useRef, useEffect } from 'react'
+import type { Tab, Notification } from '../types'
 
-export function Navbar({ tab, setTab, account, entered, balance, loading, showWalletMenu, setShowWalletMenu, onConnect, onDisconnect, onSwitchNetwork, isWrongNetwork }: {
+export function Navbar({ tab, setTab, account, entered, balance, loading, showWalletMenu, setShowWalletMenu, onConnect, onDisconnect, onSwitchNetwork, isWrongNetwork, notifications, setNotifications, showNotifications, setShowNotifications }: {
   tab: Tab
   setTab: (t: Tab) => void
   account: string
@@ -13,11 +14,40 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
   onDisconnect: () => void
   onSwitchNetwork: () => void
   isWrongNetwork: boolean
+  notifications: Notification[]
+  setNotifications: (v: Notification[]) => void
+  showNotifications: boolean
+  setShowNotifications: (v: boolean) => void
 }) {
+  const notifRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setShowNotifications(false)
+    }
+    if (showNotifications) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showNotifications, setShowNotifications])
+
+  const unreadCount = notifications.filter(n => !n.read).length
+  const markAllRead = () => setNotifications(notifications.map(n => ({ ...n, read: true })))
+  const markRead = (id: number) => setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n))
+  const clearAll = () => setNotifications([])
+
+  const typeIcon: Record<string, string> = { claim: '⚡', proof: '🔬', payment: '💰', dispute: '⚖️', post: '📋' }
+
+  function timeAgo(ts: number) {
+    const diff = Date.now() - ts
+    if (diff < 60000) return 'just now'
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
+    return `${Math.floor(diff / 86400000)}d ago`
+  }
+
   return (
     <>
       <nav style={{ background: 'radial-gradient(ellipse at 30% 50%, #1a0033 0%, transparent 60%), radial-gradient(ellipse at 70% 50%, #001a11 0%, transparent 60%), #000000', borderBottom: '1px solid #222', padding: '12px 24px', display: 'flex', alignItems: 'center', position: 'relative' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <div onClick={() => setTab('market')} role="button" aria-label="Go to marketplace" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, cursor: 'pointer' }}>
           <div style={{ width: 28, height: 28, background: '#ffd700', borderRadius: 6 }}></div>
           <div>
             <div style={{ fontSize: 17, fontWeight: 700, color: '#ffd700', letterSpacing: -0.5 }}>zkCompute Hub</div>
@@ -32,7 +62,7 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center', flex: 1, justifyContent: 'center', overflowX: 'auto', padding: '0 16px', minWidth: 0, whiteSpace: 'nowrap' }}>
           <TabButton active={tab === 'market'} onClick={() => setTab('market')} label="Marketplace" />
           <TabButton active={tab === 'post'} onClick={() => setTab('post')} label="Post Job" />
           <TabButton active={tab === 'my'} onClick={() => setTab('my')} label="My Jobs" />
@@ -41,8 +71,50 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto', flexShrink: 0 }}>
+          {entered && (
+            <div ref={notifRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+                style={{ background: '#151515', border: '1px solid #333', padding: '7px 10px', borderRadius: 8, cursor: 'pointer', position: 'relative', fontSize: 16, lineHeight: 1 }}>
+                🔔
+                {unreadCount > 0 && (
+                  <span style={{ position: 'absolute', top: -4, right: -6, background: '#ff6b6b', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 6, background: '#111', border: '1px solid #333', borderRadius: 10, minWidth: 320, maxHeight: 360, overflow: 'auto', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid #222', position: 'sticky', top: 0, background: '#111' }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#e0e0e0' }}>Notifications{unreadCount > 0 ? ` (${unreadCount})` : ''}</span>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {notifications.length > 0 && <button onClick={clearAll} style={{ background: 'transparent', border: 'none', color: '#888', fontSize: 10, cursor: 'pointer', fontWeight: 600 }}>Clear all</button>}
+                      {unreadCount > 0 && <button onClick={markAllRead} style={{ background: 'transparent', border: 'none', color: '#ffd700', fontSize: 10, cursor: 'pointer', fontWeight: 600 }}>Mark all read</button>}
+                    </div>
+                  </div>
+                  {notifications.length === 0 ? (
+                    <div style={{ padding: '32px 14px', textAlign: 'center', fontSize: 12, opacity: 0.4 }}>
+                      <div style={{ fontSize: 24, marginBottom: 8 }}>🔔</div>
+                      No notifications yet
+                    </div>
+                  ) : (
+                    notifications.map(n => (
+                      <div key={n.id} onClick={() => { markRead(n.id); setShowNotifications(false) }} role="button" tabIndex={0} style={{ display: 'flex', gap: 10, padding: '10px 14px', borderBottom: '1px solid #1a1a1a', opacity: n.read ? 0.45 : 1, background: n.read ? 'transparent' : '#0d0d0d', cursor: 'pointer' }}>
+                        <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>{typeIcon[n.type] || '📌'}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 11, color: '#c0c0c0', lineHeight: 1.4 }}>{n.message}</div>
+                          <div style={{ fontSize: 9, opacity: 0.35, marginTop: 3 }}>{timeAgo(n.time)}</div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           {!account ? (
-            <button onClick={onConnect} disabled={loading} style={{ background: '#ffd700', color: '#000', border: 'none', padding: '8px 14px', fontWeight: 700, borderRadius: 8, cursor: 'pointer', fontSize: 12 }}>
+            <button onClick={onConnect} disabled={loading} aria-label="Connect wallet" style={{ background: '#ffd700', color: '#000', border: 'none', padding: '8px 14px', fontWeight: 700, borderRadius: 8, cursor: 'pointer', fontSize: 12 }}>
               {loading ? 'Connecting...' : 'Connect Wallet'}
             </button>
           ) : (
@@ -53,6 +125,8 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
               <div style={{ position: 'relative' }}>
                 <button
                   onClick={() => setShowWalletMenu(!showWalletMenu)}
+                  aria-label="Wallet menu"
+                  aria-expanded={showWalletMenu}
                   style={{ background: '#151515', color: '#fff', border: '1px solid #333', padding: '8px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12, minWidth: 120, fontFamily: "'Space Mono', monospace" }}>
                   {account.slice(0, 6)}...{account.slice(-4)}
                 </button>
@@ -60,11 +134,13 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
                   <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, background: '#111', border: '1px solid #333', borderRadius: 8, minWidth: 130, zIndex: 100, overflow: 'hidden' }}>
                     <button
                       onClick={() => { setTab('profile'); setShowWalletMenu(false); }}
+                      aria-label="View profile"
                       style={{ width: '100%', background: 'transparent', color: '#e0e0e0', border: 'none', padding: '8px 14px', textAlign: 'left', cursor: 'pointer', fontSize: 12, fontFamily: "'Space Mono', monospace" }}>
                       Profile
                     </button>
                     <button
                       onClick={onDisconnect}
+                      aria-label="Disconnect wallet"
                       style={{ width: '100%', background: 'transparent', color: '#ff6b6b', border: 'none', padding: '8px 14px', textAlign: 'left', cursor: 'pointer', fontSize: 12, fontFamily: "'Space Mono', monospace" }}>
                       Disconnect
                     </button>
@@ -90,7 +166,7 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
 
 function TabButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
   return (
-    <button onClick={onClick} style={{
+    <button onClick={onClick} aria-label={`${label} tab`} aria-current={active ? 'page' : undefined} style={{
       background: active ? '#1a1a1a' : 'transparent',
       border: active ? '1px solid #444' : '1px solid transparent',
       padding: '7px 14px',

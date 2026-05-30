@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
 import { useAccount, useBalance, useWriteContract, useSwitchChain, useChainId } from 'wagmi'
+import { readContract } from '@wagmi/core'
 import abi from './abi/JobMarketplace.json'
 import { config, CONTRACT_ADDRESS, USDC_ADDRESS } from './config/chain'
 import { useToasts } from './hooks/useToasts'
@@ -20,9 +22,10 @@ import { Profile } from './components/Profile'
 import { ToastContainer } from './components/ToastContainer'
 import { JobDetailModal, ProofModal, ConfirmModal, EditProfileModal, DisputeModal } from './components/Modals'
 import { WorkerProfileModal } from './components/WorkerProfileModal'
-import type { Job, NewJobForm, ConfirmAction, DisputeState, Tab, PostSubTab, SortBy, LeaderboardEntry, WorkerEvent } from './types'
+import type { Job, NewJobForm, ConfirmAction, DisputeState, Tab, PostSubTab, SortBy, LeaderboardEntry, WorkerEvent, Notification } from './types'
 import { saveProfile, loadProfiles } from './hooks/useWorkerProfiles'
-import { handleTxError } from './utils'
+import { saveJobMetadata } from './hooks/useJobMetadata'
+import { handleTxError, getDeadlineMs } from './utils'
 
 const USDC_DECIMALS = 6
 const ERC20_ABI = [
@@ -39,12 +42,17 @@ function AppContent() {
   const { writeContractAsync } = useWriteContract()
 
   const { toasts, showToast } = useToasts()
-  const { jobs, setJobs, onChainJobs } = useJobs(true)
+  const { jobs, setJobs, onChainJobs, loading: jobsLoading, error: jobsError, refetch: refetchJobs } = useJobs(true)
   const { myJobs, setMyJobs } = useMyJobs(address, true)
   const { leaderboard, loading: leaderboardLoading, fetchLeaderboard } = useLeaderboard()
   const { ltcPrice } = usePrices()
 
-  const [tab, setTab] = useState<Tab>('market')
+  const navigate = useNavigate()
+  const location = useLocation()
+  const TAB_PATHS: Record<string, Tab> = { '': 'market', post: 'post', 'my-jobs': 'my', stats: 'stats', leaderboard: 'leaderboard', profile: 'profile' }
+  const tab = TAB_PATHS[location.pathname.replace('/', '')] || 'market'
+  const setTab = (t: Tab) => navigate(t === 'market' ? '/' : '/' + (t === 'my' ? 'my-jobs' : t))
+
   const [account, setAccount] = useState('')
   const [entered, setEntered] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -59,12 +67,12 @@ function AppContent() {
   const [currentProofJob, setCurrentProofJob] = useState<Job | null>(null)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
 
-  const [disputeState, setDisputeState] = useState<DisputeState>({ job: {} as Job, reason: '' })
+  const [disputeState, setDisputeState] = useState<DisputeState>({ job: null, reason: '' })
   const [showDisputeModal, setShowDisputeModal] = useState(false)
 
   const [postSubTab, setPostSubTab] = useState<PostSubTab>('new')
   const [newJob, setNewJob] = useState<NewJobForm>({
-    title: '', type: 'ML', reward: 50, deadline: '4', description: '', requirements: '', maxWorkers: 3, token: 'zkLTC', customToken: ''
+    title: '', type: 'ML', reward: 50, deadline: '', description: '', requirements: '', maxWorkers: 3, token: 'zkLTC', customToken: ''
   })
 
   const [bio, setBio] = useState('')
@@ -76,6 +84,18 @@ function AppContent() {
   const [viewedWorker, setViewedWorker] = useState<string | null>(null)
   const [viewedWorkerEntry, setViewedWorkerEntry] = useState<LeaderboardEntry | null>(null)
   const [viewedWorkerRank, setViewedWorkerRank] = useState(0)
+
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [showNotifications, setShowNotifications] = useState(false)
+  const addNotification = (message: string, type: Notification['type'], jobTitle?: string) => {
+    setNotifications(prev => [{ id: Date.now(), message, time: Date.now(), read: false, type, jobTitle }, ...prev].slice(0, 50))
+  }
+
+  const [editingPostedJob, setEditingPostedJob] = useState<Job | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editType, setEditType] = useState('')
+  const [editDesc, setEditDesc] = useState('')
+  const [editReqs, setEditReqs] = useState('')
 
   useEffect(() => {
     if (address) {
@@ -94,7 +114,7 @@ function AppContent() {
     if (!address) return
 
     const SYNCED_KEY = `zkcompute_synced_${address.toLowerCase()}`
-    if (localStorage.getItem(SYNCED_KEY)) return // sudah pernah sync
+    if (localStorage.getItem(SYNCED_KEY)) return
 
     const events: WorkerEvent[] = JSON.parse(localStorage.getItem('zkcompute_workers') || '[]')
     const myEvents = events.filter(e => e.worker === address.toLowerCase())
@@ -169,6 +189,10 @@ function AppContent() {
     const rewardPerWorker = newJob.reward
     if (isNaN(rewardPerWorker) || rewardPerWorker <= 0) { showToast('Invalid reward amount', 'info'); return }
     const maxWorkers = newJob.maxWorkers
+    if (!newJob.deadline) { showToast('Please set a deadline', 'info'); return }
+    const deadlineTs = Date.parse(newJob.deadline)
+    if (isNaN(deadlineTs)) { showToast('Invalid deadline format', 'info'); return }
+    if (deadlineTs <= Date.now()) { showToast('Deadline must be in the future', 'info'); return }
 
     setLoading(true)
     try {
@@ -184,7 +208,7 @@ function AppContent() {
           functionName: 'approve',
           args: [CONTRACT_ADDRESS as `0x${string}`, totalBase],
         })
-        showToast(`Approving ${Number(totalBase) / (10 ** USDC_DECIMALS)} USDC... Tx: ${approveHash.slice(0, 10)}...`, 'info')
+        showToast(`Approving ${Number(totalBase) / (10 ** USDC_DECIMALS)} USDC... Tx: ${approveHash.slice(0, 10)}...`, 'success')
 
         hash = await writeContractAsync({
           address: CONTRACT_ADDRESS as `0x${string}`,
@@ -204,24 +228,43 @@ function AppContent() {
         })
       }
 
+      const onChainId = Number(await readContract(config, {
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi,
+        functionName: 'jobCount',
+      }))
+      const now = Date.now()
       const job: Job = {
-        id: Date.now(),
+        id: onChainId,
+        createdAt: now,
         title: newJob.title || 'Custom Compute Job',
         type: newJob.type,
         reward: rewardPerWorker,
-        deadline: newJob.deadline + 'h',
+        deadline: newJob.deadline || '4h',
         description: newJob.description || 'No description',
         requirements: newJob.requirements || 'No requirements',
-        poster: account || '0x0000000000000000000000000000000000000000',
+        poster: address || '0x0000000000000000000000000000000000000000',
         claimedCount: 0,
         maxWorkers,
         difficulty: 'Medium',
         tokenSymbol: newJob.token === 'USDC' ? 'USDC' : 'zkLTC',
       }
-      setJobs([...jobs, job])
+      setJobs(prev => [...prev, job])
+      saveJobMetadata({
+        job_id: onChainId,
+        poster: address?.toLowerCase() || '',
+        title: job.title,
+        type: job.type,
+        description: job.description,
+        requirements: job.requirements,
+        deadline: job.deadline,
+        token_symbol: job.tokenSymbol || 'zkLTC',
+        difficulty: job.difficulty,
+      })
       const tokenLabel = newJob.token === 'USDC' ? 'USDC' : 'zkLTC'
-      setNewJob({ title: '', type: 'ML', reward: 50, deadline: '4', description: '', requirements: '', maxWorkers: 3, token: 'zkLTC', customToken: '' })
+      setNewJob({ title: '', type: 'ML', reward: 50, deadline: '', description: '', requirements: '', maxWorkers: 3, token: 'zkLTC', customToken: '' })
       showToast(`Job posted! ${rewardPerWorker * maxWorkers} ${tokenLabel} escrowed | Tx: ${hash.slice(0, 10)}...`, 'success')
+      addNotification(`Job posted: "${job.title}" — ${rewardPerWorker * maxWorkers} ${tokenLabel} escrowed`, 'post', job.title)
     } catch (e: unknown) {
       handleTxError(e, 'Post job', showToast)
     }
@@ -240,9 +283,9 @@ function AppContent() {
       })
       const newClaimedCount = job.claimedCount + 1
       if (newClaimedCount >= job.maxWorkers) {
-        setJobs(jobs.filter(j => j.id !== job.id))
+        setJobs(prev => prev.filter(j => j.id !== job.id))
       } else {
-        setJobs(jobs.map(j => j.id === job.id ? { ...j, claimedCount: newClaimedCount } : j))
+        setJobs(prev => prev.map(j => j.id === job.id ? { ...j, claimedCount: newClaimedCount } : j))
       }
       setMyJobs(prev => {
         if (prev.some(j => j.id === job.id)) return prev
@@ -251,6 +294,7 @@ function AppContent() {
       setSelectedJob(null)
       saveWorkerEvent('claimed', job, address)
       showToast(`Job claimed! Tx: ${hash.slice(0, 10)}...`, 'success')
+      addNotification(`Job claimed: "${job.title}" — +${job.reward} ${job.tokenSymbol || 'zkLTC'}`, 'claim', job.title)
     } catch (e: unknown) {
       handleTxError(e, 'Claim job', showToast)
     }
@@ -266,12 +310,13 @@ function AppContent() {
     if (!confirmAction?.job) return
     const unclaimedJob = confirmAction.job
     setMyJobs(prev => prev.filter(j => j.id !== unclaimedJob.id))
-    const existing = jobs.find(j => j.id === unclaimedJob.id)
-    if (existing) {
-      setJobs(jobs.map(j => j.id === unclaimedJob.id ? { ...j, claimedCount: Math.max(0, j.claimedCount - 1) } : j))
-    } else {
-      setJobs([...jobs, { ...unclaimedJob, claimedCount: unclaimedJob.maxWorkers - 1 }])
-    }
+    setJobs(prev => {
+      const existing = prev.find(j => j.id === unclaimedJob.id)
+      if (existing) {
+        return prev.map(j => j.id === unclaimedJob.id ? { ...j, claimedCount: Math.max(0, j.claimedCount - 1) } : j)
+      }
+      return [...prev, { ...unclaimedJob, claimedCount: unclaimedJob.maxWorkers - 1 }]
+    })
     showToast('Job unclaimed', 'info')
     setConfirmAction(null)
   }
@@ -307,6 +352,7 @@ function AppContent() {
       ))
       saveWorkerEvent('completed', confirmAction.job!, address)
       showToast(`Proof submitted! Tx: ${hash.slice(0, 10)}...`, 'success')
+      addNotification(`Proof submitted: "${confirmAction.job!.title}"`, 'proof', confirmAction.job!.title)
       setTimeout(() => showToast('Stats updated: +1 job completed', 'info'), 800)
     } catch (e: unknown) {
       handleTxError(e, 'Submit proof', showToast)
@@ -332,6 +378,7 @@ function AppContent() {
       ))
       saveWorkerEvent('paid', job, address)
       showToast(`Payment released! +${job.reward} ${job.tokenSymbol || 'zkLTC'} | Tx: ${hash.slice(0, 10)}...`, 'success')
+      addNotification(`Payment received: +${job.reward} ${job.tokenSymbol || 'zkLTC'} for "${job.title}"`, 'payment', job.title)
     } catch (e: unknown) {
       handleTxError(e, 'Release payment', showToast)
     }
@@ -361,6 +408,8 @@ function AppContent() {
   const deactivateJob = async (job: Job) => {
     if (!address) { showToast('Connect wallet first', 'info'); return }
     setLoading(true)
+    const token = job.tokenSymbol || 'zkLTC'
+    const refundAmount = job.reward * job.maxWorkers
     try {
       const hash = await writeContractAsync({
         address: CONTRACT_ADDRESS as `0x${string}`,
@@ -368,11 +417,12 @@ function AppContent() {
         functionName: 'deactivateJob',
         args: [BigInt(job.id)],
       })
-      setJobs(jobs.filter(j => j.id !== job.id))
+      setJobs(prev => prev.filter(j => j.id !== job.id))
       setMyJobs(prev => prev.filter(j => j.id !== job.id))
-      showToast(`Job deactivated! Tx: ${hash.slice(0, 10)}...`, 'success')
+      showToast(`Job cancelled! +${refundAmount} ${token} refunded | Tx: ${hash.slice(0, 10)}...`, 'success')
+      addNotification(`Job cancelled & refunded: "${job.title}" — +${refundAmount} ${token}`, 'payment', job.title)
     } catch (e: unknown) {
-      handleTxError(e, 'Deactivate job', showToast)
+      handleTxError(e, 'Cancel job', showToast)
     }
     setLoading(false)
   }
@@ -403,6 +453,7 @@ function AppContent() {
         args: [BigInt(confirmAction.job.id), confirmAction.disputeWorker as `0x${string}`, confirmAction.disputeReason || ''],
       })
       showToast(`Dispute filed! Tx: ${hash.slice(0, 10)}...`, 'success')
+      addNotification(`Dispute filed for "${confirmAction.job.title}"`, 'dispute', confirmAction.job.title)
     } catch (e: unknown) {
       handleTxError(e, 'Raise dispute', showToast)
     }
@@ -455,6 +506,10 @@ function AppContent() {
     .filter(j => j.claimedCount < j.maxWorkers)
     .filter(j => !search || j.title.toLowerCase().includes(search.toLowerCase()) || j.type.toLowerCase().includes(search.toLowerCase()))
     .filter(j => !typeFilter || j.type === typeFilter)
+    .filter(j => {
+      const endMs = getDeadlineMs(j.createdAt, j.deadline)
+      return endMs === null || endMs > Date.now()
+    })
     .sort((a, b) => {
       if (sortBy === 'reward') {
         const price = ltcPrice ?? parseFloat(localStorage.getItem('zkcompute_ltc_price') || '51')
@@ -462,11 +517,53 @@ function AppContent() {
         const priceB = b.tokenSymbol === 'zkLTC' ? price * b.reward : b.reward
         return priceB - priceA || b.id - a.id
       }
-      if (sortBy === 'deadline') return parseInt(a.deadline) - parseInt(b.deadline) || b.id - a.id
+      if (sortBy === 'deadline') {
+        const aMs = getDeadlineMs(a.createdAt, a.deadline) ?? 0
+        const bMs = getDeadlineMs(b.createdAt, b.deadline) ?? 0
+        return aMs - bMs || b.id - a.id
+      }
       return b.id - a.id
     })
 
   const postedJobs = jobs.filter(j => address && j.poster.toLowerCase() === (address || '').toLowerCase())
+
+  const confirmDeactivate = (job: Job) => {
+    setConfirmAction({ type: 'deactivate', job })
+  }
+
+  const editPostedJob = (job: Job) => {
+    setEditingPostedJob(job)
+    setEditTitle(job.title)
+    setEditType(job.type)
+    setEditDesc(job.description)
+    setEditReqs(job.requirements)
+  }
+
+  const saveEditedJob = () => {
+    if (!editingPostedJob) return
+    setJobs(prev => prev.map(j => j.id === editingPostedJob.id ? { ...j, title: editTitle, type: editType, description: editDesc, requirements: editReqs } : j))
+    saveJobMetadata({
+      job_id: editingPostedJob.id,
+      poster: editingPostedJob.poster.toLowerCase(),
+      title: editTitle,
+      type: editType,
+      description: editDesc,
+      requirements: editReqs,
+      deadline: editingPostedJob.deadline,
+      token_symbol: editingPostedJob.tokenSymbol || 'zkLTC',
+      difficulty: editingPostedJob.difficulty,
+    })
+    setEditingPostedJob(null)
+    showToast('Job updated!', 'success')
+  }
+
+  const cancelEdit = () => {
+    setEditingPostedJob(null)
+    setEditTitle('')
+    setEditType('')
+    setEditDesc('')
+    setEditReqs('')
+  }
 
   const handleViewWorker = (workerAddr: string, entry: LeaderboardEntry, rank: number) => {
     setViewedWorker(workerAddr)
@@ -489,65 +586,92 @@ function AppContent() {
         onConnect={connectWallet} onDisconnect={disconnect}
         onSwitchNetwork={switchToLitForge}
         isWrongNetwork={isWrongNetwork}
+        notifications={notifications}
+        setNotifications={setNotifications}
+        showNotifications={showNotifications}
+        setShowNotifications={setShowNotifications}
       />
 
       <div style={{ padding: '20px 24px' }}>
-        {tab === 'market' && (
-          <Marketplace
-            jobs={filteredJobs}
-            search={search} setSearch={setSearch}
-            typeFilter={typeFilter} setTypeFilter={setTypeFilter}
-            sortBy={sortBy} setSortBy={setSortBy}
-            onClaim={claimJob} onDetail={setSelectedJob}
-            loading={loading}
-          />
-        )}
-        {tab === 'post' && (
-          <PostJob
-            postSubTab={postSubTab} setPostSubTab={setPostSubTab}
-            newJob={newJob} setNewJob={setNewJob}
-            postedJobs={postedJobs}
-            onPost={postJob} onReleaseWorker={releasePaymentForWorker}
-            onDeactivate={deactivateJob}
-            onDispute={openDisputeModal}
-            loading={loading} account={account || address || ''}
-          />
-        )}
-        {tab === 'my' && (
-          <MyJobs
-            myJobs={myJobs} address={address}
-            onOpenProof={openProofModal} onUnclaim={unclaimJob}
-            onRelease={releasePayment} loading={loading}
-            onDispute={openDisputeModal}
-            onResolveDispute={resolveDispute}
-          />
-        )}
-        {tab === 'stats' && (
-          <Stats
-            onChainJobs={onChainJobs}
-            leaderboard={leaderboard}
-            ltcPrice={ltcPrice}
-            address={address || ''}
-          />
-        )}
-        {tab === 'leaderboard' && (
-          <Leaderboard
-            leaderboard={leaderboard}
-            leaderboardLoading={leaderboardLoading}
-            onViewWorker={handleViewWorker}
-            ltcPrice={ltcPrice}
-          />
-        )}
-        {tab === 'profile' && (
-          <Profile
-            account={account || address || ''}
-            myJobs={myJobs}
-            bio={bio} skills={skills} avatarUrl={avatarUrl}
-            setEditBio={setEditBio} setShowEditProfile={setShowEditProfile}
-            leaderboard={leaderboard}
-            ltcPrice={ltcPrice}
-          />
-        )}
+        <Routes>
+          <Route path="/" element={
+            <Marketplace
+              jobs={filteredJobs}
+              search={search} setSearch={setSearch}
+              typeFilter={typeFilter} setTypeFilter={setTypeFilter}
+              sortBy={sortBy} setSortBy={setSortBy}
+              onClaim={claimJob} onDetail={setSelectedJob}
+              loading={loading} jobsLoading={jobsLoading}
+              jobsError={jobsError} onRetry={refetchJobs}
+            />
+          } />
+          <Route path="/post" element={
+            <PostJob
+              postSubTab={postSubTab} setPostSubTab={setPostSubTab}
+              newJob={newJob} setNewJob={setNewJob}
+              postedJobs={postedJobs}
+              onPost={postJob} onReleaseWorker={releasePaymentForWorker}
+              onDeactivate={confirmDeactivate}
+              onDispute={openDisputeModal}
+              loading={loading}
+              onEditPostedJob={editPostedJob}
+              editingPostedJob={editingPostedJob}
+              editTitle={editTitle} setEditTitle={setEditTitle}
+              editType={editType} setEditType={setEditType}
+              editDesc={editDesc} setEditDesc={setEditDesc}
+              editReqs={editReqs} setEditReqs={setEditReqs}
+              onSaveEdit={saveEditedJob}
+              onCancelEdit={cancelEdit}
+            />
+          } />
+          <Route path="/my-jobs" element={
+            <MyJobs
+              myJobs={myJobs} address={address}
+              onOpenProof={openProofModal} onUnclaim={unclaimJob}
+              onRelease={releasePayment} loading={loading}
+              onDispute={openDisputeModal}
+              onResolveDispute={resolveDispute}
+            />
+          } />
+          <Route path="/stats" element={
+            <Stats
+              onChainJobs={onChainJobs}
+              leaderboard={leaderboard}
+              ltcPrice={ltcPrice}
+              address={address || ''}
+              loading={jobsLoading || leaderboardLoading}
+              error={jobsError}
+              onRetry={() => { refetchJobs(); fetchLeaderboard(onChainJobs, true) }}
+            />
+          } />
+          <Route path="/leaderboard" element={
+            <Leaderboard
+              leaderboard={leaderboard}
+              leaderboardLoading={leaderboardLoading}
+              onViewWorker={handleViewWorker}
+              ltcPrice={ltcPrice}
+              onChainJobs={onChainJobs}
+              onRetry={() => fetchLeaderboard(onChainJobs, true)}
+            />
+          } />
+          <Route path="/profile" element={
+            <Profile
+              account={account || address || ''}
+              myJobs={myJobs}
+              bio={bio} skills={skills} avatarUrl={avatarUrl}
+              setEditBio={setEditBio} setShowEditProfile={setShowEditProfile}
+              leaderboard={leaderboard}
+              ltcPrice={ltcPrice}
+              loading={leaderboardLoading}
+              onRetry={() => fetchLeaderboard(onChainJobs, true)}
+            />
+          } />
+          <Route path="*" element={
+            <div style={{ textAlign: 'center', padding: 60, opacity: 0.5 }}>
+              Page not found. <a onClick={() => navigate('/')} style={{ color: '#ffd700', cursor: 'pointer', textDecoration: 'underline' }}>Go to Marketplace</a>
+            </div>
+          } />
+        </Routes>
       </div>
 
       <ToastContainer toasts={toasts} />
@@ -626,7 +750,9 @@ export default function App() {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <AppContent />
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
       </QueryClientProvider>
     </WagmiProvider>
   )

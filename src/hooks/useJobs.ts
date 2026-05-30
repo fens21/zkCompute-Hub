@@ -3,6 +3,7 @@ import { readContract } from '@wagmi/core'
 import abi from '../abi/JobMarketplace.json'
 import { config, CONTRACT_ADDRESS } from '../config/chain'
 import type { Job } from '../types'
+import { fetchJobMetadata } from './useJobMetadata'
 
 // Demo jobs removed for clean testing. Marketplace will only show on-chain jobs.
 const DEMO_JOBS: Job[] = []
@@ -32,13 +33,24 @@ function parseJob(raw: [bigint, string, string, bigint, string, string, bigint, 
   }
 }
 
+function mergeMetadata(jobs: Job[], metaMap: Map<number, import('./useJobMetadata').JobMetadata>): Job[] {
+  return jobs.map(j => {
+    const meta = metaMap.get(j.id)
+    if (!meta) return j
+    return { ...j, title: meta.title ?? j.title, type: meta.type ?? j.type, description: meta.description, requirements: meta.requirements, deadline: meta.deadline, difficulty: meta.difficulty || j.difficulty }
+  })
+}
+
 export function useJobs(autoFetch: boolean) {
   const [jobs, setJobs] = useState<Job[]>([])
   const [onChainJobs, setOnChainJobs] = useState<Job[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const hasFetched = useRef(false)
 
   const fetchOnChainJobs = useCallback(async () => {
-    if (hasFetched.current) return
+    setLoading(true)
+    setError(null)
     hasFetched.current = true
     try {
       const count = await readContract(config, {
@@ -64,11 +76,18 @@ export function useJobs(autoFetch: boolean) {
           console.error(`Failed to fetch on-chain job #${i}:`, e)
         }
       }
-      setOnChainJobs(Object.values(Object.fromEntries(onChain.map(j => [String(j.id), j]))))
-      setJobs(Object.values(Object.fromEntries([...onChain, ...DEMO_JOBS].map(j => [String(j.id), j]))))
+      let metaMap = new Map<number, import('./useJobMetadata').JobMetadata>()
+      try {
+        const idList = onChain.map(j => j.id)
+        metaMap = await fetchJobMetadata(idList)
+      } catch { /* table may not exist yet */ }
+      setOnChainJobs(mergeMetadata(onChain, metaMap))
+      setJobs(mergeMetadata([...onChain, ...DEMO_JOBS], metaMap))
     } catch (e) {
       console.error('Failed to fetch on-chain jobs:', e)
+      setError('Failed to load jobs. Please check your wallet connection.')
     }
+    setLoading(false)
   }, [])
 
   useEffect(() => {
@@ -78,5 +97,5 @@ export function useJobs(autoFetch: boolean) {
     }
   }, [autoFetch, fetchOnChainJobs])
 
-  return { jobs, setJobs, onChainJobs }
+  return { jobs, setJobs, onChainJobs, loading, error, refetch: fetchOnChainJobs }
 }

@@ -44,7 +44,7 @@ contract JobMarketplace {
     ) external payable {
         require(msg.value > 0, "Reward required");
         require(_maxWorkers > 0, "Need at least 1 worker");
-        require(msg.value % _maxWorkers == 0, "Value must be divisible by maxWorkers");
+        require(msg.value >= _maxWorkers, "Value too small");
 
         uint256 rewardPerWorker = msg.value / _maxWorkers;
 
@@ -74,7 +74,7 @@ contract JobMarketplace {
         require(_maxWorkers > 0, "Need at least 1 worker");
 
         uint256 totalAmount = _reward * _maxWorkers;
-        IERC20(USDC).transferFrom(msg.sender, address(this), totalAmount);
+        require(IERC20(USDC).transferFrom(msg.sender, address(this), totalAmount), "USDC transfer failed");
 
         jobCount++;
         jobs[jobCount] = Job({
@@ -122,9 +122,10 @@ contract JobMarketplace {
         paid[_jobId][_worker] = true;
 
         if (job.token == address(0)) {
-            payable(_worker).transfer(job.reward);
+            (bool sent, ) = payable(_worker).call{value: job.reward}("");
+            require(sent, "zkLTC transfer failed");
         } else {
-            IERC20(job.token).transfer(_worker, job.reward);
+            require(IERC20(job.token).transfer(_worker, job.reward), "Token transfer failed");
         }
 
         emit PaymentReleased(_jobId, _worker, job.reward);
@@ -136,6 +137,16 @@ contract JobMarketplace {
         require(job.active, "Already inactive");
         require(job.claimedCount == 0, "Workers already claimed");
         job.active = false;
+
+        uint256 totalEscrowed = job.reward * job.maxWorkers;
+
+        if (job.token == address(0)) {
+            (bool sent, ) = payable(msg.sender).call{value: totalEscrowed}("");
+            require(sent, "zkLTC refund failed");
+        } else {
+            require(IERC20(job.token).transfer(msg.sender, totalEscrowed), "Token refund failed");
+        }
+
         emit JobDeactivated(_jobId);
     }
 
@@ -154,9 +165,12 @@ contract JobMarketplace {
 
         if (_acceptCancellation) {
             require(msg.sender == _worker, "Only worker can accept cancellation");
+            require(jobs[_jobId].claimedCount > 0, "No claims to cancel");
             hasClaimed[_jobId][_worker] = false;
             proofSubmitted[_jobId][_worker] = false;
-            jobs[_jobId].claimedCount--;
+            unchecked {
+                jobs[_jobId].claimedCount--;
+            }
         }
 
         emit DisputeResolved(_jobId, _worker, _acceptCancellation);
