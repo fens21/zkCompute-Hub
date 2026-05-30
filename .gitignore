@@ -63,3 +63,4 @@ vite.config.ts.timestamp-*
 tmp/
 temp/
 .vercel
+.env*
