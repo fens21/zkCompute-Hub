@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
-import { useAccount, useConnect, useDisconnect, useBalance, useWriteContract, useSwitchChain, useChainId } from 'wagmi'
-import { injected } from 'wagmi/connectors'
+import { useAccount, useBalance, useWriteContract, useSwitchChain, useChainId } from 'wagmi'
 import { readContract } from '@wagmi/core'
 import abi from './abi/JobMarketplace.json'
 import { config, CONTRACT_ADDRESS, USDC_ADDRESS } from './config/chain'
@@ -37,8 +36,6 @@ const queryClient = new QueryClient()
 
 function AppContent() {
   const { address } = useAccount()
-  const { connect: wagmiConnect } = useConnect()
-  const { disconnect: wagmiDisconnect } = useDisconnect()
   const chainId = useChainId()
   const { switchChain } = useSwitchChain()
   const { data: balance } = useBalance({ address, chainId: 4441 })
@@ -148,8 +145,15 @@ function AppContent() {
   const connectWallet = async () => {
     setLoading(true)
     try {
-      try { wagmiDisconnect() } catch {}
-      await wagmiConnect({ connector: injected() })
+      if (!window.ethereum) {
+        showToast('Please install MetaMask or Brave Wallet', 'error')
+        setLoading(false)
+        return
+      }
+      await window.ethereum.request({
+        method: 'wallet_requestPermissions',
+        params: [{ eth_accounts: {} }]
+      })
       setEntered(true)
       navigate('/')
       showToast('Switching to LitForge Testnet...', 'info')
@@ -177,7 +181,6 @@ function AppContent() {
   const disconnect = () => {
     setEntered(false)
     setShowWalletMenu(false)
-    try { wagmiDisconnect() } catch {}
   }
 
   const postJob = async () => {
