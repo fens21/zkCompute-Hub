@@ -229,7 +229,6 @@ function DeadlineValue({ createdAt, deadline, now }: { createdAt?: number; deadl
 
 function JobCard({ job, onClaim, onDetail, loading, now }: { job: Job; onClaim: (job: Job) => void; onDetail: (job: Job) => void; loading: boolean; now: number }) {
   const rewardStr = job.reward.toLocaleString(undefined, { minimumFractionDigits: 2 })
-  const endMs = getDeadlineMs(job.createdAt, job.deadline)
   const claimedRatio = job.maxWorkers > 0 ? job.claimedCount / job.maxWorkers : 0
 
   return (
