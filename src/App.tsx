@@ -60,7 +60,6 @@ function AppContent() {
   const [loading, setLoading] = useState(false)
   const [deactivating, setDeactivating] = useState(false)
   const [submittingProof, setSubmittingProof] = useState(false)
-  const [releasing, setReleasing] = useState(false)
   const [showWalletMenu, setShowWalletMenu] = useState(false)
 
   useEffect(() => {
@@ -295,7 +294,7 @@ function AppContent() {
         deadline: newJob.deadline || '4h',
         description: newJob.description || 'No description',
         requirements: newJob.requirements || 'No requirements',
-        poster: address || '0x0000000000000000000000000000000000000000',
+        poster: address,
         claimedCount: 0,
         maxWorkers,
         difficulty: newJob.difficulty,
@@ -304,7 +303,7 @@ function AppContent() {
       setJobs(prev => [...prev, job])
       saveJobMetadata({
         job_id: onChainId,
-        poster: address?.toLowerCase() || '',
+        poster: address.toLowerCase(),
         title: job.title,
         type: job.type,
         description: job.description,
@@ -425,7 +424,6 @@ function AppContent() {
 
   const releasePayment = async (job: Job) => {
     if (!address) { showToast('Connect wallet first', 'info'); return }
-    setReleasing(true)
     try {
       const hash = await writeContractAsync({
         address: CONTRACT_ADDRESS as `0x${string}`,
@@ -442,7 +440,6 @@ function AppContent() {
     } catch (e: unknown) {
       handleTxError(e, 'Release payment', showToast)
     }
-    setReleasing(false)
   }
 
   const releasePaymentForWorker = async (workerAddr: string, job: Job) => {
@@ -586,7 +583,7 @@ function AppContent() {
       return b.id - a.id
     })
 
-  const postedJobs = jobs.filter(j => address && j.poster.toLowerCase() === (address || '').toLowerCase())
+  const postedJobs = jobs.filter(j => address && j.poster.toLowerCase() === address.toLowerCase())
 
   const confirmDeactivate = (job: Job) => {
     setConfirmAction({ type: 'deactivate', job, claimantCount: job.claimedCount })
@@ -637,7 +634,6 @@ function AppContent() {
   }
 
   if (!sessionChecked) {
-    // Wait for session check to finish — prevent landing page flash on reload
     return null
   }
 
@@ -701,13 +697,12 @@ function AppContent() {
           <Route path="/my-jobs" element={
             <MyJobs
               myJobs={myJobs}
-              onOpenProof={openProofModal} onUnclaim={unclaimJob}
-              onRelease={releasePayment} loading={loading}
+              onOpenProof={openProofModal}
+              onUnclaim={unclaimJob}
+              loading={loading}
               submittingProof={submittingProof}
-              releasing={releasing}
               onDispute={openDisputeModal}
               onResolveDispute={resolveDispute}
-              address={address || ''}
             />
           } />
           <Route path="/stats" element={

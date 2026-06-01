@@ -106,8 +106,8 @@ export async function fetchWorkerActivities(workerAddr: string): Promise<(Worker
 export async function fetchProofUrl(jobId: number, workerAddr: string): Promise<string | null> {
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/activities?job_id=eq.${jobId}&worker=eq.${workerAddr.toLowerCase()}&status=eq.completed&select=proof_url&order=created_at.desc&limit=1`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+      `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/activities?job_id=eq.${jobId}&worker=eq.${workerAddr.toLowerCase()}&status=eq.completed&select=proof_url&order=created_at.desc&limit=1`,
+      { headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` } }
     )
     if (!res.ok) return null
     const data = await res.json()
@@ -123,8 +123,8 @@ export async function fetchProofUrl(jobId: number, workerAddr: string): Promise<
 export async function fetchProofHash(jobId: number, workerAddr: string): Promise<string | null> {
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/activities?job_id=eq.${jobId}&worker=eq.${workerAddr.toLowerCase()}&status=eq.completed&select=proof_hash&order=created_at.desc&limit=1`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+      `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/activities?job_id=eq.${jobId}&worker=eq.${workerAddr.toLowerCase()}&status=eq.completed&select=proof_hash&order=created_at.desc&limit=1`,
+      { headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` } }
     )
     if (!res.ok) return null
     const data = await res.json()
@@ -209,7 +209,6 @@ export function useMyJobs(address: string | undefined, _syncEnabled: boolean = t
       const jobsMap = new Map<number, Job>()
       for (const ev of events) {
         const existing = jobsMap.get(ev.jobId)
-        // Prefer event with job_data (has full details); update status if newer
         if (!existing || ev.job) {
           if (ev.job) {
             jobsMap.set(ev.jobId, { ...ev.job, status: ev.status })

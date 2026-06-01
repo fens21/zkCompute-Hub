@@ -8,7 +8,7 @@ import { colors, radii } from '../styles/tokens'
 import { getProofUrl, discoverProofUrl } from '../hooks/useWorkerProfiles'
 import { fetchProofUrl, fetchProofHash } from '../hooks/useMyJobs'
 
-export function PostedJobCard({ job, onRelease, onDeactivate, onDispute, loading, deactivating, onEdit, view = 'grid', myAddress }: { job: Job; onRelease: (worker: string, j: Job) => void; onDeactivate: (j: Job) => void; onDispute: (j: Job, worker?: string) => void; loading: boolean; deactivating?: boolean; onEdit?: (j: Job) => void; view?: 'grid' | 'list'; myAddress?: string }) {
+export function PostedJobCard({ job, onRelease, onDeactivate, onDispute, loading, deactivating, onEdit, view = 'grid' }: { job: Job; onRelease: (worker: string, j: Job) => void; onDeactivate: (j: Job) => void; onDispute: (j: Job, worker?: string) => void; loading: boolean; deactivating?: boolean; onEdit?: (j: Job) => void; view?: 'grid' | 'list' }) {
   const [claimantsList, setClaimantsList] = useState<string[]>([])
   const [claimantsLoading, setClaimantsLoading] = useState(true)
   const [claimantsRefreshKey, setClaimantsRefreshKey] = useState(0)
@@ -78,7 +78,7 @@ export function PostedJobCard({ job, onRelease, onDeactivate, onDispute, loading
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
             <button type="button" onClick={refreshClaimants} aria-label="Refresh claimants" style={{ background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.border}`, padding: '2px 8px', borderRadius: radii.sm, cursor: 'pointer', fontSize: 10 }}>↻ Refresh</button>
           </div>
-          <CheckProofs jobId={job.id} claimants={claimantsList} claimantsRefreshKey={claimantsRefreshKey} onRelease={onRelease} job={job} loading={loading} onDispute={onDispute} myAddress={myAddress} />
+          <CheckProofs jobId={job.id} claimants={claimantsList} claimantsRefreshKey={claimantsRefreshKey} onRelease={onRelease} job={job} loading={loading} onDispute={onDispute} />
         </div>
       )}
     </>
@@ -102,7 +102,7 @@ export function PostedJobCard({ job, onRelease, onDeactivate, onDispute, loading
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
             <button type="button" onClick={refreshClaimants} aria-label="Refresh claimants" style={{ background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.border}`, padding: '2px 8px', borderRadius: radii.sm, cursor: 'pointer', fontSize: 10 }}>↻ Refresh</button>
           </div>
-          <CheckProofs jobId={job.id} claimants={claimantsList} claimantsRefreshKey={claimantsRefreshKey} onRelease={onRelease} job={job} loading={loading} onDispute={onDispute} myAddress={myAddress} />
+          <CheckProofs jobId={job.id} claimants={claimantsList} claimantsRefreshKey={claimantsRefreshKey} onRelease={onRelease} job={job} loading={loading} onDispute={onDispute} />
         </div>
       ) : (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, gap: 6 }}>
@@ -119,7 +119,7 @@ export function PostedJobCard({ job, onRelease, onDeactivate, onDispute, loading
 )
 }
 
-function CheckProofs({ jobId, claimants, claimantsRefreshKey, onRelease, job, loading, onDispute, myAddress }: { jobId: number; claimants: string[]; claimantsRefreshKey: number; onRelease: (worker: string, j: Job) => void; job: Job; loading: boolean; onDispute: (j: Job, worker: string) => void; myAddress?: string }) {
+function CheckProofs({ jobId, claimants, claimantsRefreshKey, onRelease, job, loading, onDispute }: { jobId: number; claimants: string[]; claimantsRefreshKey: number; onRelease: (worker: string, j: Job) => void; job: Job; loading: boolean; onDispute: (j: Job, worker?: string) => void }) {
   const [workers, setWorkers] = useState<{ addr: string; hasProof: boolean; isPaid: boolean; isDisputed: boolean }[]>([])
   const [openSection, setOpenSection] = useState<string | null>(null)
 
@@ -198,7 +198,7 @@ function CheckProofs({ jobId, claimants, claimantsRefreshKey, onRelease, job, lo
           <div style={{ maxHeight: openSection === 'pending' ? '600px' : '0', overflow: 'hidden', transition: 'max-height 0.3s ease' }}>
             <div style={{ padding: '4px 8px 8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
               {pending.map((w, i) => (
-                <PendingRow key={i} jobId={job.id} worker={w.addr} loading={loading} onRelease={onRelease} onDispute={onDispute} job={job} myAddress={myAddress} />
+                <PendingRow key={i} jobId={job.id} worker={w.addr} loading={loading} onRelease={onRelease} onDispute={onDispute} job={job} />
               ))}
             </div>
           </div>
@@ -241,9 +241,8 @@ function CheckProofs({ jobId, claimants, claimantsRefreshKey, onRelease, job, lo
   )
 }
 
-function PendingRow({ jobId, worker, loading, onRelease, onDispute, job, myAddress }: { jobId: number; worker: string; loading: boolean; onRelease: (w: string, j: Job) => void; onDispute: (j: Job, w?: string) => void; job: Job; myAddress?: string }) {
+function PendingRow({ jobId, worker, loading, onRelease, onDispute, job }: { jobId: number; worker: string; loading: boolean; onRelease: (w: string, j: Job) => void; onDispute: (j: Job, w?: string) => void; job: Job }) {
   const [exists, setExists] = useState<boolean | null>(null)
-  const [proofUrl, setProofUrl] = useState('')
   const [fileUrl, setFileUrl] = useState('')
   const [proofHash, setProofHash] = useState('')
 
@@ -251,14 +250,12 @@ function PendingRow({ jobId, worker, loading, onRelease, onDispute, job, myAddre
     let cancelled = false
     const tryUrl = async (base: string) => {
       if (cancelled) return
-      setProofUrl(base + '?download=1')
       setFileUrl(base)
       const ok = await fetch(base, { method: 'HEAD' }).then(r => r.ok).catch(() => false)
       if (!cancelled) setExists(ok)
       if (!ok) {
         const discovered = await discoverProofUrl(jobId, worker)
         if (discovered !== base && !cancelled) {
-          setProofUrl(discovered + '?download=1')
           setFileUrl(discovered)
           const ok2 = await fetch(discovered, { method: 'HEAD' }).then(r => r.ok).catch(() => false)
           if (!cancelled) setExists(ok2)

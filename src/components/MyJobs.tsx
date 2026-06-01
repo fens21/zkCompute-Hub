@@ -12,15 +12,12 @@ const JOB_TYPE_ICONS: Record<string, string> = {
 
 type ViewMode = 'grid' | 'list'
 
-export function MyJobs({ myJobs, address, onOpenProof, onUnclaim, onRelease, loading, submittingProof, releasing, onDispute, onResolveDispute }: {
+export function MyJobs({ myJobs, onOpenProof, onUnclaim, loading, submittingProof, onDispute, onResolveDispute }: {
   myJobs: Job[]
-  address?: string
   onOpenProof: (job: Job) => void
   onUnclaim: (jobId: number) => void
-  onRelease: (job: Job) => void
   loading: boolean
   submittingProof?: boolean
-  releasing?: boolean
   onDispute: (job: Job, worker?: string) => void
   onResolveDispute: (job: Job, acceptCancel: boolean) => void
 }) {
