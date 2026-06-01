@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Job, WorkerEvent } from '../types'
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 const MYJOBS_KEY = 'zkcompute_myjobs_v2'
 const WORKER_KEY = 'zkcompute_workers'
 
