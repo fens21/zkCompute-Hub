@@ -23,7 +23,7 @@ import { ToastContainer } from './components/ToastContainer'
 import { JobDetailModal, ProofModal, ConfirmModal, EditProfileModal, DisputeModal } from './components/Modals'
 import { WorkerProfileModal } from './components/WorkerProfileModal'
 import type { Job, NewJobForm, ConfirmAction, DisputeState, Tab, PostSubTab, SortBy, LeaderboardEntry, WorkerEvent, Notification } from './types'
-import { saveProfile, loadProfiles } from './hooks/useWorkerProfiles'
+import { saveProfile, loadProfiles, uploadProofFile } from './hooks/useWorkerProfiles'
 import { saveJobMetadata } from './hooks/useJobMetadata'
 import { handleTxError, getDeadlineMs } from './utils'
 
@@ -58,6 +58,9 @@ function AppContent() {
   const [entered, setEntered] = useState(false)
   const [sessionChecked, setSessionChecked] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [deactivating, setDeactivating] = useState(false)
+  const [submittingProof, setSubmittingProof] = useState(false)
+  const [releasing, setReleasing] = useState(false)
   const [showWalletMenu, setShowWalletMenu] = useState(false)
 
   useEffect(() => {
@@ -101,6 +104,7 @@ function AppContent() {
   const [proofHash, setProofHash] = useState('')
   const [showProofModal, setShowProofModal] = useState(false)
   const [currentProofJob, setCurrentProofJob] = useState<Job | null>(null)
+  const [currentProofFile, setCurrentProofFile] = useState<File | null>(null)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
 
   const [disputeState, setDisputeState] = useState<DisputeState>({ job: null, reason: '' })
@@ -133,6 +137,7 @@ function AppContent() {
   const [editDesc, setEditDesc] = useState('')
   const [editReqs, setEditReqs] = useState('')
   const [editDeadline, setEditDeadline] = useState('')
+  const [editDifficulty, setEditDifficulty] = useState('')
 
   useEffect(() => {
     if (address) {
@@ -372,47 +377,55 @@ function AppContent() {
     setCurrentProofJob(job)
     setShowProofModal(true)
     setProofHash('')
+    setCurrentProofFile(null)
   }
 
   const submitProof = async () => {
-    if (!proofHash || !currentProofJob) {
+    if (!proofHash || !currentProofJob || !address) {
       showToast('Please enter proof hash', 'info')
       return
     }
-    setConfirmAction({ type: 'submit', job: currentProofJob })
-    setShowProofModal(false)
-  }
+    const job = currentProofJob
+    setSubmittingProof(true)
 
-  const confirmSubmitProof = async () => {
-    if (!confirmAction?.job || !address) return
-    setLoading(true)
+    let proofUrl = ''
+    if (currentProofFile) {
+      proofUrl = await uploadProofFile(job.id, address, currentProofFile)
+      if (!proofUrl) {
+        showToast('Upload failed — make sure the "proofs" bucket exists in Supabase dashboard', 'error')
+        setSubmittingProof(false)
+        return
+      }
+    }
+
+    setShowProofModal(false)
     try {
       const hash = await writeContractAsync({
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi,
         functionName: 'submitProof',
-        args: [BigInt(confirmAction.job.id), proofHash],
+        args: [BigInt(job.id), proofHash],
       })
 
       setMyJobs(prev => prev.map(j =>
-        j.id === confirmAction.job!.id ? { ...j, status: 'completed' } : j
+        j.id === job.id ? { ...j, status: 'completed' } : j
       ))
-      saveWorkerEvent('completed', confirmAction.job!, address)
+      saveWorkerEvent('completed', job, address, proofUrl, proofHash)
       showToast(`Proof submitted! Tx: ${hash.slice(0, 10)}...`, 'success')
-      addNotification(`Proof submitted: "${confirmAction.job!.title}"`, 'proof', confirmAction.job!.title)
+      addNotification(`Proof submitted: "${job.title}"`, 'proof', job.title)
       setTimeout(() => showToast('Stats updated: +1 job completed', 'info'), 800)
     } catch (e: unknown) {
       handleTxError(e, 'Submit proof', showToast)
     }
-    setLoading(false)
+    setSubmittingProof(false)
     setProofHash('')
     setCurrentProofJob(null)
-    setConfirmAction(null)
+    setCurrentProofFile(null)
   }
 
   const releasePayment = async (job: Job) => {
     if (!address) { showToast('Connect wallet first', 'info'); return }
-    setLoading(true)
+    setReleasing(true)
     try {
       const hash = await writeContractAsync({
         address: CONTRACT_ADDRESS as `0x${string}`,
@@ -429,7 +442,7 @@ function AppContent() {
     } catch (e: unknown) {
       handleTxError(e, 'Release payment', showToast)
     }
-    setLoading(false)
+    setReleasing(false)
   }
 
   const releasePaymentForWorker = async (workerAddr: string, job: Job) => {
@@ -454,7 +467,7 @@ function AppContent() {
 
   const deactivateJob = async (job: Job) => {
     if (!address) { showToast('Connect wallet first', 'info'); return }
-    setLoading(true)
+    setDeactivating(true)
     const token = job.tokenSymbol || 'zkLTC'
     const refundAmount = job.reward * job.maxWorkers
     try {
@@ -471,7 +484,8 @@ function AppContent() {
     } catch (e: unknown) {
       handleTxError(e, 'Cancel job', showToast)
     }
-    setLoading(false)
+    setDeactivating(false)
+    setConfirmAction(null)
   }
 
   const openDisputeModal = (job: Job, worker?: string) => {
@@ -575,7 +589,7 @@ function AppContent() {
   const postedJobs = jobs.filter(j => address && j.poster.toLowerCase() === (address || '').toLowerCase())
 
   const confirmDeactivate = (job: Job) => {
-    setConfirmAction({ type: 'deactivate', job })
+    setConfirmAction({ type: 'deactivate', job, claimantCount: job.claimedCount })
   }
 
   const editPostedJob = (job: Job) => {
@@ -585,11 +599,12 @@ function AppContent() {
     setEditDesc(job.description)
     setEditReqs(job.requirements)
     setEditDeadline(job.deadline && job.deadline !== 'N/A' ? job.deadline : '')
+    setEditDifficulty(job.difficulty)
   }
 
   const saveEditedJob = () => {
     if (!editingPostedJob) return
-    setJobs(prev => prev.map(j => j.id === editingPostedJob.id ? { ...j, title: editTitle, type: editType, description: editDesc, requirements: editReqs, deadline: editDeadline || j.deadline } : j))
+    setJobs(prev => prev.map(j => j.id === editingPostedJob.id ? { ...j, title: editTitle, type: editType, description: editDesc, requirements: editReqs, deadline: editDeadline || j.deadline, difficulty: editDifficulty } : j))
     saveJobMetadata({
       job_id: editingPostedJob.id,
       poster: editingPostedJob.poster.toLowerCase(),
@@ -599,7 +614,7 @@ function AppContent() {
       requirements: editReqs,
       deadline: editDeadline || editingPostedJob.deadline,
       token_symbol: editingPostedJob.tokenSymbol || 'zkLTC',
-      difficulty: editingPostedJob.difficulty,
+      difficulty: editDifficulty || editingPostedJob.difficulty,
     })
     setEditingPostedJob(null)
     showToast('Job updated!', 'success')
@@ -612,6 +627,7 @@ function AppContent() {
     setEditDesc('')
     setEditReqs('')
     setEditDeadline('')
+    setEditDifficulty('')
   }
 
   const handleViewWorker = (workerAddr: string, entry: LeaderboardEntry, rank: number) => {
@@ -668,24 +684,30 @@ function AppContent() {
               onDeactivate={confirmDeactivate}
               onDispute={openDisputeModal}
               loading={loading}
+              deactivating={deactivating}
               onEditPostedJob={editPostedJob}
               editingPostedJob={editingPostedJob}
               editTitle={editTitle} setEditTitle={setEditTitle}
               editType={editType} setEditType={setEditType}
               editDesc={editDesc} setEditDesc={setEditDesc}
               editReqs={editReqs} setEditReqs={setEditReqs}
-               editDeadline={editDeadline} setEditDeadline={setEditDeadline}
-               onSaveEdit={saveEditedJob}
-               onCancelEdit={cancelEdit}
+              editDeadline={editDeadline} setEditDeadline={setEditDeadline}
+              editDifficulty={editDifficulty} setEditDifficulty={setEditDifficulty}
+              onSaveEdit={saveEditedJob}
+              onCancelEdit={cancelEdit}
+              address={address}
             />
           } />
           <Route path="/my-jobs" element={
             <MyJobs
-              myJobs={myJobs} address={address}
+              myJobs={myJobs}
               onOpenProof={openProofModal} onUnclaim={unclaimJob}
               onRelease={releasePayment} loading={loading}
+              submittingProof={submittingProof}
+              releasing={releasing}
               onDispute={openDisputeModal}
               onResolveDispute={resolveDispute}
+              address={address || ''}
             />
           } />
           <Route path="/stats" element={
@@ -736,9 +758,10 @@ function AppContent() {
           job={currentProofJob}
           proofHash={proofHash}
           onProofHashChange={setProofHash}
+          onProofFileChange={setCurrentProofFile}
           onSubmit={submitProof}
           onClose={() => setShowProofModal(false)}
-          loading={loading}
+          loading={submittingProof}
         />
       )}
 
@@ -764,7 +787,7 @@ function AppContent() {
             confirmAction.type === 'deactivate' ? () => { deactivateJob(confirmAction.job!); setConfirmAction(null) } :
             confirmAction.type === 'dispute' ? confirmDispute :
             confirmAction.type === 'resolveCancel' ? confirmResolveCancel :
-            confirmSubmitProof
+            () => {}
           }
         />
       )}

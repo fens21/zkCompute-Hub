@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { LeaderboardEntry, Job } from '../types'
 import { shorten } from '../utils'
+import { colors } from '../styles/tokens'
 
 function formatUsd(entry: LeaderboardEntry, ltcPrice: number | null): string {
   if (ltcPrice === null) return '...'
@@ -53,7 +54,7 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
     return (
       <div>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 24, position: 'relative' }}>
-          <h2 style={{ fontSize: 20, margin: 0, color: '#fff' }}>Top Worker Leaderboard</h2>
+          <h2 style={{ fontSize: 20, margin: 0, color: colors.textPrimary }}>Top Worker Leaderboard</h2>
         </div>
         <div style={{ background: '#111', border: '1px solid #ff6b6b', borderRadius: 12, padding: 40, textAlign: 'center' }}>
           <div style={{ fontSize: 28, marginBottom: 12 }}>⚠️</div>
@@ -67,7 +68,7 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 8, position: 'relative' }}>
-        <h2 style={{ fontSize: 20, margin: 0, color: '#fff' }}>Top Worker Leaderboard</h2>
+        <h2 style={{ fontSize: 20, margin: 0, color: colors.textPrimary }}>Top Worker Leaderboard</h2>
         {onRetry && <div style={{ position: 'absolute', right: 0 }}><button onClick={onRetry} aria-label="Refresh leaderboard" style={{ background: '#222', color: '#888', border: 'none', width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Refresh">↻</button></div>}
       </div>
       <p style={{ textAlign: 'center', opacity: 0.6, fontSize: 12, marginBottom: 24 }}>Rankings based on jobs completed and points earned on-chain</p>

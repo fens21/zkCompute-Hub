@@ -132,7 +132,7 @@ export function Profile({ account, myJobs, bio, skills, avatarUrl, setEditBio, s
             <button
               onClick={() => { setEditBio(bio); setShowEditProfile(true) }}
               aria-label="Edit profile"
-              style={{ padding: '6px 14px', background: '#222', border: '1px solid #555', color: '#fff', borderRadius: 6, fontSize: 11, cursor: 'pointer' }}
+              style={{ padding: '6px 14px', background: '#222', border: '1px solid #555', color: '#c0d8e8', borderRadius: 6, fontSize: 11, cursor: 'pointer' }}
             >
               Edit Profile
             </button>

@@ -12,8 +12,6 @@ const JOB_TYPE_ICONS: Record<string, string> = {
 const PER_PAGE = 12
 type ViewMode = 'grid' | 'list'
 
-let carouselDismissed = false
-
 export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter, sortBy, setSortBy, onClaim, onDetail, loading, jobsLoading, jobsError, onRetry }: {
   jobs: Job[]
   search: string
@@ -32,7 +30,7 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
   const [now, setNow] = useState(Date.now())
   const [page, setPage] = useState(1)
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
-  const [dismissed, setDismissed] = useState(carouselDismissed)
+  const [dismissed, setDismissed] = useState(false)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
 
   useEffect(() => {
@@ -63,8 +61,15 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
   return (
     <>
       {!dismissed && (() => {
-        const recentJobs = jobs.slice(-5).reverse()
-        return recentJobs.length > 0 ? <JobCarousel jobs={recentJobs} onDetail={onDetail} onClose={() => { carouselDismissed = true; setDismissed(true) }} /> : null
+        const now = Date.now()
+        const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000
+        const activeJobs = jobs.filter(j => {
+          if (!j.createdAt || now - j.createdAt > TWO_DAYS_MS) return false
+          const endMs = getDeadlineMs(j.createdAt, j.deadline)
+          return endMs !== null && endMs > now && j.claimedCount < j.maxWorkers
+        })
+        const recentJobs = activeJobs.slice(-5).reverse()
+        return recentJobs.length > 0 ? <JobCarousel jobs={recentJobs} onDetail={onDetail} onClose={() => setDismissed(true)} /> : null
       })()}
 
       <div style={{ textAlign: 'center', marginBottom: isMobile ? 16 : 20 }}>
@@ -159,20 +164,20 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
           {viewMode === 'list' ? (
             <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: radii.xl, overflow: 'hidden' }}>
               {pagedJobs.map((job, i) => (
-                <div key={job.id} style={{ borderBottom: i < pagedJobs.length - 1 ? `1px solid ${colors.border}` : 'none' }}>
+                <div key={job.id} className="job-card-list-row" style={{ borderBottom: i < pagedJobs.length - 1 ? `1px solid ${colors.border}` : 'none' }}>
                   <JobCardList job={job} onClaim={onClaim} onDetail={onDetail} loading={loading} now={now} isMobile={isMobile} />
                 </div>
               ))}
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 12 : 20 }}>
+            <div key={`${search}-${typeFilter}-${sortBy}`} className="job-grid" style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 12 : 20 }}>
               {pagedJobs.map(job => (
                 <JobCard key={job.id} job={job} onClaim={onClaim} onDetail={onDetail} loading={loading} now={now} />
               ))}
             </div>
           )}
           {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 20 }}>
+            <div className="pagination-bar" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} style={{ background: page <= 1 ? colors.bgCard : colors.bgElevated, border: `1px solid ${colors.borderLight}`, color: page <= 1 ? '#555' : '#ccc', padding: '4px 12px', borderRadius: 6, cursor: page <= 1 ? 'default' : 'pointer', fontSize: 11, fontWeight: 600 }}>◀ Prev</button>
               <span style={{ fontSize: 12, opacity: 0.6 }}>Page {page} of {totalPages}</span>
               <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={!hasMore} style={{ background: !hasMore ? colors.bgCard : colors.bgElevated, border: `1px solid ${colors.borderLight}`, color: !hasMore ? '#555' : '#ccc', padding: '4px 12px', borderRadius: 6, cursor: !hasMore ? 'default' : 'pointer', fontSize: 11, fontWeight: 600 }}>Next ▶</button>
@@ -269,7 +274,7 @@ function JobCard({ job, onClaim, onDetail, loading, now }: { job: Job; onClaim: 
   const claimedRatio = job.maxWorkers > 0 ? job.claimedCount / job.maxWorkers : 0
 
   return (
-    <div style={card}>
+    <div className="job-card" style={card}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
         <div style={{ background: colors.borderLight, color: colors.gold, padding: '4px 12px', borderRadius: radii.full, fontSize: fontSizes.base, fontWeight: 600 }}>{JOB_TYPE_ICONS[job.type] || '📋'} {job.type}</div>
         <div style={{ color: colors.gold, fontWeight: 700 }}>{job.difficulty}</div>

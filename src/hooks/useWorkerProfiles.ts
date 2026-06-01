@@ -84,8 +84,6 @@ export async function uploadAvatar(worker: string, file: File): Promise<string |
   try {
     const ext = file.name.split('.').pop()
     const filename = `${worker.toLowerCase()}.${ext}`
-
-    // Upload to Supabase Storage
     const res = await fetch(
       `${SUPABASE_URL}/storage/v1/object/avatars/${filename}`,
       {
@@ -94,7 +92,7 @@ export async function uploadAvatar(worker: string, file: File): Promise<string |
           apikey: SUPABASE_KEY,
           Authorization: `Bearer ${SUPABASE_KEY}`,
           'Content-Type': file.type,
-          'x-upsert': 'true', // overwrite if already exists
+          'x-upsert': 'true',
         },
         body: file,
       }
@@ -103,13 +101,86 @@ export async function uploadAvatar(worker: string, file: File): Promise<string |
       console.error('Upload failed:', await res.text())
       return null
     }
-    // Return public URL
-    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${filename}`
-    return publicUrl
+    return `${SUPABASE_URL}/storage/v1/object/public/avatars/${filename}`
   } catch (e) {
     console.error('Avatar upload error:', e)
     return null
   }
+}
+
+// ── Proof file upload ────────────────────────────────────────────────────
+const MAX_PROOF_SIZE = 10 * 1024 * 1024
+
+export async function uploadProofFile(jobId: number, worker: string, file: File): Promise<string | null> {
+  if (file.size > MAX_PROOF_SIZE) {
+    console.error(`Proof file too large: ${file.size} bytes`)
+    return null
+  }
+  try {
+    const ext = file.name.split('.').pop() || 'bin'
+    const filename = `proof-${jobId}-${worker.toLowerCase()}.${ext}`
+    const res = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/proofs/${filename}`,
+      {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': file.type || 'application/octet-stream',
+          'x-upsert': 'true',
+        },
+        body: file,
+      }
+    )
+    if (!res.ok) {
+      console.error('Proof upload failed:', await res.text())
+      return null
+    }
+    return `${SUPABASE_URL}/storage/v1/object/public/proofs/${filename}`
+  } catch (e) {
+    console.error('Proof file upload error:', e)
+    return null
+  }
+}
+
+export function getProofUrl(jobId: number, worker: string): string {
+  return `${SUPABASE_URL}/storage/v1/object/public/proofs/proof-${jobId}-${worker.toLowerCase()}.bin`
+}
+
+const COMMON_EXTENSIONS = ['zip', 'rar', '7z', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'json', 'txt', 'bin']
+
+export async function discoverProofUrl(jobId: number, worker: string): Promise<string> {
+  const base = `${SUPABASE_URL}/storage/v1/object/public/proofs`
+  const prefix = `proof-${jobId}-${worker.toLowerCase()}`
+  try {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/proofs`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prefix,
+        limit: 1,
+        sortBy: { column: 'name', order: 'desc' },
+      }),
+    })
+    const data = await res.json()
+    if (Array.isArray(data) && data.length > 0 && data[0].name) {
+      return `${base}/${data[0].name}`
+    }
+  } catch (e) {
+    console.error('Storage list API failed:', e)
+  }
+  for (const ext of COMMON_EXTENSIONS) {
+    try {
+      const url = `${base}/${prefix}.${ext}`
+      const head = await fetch(url, { method: 'HEAD' })
+      if (head.ok) return url
+    } catch { /* skip */ }
+  }
+  return `${base}/${prefix}.bin`
 }
 
 // ── Public API ───────────────────────────────────────────────────────────

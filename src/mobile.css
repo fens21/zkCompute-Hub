@@ -69,18 +69,9 @@
 
 /* ── Grid cards ── */
 @media (max-width: 768px) {
-  /* Semua grid: 1 kolom di mobile */
-  /* Ini override inline style yang pakai repeat(auto-fill, minmax(320px, 1fr)) */
-  div[style*="minmax(320px"] {
+  /* Semua grid job: 1 kolom di mobile */
+  .job-grid {
     grid-template-columns: 1fr !important;
-  }
-
-  div[style*="minmax(300px"] {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* Gap lebih kecil di mobile */
-  div[style*="gap: 20"] {
     gap: 12px !important;
   }
 }
@@ -181,6 +172,19 @@
   div[style*="borderRadius"][style*="marginBottom: 24"] {
     padding: 10px 12px !important;
     gap: 8px !important;
+  }
+}
+
+/* ── Pagination ── */
+@media (max-width: 768px) {
+  .pagination-bar {
+    position: sticky;
+    bottom: 0;
+    background: #0a1428;
+    padding: 12px 0;
+    z-index: 10;
+    border-top: 1px solid #333;
+    margin-top: 16px;
   }
 }
 

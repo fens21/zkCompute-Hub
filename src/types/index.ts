@@ -22,8 +22,18 @@ export interface Notification {
   message: string
   time: number
   read: boolean
-  type: 'claim' | 'proof' | 'payment' | 'dispute' | 'post'
+  type: 'claim' | 'proof' | 'payment' | 'dispute' | 'post' | 'chat'
   jobTitle?: string
+}
+
+export interface Message {
+  id: number
+  job_id: number
+  sender: string
+  recipient: string
+  content: string
+  created_at: number
+  read: boolean
 }
 
 export interface Toast {
@@ -40,6 +50,8 @@ export interface WorkerEvent {
   tokenSymbol: string
   status: 'claimed' | 'completed' | 'paid'
   time: number
+  proofUrl?: string
+  job?: Job
 }
 
 export interface WorkerProfile {
@@ -81,6 +93,7 @@ export interface ConfirmAction {
   job: Job | null
   disputeWorker?: string
   disputeReason?: string
+  claimantCount?: number
 }
 
 export interface DisputeState {

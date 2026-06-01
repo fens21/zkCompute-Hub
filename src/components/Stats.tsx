@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { Job, LeaderboardEntry } from '../types'
+import { colors } from '../styles/tokens'
 
 const JOB_TYPE_ICONS: Record<string, string> = {
   ML: '🧠', ZK: '🔐', Render: '🎬', 'AI Inference': '🤖',
@@ -94,7 +95,7 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div style={{ flex: 1 }} />
-        <h2 style={{ fontSize: 20, margin: 0, color: '#fff', textAlign: 'center' }}>Statistics Overview</h2>
+        <h2 style={{ fontSize: 20, margin: 0, color: colors.textPrimary, textAlign: 'center' }}>Statistics Overview</h2>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
           {onRetry && <button onClick={onRetry} aria-label="Refresh stats" style={{ background: '#222', color: '#888', border: 'none', width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Refresh">↻</button>}
         </div>

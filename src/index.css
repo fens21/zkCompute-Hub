@@ -54,13 +54,7 @@
 
 body {
   margin: 0;
-  background:
-    radial-gradient(ellipse at 20% 80%, #0d001a 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, #001a11 0%, transparent 50%),
-    radial-gradient(ellipse at 60% 60%, #000033 0%, transparent 50%),
-    radial-gradient(ellipse at 10% 40%, #1a0033 0%, transparent 50%),
-    radial-gradient(ellipse at 90% 70%, #002211 0%, transparent 50%),
-    #000000;
+  background: #0a1428;
   min-height: 100vh;
   position: relative;
 }
@@ -71,31 +65,12 @@ body::before {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background:
-    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.6), transparent),
-    radial-gradient(1px 1px at 25% 8%, rgba(220,200,255,0.5), transparent),
-    radial-gradient(1.5px 1.5px at 40% 22%, rgba(255,255,255,0.7), transparent),
-    radial-gradient(1px 1px at 55% 12%, rgba(200,220,255,0.4), transparent),
-    radial-gradient(1px 1px at 70% 18%, rgba(255,255,255,0.5), transparent),
-    radial-gradient(1.5px 1.5px at 85% 25%, rgba(220,200,255,0.6), transparent),
-    radial-gradient(1px 1px at 15% 35%, rgba(255,255,255,0.4), transparent),
-    radial-gradient(1px 1px at 33% 45%, rgba(180,200,255,0.5), transparent),
-    radial-gradient(1px 1px at 50% 38%, rgba(255,255,255,0.3), transparent),
-    radial-gradient(1.5px 1.5px at 68% 50%, rgba(220,220,255,0.6), transparent),
-    radial-gradient(1px 1px at 78% 42%, rgba(255,255,255,0.4), transparent),
-    radial-gradient(1px 1px at 92% 55%, rgba(200,200,255,0.5), transparent),
-    radial-gradient(1px 1px at 5% 60%, rgba(255,255,255,0.3), transparent),
-    radial-gradient(1.5px 1.5px at 22% 70%, rgba(220,220,255,0.5), transparent),
-    radial-gradient(1px 1px at 45% 65%, rgba(255,255,255,0.4), transparent),
-    radial-gradient(1px 1px at 60% 75%, rgba(200,210,255,0.5), transparent),
-    radial-gradient(1px 1px at 75% 80%, rgba(255,255,255,0.6), transparent),
-    radial-gradient(1px 1px at 88% 72%, rgba(180,200,255,0.3), transparent),
-    radial-gradient(1px 1px at 32% 85%, rgba(255,255,255,0.4), transparent),
-    radial-gradient(1.5px 1.5px at 52% 90%, rgba(220,200,255,0.5), transparent),
-    radial-gradient(1px 1px at 8% 92%, rgba(255,255,255,0.3), transparent),
-    radial-gradient(1px 1px at 95% 92%, rgba(200,220,255,0.5), transparent),
-    radial-gradient(1px 1px at 42% 95%, rgba(255,255,255,0.4), transparent),
-    radial-gradient(1px 1px at 65% 95%, rgba(220,200,255,0.3), transparent);
+  background-image:
+    linear-gradient(rgba(0, 200, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 200, 255, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: linear-gradient(to bottom, transparent 5%, black 30%, black 70%, transparent 95%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 5%, black 30%, black 70%, transparent 95%);
 }
 
 #root {
@@ -161,6 +136,8 @@ code {
   background: var(--code-bg);
 }
 
+@keyframes spinner { to { transform: rotate(360deg); } }
+
 @keyframes shimmer {
   0% { background-position: -200px 0; }
   100% { background-position: calc(200px + 100%) 0; }
@@ -220,17 +197,52 @@ a:focus-visible {
   border-radius: 8px;
 }
 
-/* App Container - Dark Cyber Theme */
+/* App Container - Cyberpunk Navy Theme */
 .app-container {
-  background: 
-    radial-gradient(ellipse at 20% 80%, #0d001a 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, #001a11 0%, transparent 50%),
-    radial-gradient(ellipse at 60% 60%, #000033 0%, transparent 50%),
-    radial-gradient(ellipse at 10% 40%, #1a0033 0%, transparent 50%),
-    radial-gradient(ellipse at 90% 70%, #002211 0%, transparent 50%),
-    #000000;
-  color: #c0c0c0;
+  background: #0a1428;
+  color: #8ab0d0;
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   min-height: 100vh;
   position: relative;
+}
+
+/* Job card glow effect — seperti feature cards di landing page */
+.job-card {
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+  animation: fadeIn 0.35s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .job-card {
+    animation: none;
+  }
+}
+.job-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #f5c842 50%, transparent 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+.job-card:hover {
+  border-color: #ffd700 !important;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.12), 0 0 40px rgba(255, 215, 0, 0.06);
+  transform: translateY(-2px);
+}
+.job-card-list-row:hover {
+  background: rgba(255, 215, 0, 0.02);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .job-card, .job-card::before {
+    transition: none !important;
+  }
+  .job-card:hover {
+    transform: none !important;
+  }
 }

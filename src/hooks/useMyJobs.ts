@@ -4,8 +4,8 @@ import type { Job, WorkerEvent } from '../types'
 const MYJOBS_KEY = 'zkcompute_myjobs_v2'
 const WORKER_KEY = 'zkcompute_workers'
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+// Supabase proxy base URL (server side)
+const PROXY_BASE = '/api'
 
 function loadMyJobs(address?: string): Job[] {
   if (!address) return []
@@ -37,9 +37,9 @@ function saveMyJobs(address: string, jobs: Job[]) {
   }
 }
 
-async function saveActivityToSupabase(status: string, job: Job, workerAddr: string) {
+async function saveActivityToSupabase(status: string, job: Job, workerAddr: string, proofUrl?: string, proofHash?: string) {
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/activities`, {
+    const res = await fetch(`${PROXY_BASE}/activities`, {
       method: 'POST',
       headers: {
         apikey: SUPABASE_KEY,
@@ -54,18 +54,22 @@ async function saveActivityToSupabase(status: string, job: Job, workerAddr: stri
         reward: job.reward,
         token_symbol: job.tokenSymbol || 'zkLTC',
         status,
+        proof_url: proofUrl || '',
+        proof_hash: proofHash || '',
         created_at: Date.now(),
+        job_data: JSON.stringify(job),
       }),
     })
+    if (!res.ok) console.error('saveActivityToSupabase failed:', await res.text())
   } catch (e) {
     console.error('Failed to save activity to Supabase:', e)
   }
 }
 
-export async function fetchWorkerActivities(workerAddr: string): Promise<WorkerEvent[]> {
+export async function fetchWorkerActivities(workerAddr: string): Promise<(WorkerEvent & { job?: Job })[]> {
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/activities?worker=eq.${workerAddr.toLowerCase()}&order=created_at.desc&limit=10&select=*`,
+      `${PROXY_BASE}/activities?worker=eq.${workerAddr.toLowerCase()}&order=created_at.desc&limit=50&select=*`,
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
     )
     const data = await res.json()
@@ -73,22 +77,65 @@ export async function fetchWorkerActivities(workerAddr: string): Promise<WorkerE
     return data.map((row: {
       worker: string; job_id: number; job_title: string
       reward: number; token_symbol: string
-      status: 'claimed' | 'completed' | 'paid'; created_at: number
-    }) => ({
-      worker: row.worker,
-      jobId: row.job_id,
-      title: row.job_title,
-      reward: row.reward,
-      tokenSymbol: row.token_symbol,
-      status: row.status,
-      time: row.created_at,
-    }))
+      status: 'claimed' | 'completed' | 'paid'; created_at: number; proof_url?: string | null
+      job_data?: string | null
+    }) => {
+      let job: Job | undefined
+      if (row.job_data) {
+        try { job = JSON.parse(row.job_data) } catch { /* ignore */ }
+      }
+      return {
+        worker: row.worker,
+        jobId: row.job_id,
+        title: row.job_title,
+        reward: row.reward,
+        tokenSymbol: row.token_symbol,
+        status: row.status,
+        time: row.created_at,
+        ...(row.proof_url ? { proofUrl: row.proof_url } : {}),
+        ...(job ? { job } : {}),
+      }
+    })
   } catch {
     return []
   }
 }
 
-export function saveWorkerEvent(status: 'claimed' | 'completed' | 'paid', job: Job, workerAddr?: string) {
+export async function fetchProofUrl(jobId: number, workerAddr: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/activities?job_id=eq.${jobId}&worker=eq.${workerAddr.toLowerCase()}&status=eq.completed&select=proof_url&order=created_at.desc&limit=1`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    if (Array.isArray(data) && data.length > 0 && data[0].proof_url) {
+      return data[0].proof_url
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+export async function fetchProofHash(jobId: number, workerAddr: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/activities?job_id=eq.${jobId}&worker=eq.${workerAddr.toLowerCase()}&status=eq.completed&select=proof_hash&order=created_at.desc&limit=1`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    if (Array.isArray(data) && data.length > 0 && data[0].proof_hash) {
+      return data[0].proof_hash
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+export function saveWorkerEvent(status: 'claimed' | 'completed' | 'paid', job: Job, workerAddr?: string, proofUrl?: string, proofHash?: string) {
   if (!workerAddr) return
   const events: WorkerEvent[] = JSON.parse(localStorage.getItem(WORKER_KEY) || '[]')
   events.push({
@@ -99,9 +146,10 @@ export function saveWorkerEvent(status: 'claimed' | 'completed' | 'paid', job: J
     tokenSymbol: job.tokenSymbol || 'zkLTC',
     status,
     time: Date.now(),
+    ...(proofUrl ? { proofUrl } : {}),
   })
   localStorage.setItem(WORKER_KEY, JSON.stringify(events))
-  saveActivityToSupabase(status, job, workerAddr)
+  saveActivityToSupabase(status, job, workerAddr, proofUrl, proofHash)
 }
 
 export function getLeaderboardLocal() {
@@ -147,9 +195,52 @@ export function useMyJobs(address: string | undefined, _syncEnabled: boolean = t
       return
     }
     const cached = loadMyJobs(address)
-    setMyJobsState(cached)
-    loadedRef.current = true
+    if (cached.length > 0) {
+      setMyJobsState(cached)
+      loadedRef.current = true
+      addressRef.current = address.toLowerCase()
+      return
+    }
+    // No cache — restore from Supabase
     addressRef.current = address.toLowerCase()
+    fetchWorkerActivities(address).then(events => {
+      const jobsMap = new Map<number, Job>()
+      for (const ev of events) {
+        const existing = jobsMap.get(ev.jobId)
+        // Prefer event with job_data (has full details); update status if newer
+        if (!existing || ev.job) {
+          if (ev.job) {
+            jobsMap.set(ev.jobId, { ...ev.job, status: ev.status })
+          } else {
+            jobsMap.set(ev.jobId, {
+              id: ev.jobId,
+              title: ev.title,
+              type: 'Custom',
+              reward: ev.reward,
+              deadline: '',
+              description: '',
+              requirements: '',
+              poster: '',
+              claimedCount: 1,
+              maxWorkers: 1,
+              difficulty: 'Medium',
+              tokenSymbol: ev.tokenSymbol,
+              status: ev.status,
+              createdAt: ev.time,
+              claimedBy: address?.toLowerCase(),
+            })
+          }
+        } else if (ev.status === 'paid' || (ev.status === 'completed' && existing.status !== 'paid')) {
+          jobsMap.set(ev.jobId, { ...existing, status: ev.status })
+        }
+      }
+      const restored = [...jobsMap.values()]
+      setMyJobsState(restored)
+      loadedRef.current = true
+      if (restored.length > 0) saveMyJobs(address, restored)
+    }).catch(() => {
+      loadedRef.current = true
+    })
   }, [address])
 
   const setMyJobs = useCallback((updater: Job[] | ((prev: Job[]) => Job[])) => {

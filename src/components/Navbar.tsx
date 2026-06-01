@@ -45,7 +45,7 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
   const markRead = (id: number) => setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n))
   const clearAll = () => setNotifications([])
 
-  const typeIcon: Record<string, string> = { claim: '⚡', proof: '🔬', payment: '💰', dispute: '⚖️', post: '📋' }
+  const typeIcon: Record<string, string> = { claim: '⚡', proof: '🔬', payment: '💰', dispute: '⚖️', post: '📋', chat: '💬' }
 
   function timeAgo(ts: number) {
     const diff = Date.now() - ts
@@ -170,7 +170,7 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
                   onClick={() => setShowWalletMenu(!showWalletMenu)}
                   aria-label="Wallet menu"
                   aria-expanded={showWalletMenu}
-                  style={{ background: '#151515', color: '#fff', border: '1px solid #333', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontSize: isMobile ? 11 : 12, fontFamily: "'Space Mono', monospace" }}>
+                  style={{ background: '#151515', color: '#c0d8e8', border: '1px solid #333', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontSize: isMobile ? 11 : 12, fontFamily: "'Space Mono', monospace" }}>
                   {account.slice(0, 6)}...{account.slice(-4)}
                 </button>
                 {showWalletMenu && (
@@ -203,7 +203,7 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
-              style={{ background: '#151515', border: '1px solid #333', padding: '8px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 16, lineHeight: 1, color: '#fff' }}>
+              style={{ background: '#151515', border: '1px solid #333', padding: '8px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 16, lineHeight: 1, color: '#c0d8e8' }}>
               {mobileMenuOpen ? '✕' : '☰'}
             </button>
           )}
@@ -253,7 +253,7 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
       {isWrongNetwork && (
         <div style={{ background: '#ff6b6b', color: '#000', padding: '10px 24px', textAlign: 'center', fontWeight: 600, fontSize: 12, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
           Wrong network! Please switch to LitForge Testnet (Chain ID 4441)
-          <button onClick={onSwitchNetwork} style={{ background: '#000', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: 11 }}>
+          <button onClick={onSwitchNetwork} style={{ background: '#000', color: '#c0d8e8', border: 'none', padding: '6px 14px', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: 11 }}>
             SWITCH NETWORK
           </button>
         </div>

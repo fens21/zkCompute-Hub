@@ -7,6 +7,13 @@ interface IERC20 {
 }
 
 contract JobMarketplace {
+    bool private locked;
+    modifier nonReentrant() {
+        require(!locked, "Reentrant call");
+        locked = true;
+        _;
+        locked = false;
+    }
     address public constant USDC = 0xd5118dEe968d1533B2A57aB66C266010AD8957fa;
 
     struct Job {
@@ -112,7 +119,7 @@ contract JobMarketplace {
         emit ProofSubmitted(_jobId, msg.sender, _proofHash);
     }
 
-    function releasePayment(uint256 _jobId, address _worker) external {
+    function releasePayment(uint256 _jobId, address _worker) external nonReentrant {
         Job storage job = jobs[_jobId];
         require(msg.sender == job.poster, "Only poster can release");
         require(proofSubmitted[_jobId][_worker], "No proof submitted");
@@ -131,7 +138,7 @@ contract JobMarketplace {
         emit PaymentReleased(_jobId, _worker, job.reward);
     }
 
-    function deactivateJob(uint256 _jobId) external {
+    function deactivateJob(uint256 _jobId) external nonReentrant {
         Job storage job = jobs[_jobId];
         require(msg.sender == job.poster, "Only poster");
         require(job.active, "Already inactive");
