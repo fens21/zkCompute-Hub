@@ -1,18 +1,13 @@
 import { useRef, useEffect, useState } from 'react'
+import { useAccount, useDisconnect, useBalance } from 'wagmi'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 import type { Tab, Notification } from '../types'
 import { useIsMobile } from '../hooks/useIsMobile'
 
-export function Navbar({ tab, setTab, account, entered, balance, loading, showWalletMenu, setShowWalletMenu, onConnect, onDisconnect, onSwitchNetwork, isWrongNetwork, notifications, setNotifications, showNotifications, setShowNotifications }: {
+export function Navbar({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, notifications, setNotifications, showNotifications, setShowNotifications }: {
   tab: Tab
   setTab: (t: Tab) => void
-  account: string
   entered: boolean
-  balance: { value: bigint; symbol: string } | undefined
-  loading: boolean
-  showWalletMenu: boolean
-  setShowWalletMenu: (v: boolean) => void
-  onConnect: () => void
-  onDisconnect: () => void
   onSwitchNetwork: () => void
   isWrongNetwork: boolean
   notifications: Notification[]
@@ -22,8 +17,13 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
 }) {
   const notifRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+  const walletMenuRef = useRef<HTMLDivElement>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [showWalletMenu, setShowWalletMenu] = useState(false)
   const isMobile = useIsMobile()
+  const { address } = useAccount()
+  const { disconnect } = useDisconnect()
+  const { data: balance } = useBalance({ address, chainId: 4441 })
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -33,10 +33,16 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
     return () => document.removeEventListener('mousedown', handler)
   }, [showNotifications, setShowNotifications])
 
-  // Close mobile menu on tab change
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (walletMenuRef.current && !walletMenuRef.current.contains(e.target as Node)) setShowWalletMenu(false)
+    }
+    if (showWalletMenu) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showWalletMenu])
+
   useEffect(() => { setMobileMenuOpen(false) }, [tab])
 
-  // Close mobile menu on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMobileMenuOpen(false)
@@ -157,52 +163,63 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
             </div>
           )}
 
-          {/* Wallet */}
-          {!account ? (
-            <button onClick={onConnect} disabled={loading} aria-label="Connect wallet" style={{ background: '#ffd700', color: '#000', border: 'none', padding: '8px 14px', fontWeight: 700, borderRadius: 8, cursor: 'pointer', fontSize: 12 }}>
-              {loading ? '...' : isMobile ? 'Connect' : 'Connect Wallet'}
-            </button>
-          ) : (
-            <>
-              {/* Balance — hide on mobile */}
-              {!isMobile && (
-                <div style={{ background: '#151515', border: '1px solid #333', padding: '7px 12px', borderRadius: 8, fontSize: 11, fontFamily: "'Space Mono', monospace", minWidth: 110, textAlign: 'center' }}>
-                  {balance ? `${(Number(balance.value) / 1e18).toFixed(4)} ${balance.symbol}` : '— zkLTC'}
-                </div>
-              )}
-              <div style={{ position: 'relative' }}>
-                <button
-                  onClick={() => setShowWalletMenu(!showWalletMenu)}
-                  aria-label="Wallet menu"
-                  aria-expanded={showWalletMenu}
-                  title={`${account.slice(0, 6)}...${account.slice(-4)}`}
-                  style={{ background: '#151515', color: '#c0d8e8', border: '1px solid #333', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontSize: isMobile ? 11 : 12, fontFamily: "'Space Mono', monospace" }}>
-                  {account.slice(0, 6)}...{account.slice(-4)}
-                </button>
-                {showWalletMenu && (
-                  <div role="menu" aria-label="Wallet menu" style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, background: '#111', border: '1px solid #333', borderRadius: 8, minWidth: 150, zIndex: 100, overflow: 'hidden' }}>
-                    {/* Balance on mobile inside wallet menu */}
-                    {isMobile && balance && (
-                      <div style={{ padding: '8px 14px', borderBottom: '1px solid #222', fontSize: 11, color: '#ffd700', fontFamily: "'Space Mono', monospace" }}>
-                        {(Number(balance.value) / 1e18).toFixed(4)} {balance.symbol}
+          {/* Wallet — RainbowKit ConnectButton.Custom */}
+          <ConnectButton.Custom>
+            {({ openConnectModal, authenticationStatus, mounted }) => {
+              const ready = mounted && authenticationStatus !== 'loading'
+              const connected = ready && address
+              return (
+                <div
+                  {...(!ready ? { 'aria-hidden': true, style: { opacity: 0, pointerEvents: 'none', userSelect: 'none' } } : {})}
+                >
+                  {!connected ? (
+                    <button onClick={openConnectModal} disabled={!ready} aria-label="Connect wallet" style={{ background: '#ffd700', color: '#000', border: 'none', padding: '8px 14px', fontWeight: 700, borderRadius: 8, cursor: 'pointer', fontSize: 12 }}>
+                      {isMobile ? 'Connect' : 'Connect Wallet'}
+                    </button>
+                  ) : (
+                    <>
+                      {/* Balance — hide on mobile */}
+                      {!isMobile && (
+                        <div style={{ background: '#151515', border: '1px solid #333', padding: '7px 12px', borderRadius: 8, fontSize: 11, fontFamily: "'Space Mono', monospace", minWidth: 110, textAlign: 'center' }}>
+                          {balance ? `${(Number(balance.value) / 1e18).toFixed(4)} ${balance.symbol}` : '— zkLTC'}
+                        </div>
+                      )}
+                      <div ref={walletMenuRef} style={{ position: 'relative' }}>
+                        <button
+                          onClick={() => setShowWalletMenu(!showWalletMenu)}
+                          aria-label="Wallet menu"
+                          aria-expanded={showWalletMenu}
+                          title={`${address.slice(0, 6)}...${address.slice(-4)}`}
+                          style={{ background: '#151515', color: '#c0d8e8', border: '1px solid #333', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontSize: isMobile ? 11 : 12, fontFamily: "'Space Mono', monospace" }}>
+                          {address.slice(0, 6)}...{address.slice(-4)}
+                        </button>
+                        {showWalletMenu && (
+                          <div role="menu" aria-label="Wallet menu" style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, background: '#111', border: '1px solid #333', borderRadius: 8, minWidth: 150, zIndex: 100, overflow: 'hidden' }}>
+                            {isMobile && balance && (
+                              <div style={{ padding: '8px 14px', borderBottom: '1px solid #222', fontSize: 11, color: '#ffd700', fontFamily: "'Space Mono', monospace" }}>
+                                {(Number(balance.value) / 1e18).toFixed(4)} {balance.symbol}
+                              </div>
+                            )}
+                            <button onClick={() => { setTab('profile'); setShowWalletMenu(false) }} role="menuitem" aria-label="View profile" style={{ width: '100%', background: 'transparent', color: '#e0e0e0', border: 'none', padding: '8px 14px', textAlign: 'left', cursor: 'pointer', fontSize: 12, fontFamily: "'Space Mono', monospace" }}>
+                              Profile
+                            </button>
+                            {isWrongNetwork && (
+                              <button onClick={() => { onSwitchNetwork(); setShowWalletMenu(false) }} role="menuitem" aria-label="Switch network" style={{ width: '100%', background: 'transparent', color: '#ff6b6b', border: 'none', padding: '8px 14px', textAlign: 'left', cursor: 'pointer', fontSize: 12 }}>
+                                Switch Network
+                              </button>
+                            )}
+                            <button onClick={() => { disconnect(); setShowWalletMenu(false) }} role="menuitem" aria-label="Disconnect wallet" style={{ width: '100%', background: 'transparent', color: '#ff6b6b', border: 'none', padding: '8px 14px', textAlign: 'left', cursor: 'pointer', fontSize: 12, fontFamily: "'Space Mono', monospace" }}>
+                              Disconnect
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    <button onClick={() => { setTab('profile'); setShowWalletMenu(false) }} role="menuitem" aria-label="View profile" style={{ width: '100%', background: 'transparent', color: '#e0e0e0', border: 'none', padding: '8px 14px', textAlign: 'left', cursor: 'pointer', fontSize: 12, fontFamily: "'Space Mono', monospace" }}>
-                      Profile
-                    </button>
-                    {isWrongNetwork && (
-                      <button onClick={() => { onSwitchNetwork(); setShowWalletMenu(false) }} role="menuitem" aria-label="Switch network" style={{ width: '100%', background: 'transparent', color: '#ff6b6b', border: 'none', padding: '8px 14px', textAlign: 'left', cursor: 'pointer', fontSize: 12 }}>
-                        Switch Network
-                      </button>
-                    )}
-                    <button onClick={onDisconnect} role="menuitem" aria-label="Disconnect wallet" style={{ width: '100%', background: 'transparent', color: '#ff6b6b', border: 'none', padding: '8px 14px', textAlign: 'left', cursor: 'pointer', fontSize: 12, fontFamily: "'Space Mono', monospace" }}>
-                      Disconnect
-                    </button>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+                    </>
+                  )}
+                </div>
+              )
+            }}
+          </ConnectButton.Custom>
 
           {/* Hamburger — mobile only */}
           {isMobile && (
@@ -224,7 +241,6 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
           maxHeight: mobileMenuOpen ? 500 : 0,
           transition: 'max-height 0.25s ease, padding 0.25s ease',
         }}>
-          {/* Network badge */}
           {entered && (
             <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'center' }}>
               <span style={{ background: isWrongNetwork ? '#ff6b6b' : '#1a3c1a', color: isWrongNetwork ? '#000' : '#4ade80', padding: '3px 10px', borderRadius: 10, fontSize: 10, fontWeight: 600 }}>

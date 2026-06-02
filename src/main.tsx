@@ -1,6 +1,7 @@
 import { StrictMode, Component } from 'react'
 import type { ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
+import '@rainbow-me/rainbowkit/styles.css'
 import './index.css'
 import './mobile.css'
 import App from './App.tsx'

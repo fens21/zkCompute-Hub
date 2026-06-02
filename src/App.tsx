@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
-import { useAccount, useBalance, useWriteContract, useSwitchChain, useChainId } from 'wagmi'
+import { useAccount, useWriteContract, useSwitchChain, useChainId } from 'wagmi'
+import { RainbowKitProvider, lightTheme } from '@rainbow-me/rainbowkit'
 import { readContract } from '@wagmi/core'
 import { parseUnits } from 'viem'
 import abi from './abi/JobMarketplace.json'
@@ -41,7 +42,6 @@ function AppContent() {
   const { address } = useAccount()
   const chainId = useChainId()
   const { switchChain } = useSwitchChain()
-  const { data: balance } = useBalance({ address, chainId: 4441 })
   const { writeContractAsync } = useWriteContract()
 
   const { toasts, showToast } = useToasts()
@@ -57,40 +57,10 @@ function AppContent() {
   const tab = TAB_PATHS[location.pathname.replace('/', '')] || 'market'
   const setTab = (t: Tab) => navigate(t === 'market' ? '/' : '/' + (t === 'my' ? 'my-jobs' : t))
 
-  const [entered, setEntered] = useState(false)
-  const [sessionChecked, setSessionChecked] = useState(false)
   const [loading, setLoading] = useState(false)
   const [deactivating, setDeactivating] = useState(false)
   const [submittingProof, setSubmittingProof] = useState(false)
-  const [showWalletMenu, setShowWalletMenu] = useState(false)
-
-  useEffect(() => {
-    const wasEntered = sessionStorage.getItem('zkcompute_session') === 'true'
-    if (wasEntered) {
-      setEntered(true)
-    }
-    setSessionChecked(true)
-  }, [])
-
-  // Listen for account changes from wallet extension (Brave, MetaMask, etc.)
-  useEffect(() => {
-    if (!window.ethereum) return
-
-    const handleAccountsChanged = (accounts: unknown) => {
-      const list = Array.isArray(accounts) ? accounts : typeof accounts === 'string' ? [accounts] : []
-      if (list.length === 0) {
-        sessionStorage.removeItem('zkcompute_session')
-        setEntered(false)
-        setShowWalletMenu(false)
-      }
-    }
-
-    window.ethereum.on('accountsChanged', handleAccountsChanged)
-
-    return () => {
-      window.ethereum?.removeListener('accountsChanged', handleAccountsChanged)
-    }
-  }, [])
+  const entered = !!address
 
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
@@ -185,41 +155,6 @@ function AppContent() {
 
   const isWrongNetwork = entered && chainId !== 4441
 
-  const connectWallet = async () => {
-    setLoading(true)
-    try {
-      if (!window.ethereum) {
-        showToast('Please install MetaMask or Brave Wallet', 'error')
-        setLoading(false)
-        return
-      }
-
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts'
-      }) as string[]
-
-      if (!accounts || accounts.length === 0) {
-        showToast('No accounts found', 'info')
-        setLoading(false)
-        return
-      }
-
-      sessionStorage.setItem('zkcompute_session', 'true')
-      setEntered(true)
-      showToast(`Connected: ${accounts[0].slice(0,6)}...${accounts[0].slice(-4)}`, 'success')
-      navigate('/')
-      try {
-        switchChain({ chainId: 4441 })
-      } catch {
-        showToast('Please manually switch to LitForge Testnet in your wallet', 'info')
-      }
-    } catch (e) {
-      console.error('Wallet connection failed:', e)
-      showToast('Wallet connection cancelled or failed', 'error')
-    }
-    setLoading(false)
-  }
-
   const switchToLitForge = () => {
     try {
       switchChain({ chainId: 4441 })
@@ -227,12 +162,6 @@ function AppContent() {
       console.error('Network switch failed:', e)
       showToast('Please manually switch network in your wallet', 'info')
     }
-  }
-
-  const disconnect = () => {
-    sessionStorage.removeItem('zkcompute_session')
-    setEntered(false)
-    setShowWalletMenu(false)
   }
 
   const postJob = async () => {
@@ -614,23 +543,15 @@ function AppContent() {
     setViewedWorkerRank(rank)
   }
 
-  if (!sessionChecked) {
-    return null
-  }
-
   if (!entered) {
-    return <LandingPage onConnect={connectWallet} loading={loading} />
+    return <LandingPage />
   }
 
   return (
     <div className="app-container">
       <Navbar
         tab={tab} setTab={setTab}
-        account={address || ''} entered={entered}
-        balance={balance}
-        loading={loading} showWalletMenu={showWalletMenu}
-        setShowWalletMenu={setShowWalletMenu}
-        onConnect={connectWallet} onDisconnect={disconnect}
+        entered={entered}
         onSwitchNetwork={switchToLitForge}
         isWrongNetwork={isWrongNetwork}
         notifications={notifications}
@@ -804,9 +725,11 @@ export default function App() {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AppContent />
-        </BrowserRouter>
+        <RainbowKitProvider theme={lightTheme({ accentColor: '#ffd700', accentColorForeground: '#000', borderRadius: 'small', fontStack: 'system' })}>
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   )

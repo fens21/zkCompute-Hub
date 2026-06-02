@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 import heroImg from '../assets/image.png'
 import { colors, radii } from '../styles/tokens'
 import '../styles/landing.css'
@@ -58,7 +59,7 @@ const sectionTitle: CSSProperties = {
   color: colors.gold, marginBottom: 8,
 }
 
-export function LandingPage({ onConnect, loading }: { onConnect: () => void; loading: boolean }) {
+export function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const [copyAnnounce, setCopyAnnounce] = useState('')
@@ -74,11 +75,11 @@ export function LandingPage({ onConnect, loading }: { onConnect: () => void; loa
   }
 
   const ctaBtnSx: CSSProperties = {
-    background: loading ? colors.gold : `linear-gradient(135deg, ${colors.gold}, #e6a800)`,
+    background: `linear-gradient(135deg, ${colors.gold}, #e6a800)`,
     color: colors.bgInput, border: 'none', padding: '16px 56px', fontSize: 15, fontWeight: 700,
-    cursor: loading ? 'not-allowed' : 'pointer', borderRadius: radii.lg, opacity: loading ? 0.6 : 1,
+    cursor: 'pointer', borderRadius: radii.lg, opacity: 1,
     transition: prefersReducedMotion ? 'none' : 'transform 0.2s, box-shadow 0.2s',
-    animation: (loading || prefersReducedMotion) ? 'none' : 'glow 3s ease-in-out infinite', letterSpacing: '0.5px',
+    animation: prefersReducedMotion ? 'none' : 'glow 3s ease-in-out infinite', letterSpacing: '0.5px',
   }
 
   return (
@@ -110,19 +111,25 @@ export function LandingPage({ onConnect, loading }: { onConnect: () => void; loa
           </div>
 
           <div className="lp-cta-row" style={{ animation: 'fadeIn 0.8s ease-out 0.2s both', marginTop: 48 }}>
-            <button onClick={onConnect} disabled={loading} aria-label="Connect wallet to enter"
-              className="lp-cta" style={ctaBtnSx}
-              aria-live="polite" aria-busy={loading}
-              onMouseEnter={e => {
-                if (!loading && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-                  e.currentTarget.style.transform = 'scale(1.03)'
+            <ConnectButton.Custom>
+              {({ openConnectModal, authenticationStatus, mounted }) => {
+                const ready = mounted && authenticationStatus !== 'loading'
+                return (
+                  <button onClick={openConnectModal} disabled={!ready} aria-label="Connect wallet to enter"
+                    className="lp-cta" style={{ ...ctaBtnSx, opacity: ready ? 1 : 0.6, cursor: ready ? 'pointer' : 'not-allowed' }}
+                    onMouseEnter={e => {
+                      if (ready && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+                        e.currentTarget.style.transform = 'scale(1.03)'
+                    }}
+                    onMouseLeave={e => {
+                      if (ready && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+                        e.currentTarget.style.transform = 'scale(1)'
+                    }}>
+                    CONNECT WALLET
+                  </button>
+                )
               }}
-              onMouseLeave={e => {
-                if (!loading && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-                  e.currentTarget.style.transform = 'scale(1)'
-              }}>
-              {loading ? <><span className="lp-spinner" />CONNECTING...</> : 'CONNECT WALLET'}
-            </button>
+            </ConnectButton.Custom>
           </div>
 
           <div className="lp-features" style={{ animation: 'fadeIn 0.8s ease-out 0.6s both', display: 'flex', gap: 24, justifyContent: 'center', marginTop: 52, marginBottom: 16 }}>
@@ -224,10 +231,14 @@ export function LandingPage({ onConnect, loading }: { onConnect: () => void; loa
           ))}
         </div>
         <div style={{ textAlign: 'center', marginTop: 40 }}>
-          <button onClick={() => document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' })}
-            aria-label="Scroll to connect wallet" className="lp-cta" style={{ ...ctaBtnSx, animation: 'glow 3s ease-in-out infinite' }}>
-            GET STARTED
-          </button>
+          <ConnectButton.Custom>
+            {({ openConnectModal }) => (
+              <button onClick={openConnectModal}
+                aria-label="Connect wallet" className="lp-cta" style={{ ...ctaBtnSx, animation: 'glow 3s ease-in-out infinite' }}>
+                CONNECT WALLET
+              </button>
+            )}
+          </ConnectButton.Custom>
         </div>
       </section>
       </main>
