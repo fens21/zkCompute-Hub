@@ -93,13 +93,13 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
           value={search}
           onChange={e => setSearch(e.target.value)}
           aria-label="Search jobs"
-          style={{ ...input, width: isMobile ? '100%' : 200, flexBasis: isMobile ? '100%' : 'auto', order: isMobile ? 3 : 0 }}
+          style={{ ...input, width: isMobile ? '100%' : 200, flexBasis: isMobile ? '100%' : 'auto', order: isMobile ? 3 : 0, boxSizing: 'border-box' as const }}
         />
         <select
           value={typeFilter}
           onChange={e => setTypeFilter(e.target.value)}
           aria-label="Filter by job type"
-          style={{ ...input, flex: isMobile ? '1' : 'none', minWidth: 0 }}
+          style={{ ...input, flex: isMobile ? '1' : 'none', minWidth: 0, boxSizing: 'border-box' as const }}
         >
           <option value="">All Types</option>
           <option value="ML">{JOB_TYPE_ICONS.ML} ML</option>
@@ -118,7 +118,7 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
           value={sortBy}
           onChange={e => setSortBy(e.target.value as SortBy)}
           aria-label="Sort jobs"
-          style={{ ...input, flex: isMobile ? '1' : 'none', minWidth: 0 }}
+          style={{ ...input, flex: isMobile ? '1' : 'none', minWidth: 0, boxSizing: 'border-box' as const }}
         >
           <option value="reward">Sort: Reward</option>
           <option value="deadline">Sort: Deadline</option>

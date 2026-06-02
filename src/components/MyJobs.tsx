@@ -214,7 +214,7 @@ export function MyJobs({ myJobs, onOpenProof, onUnclaim, loading, submittingProo
 }
 
 function cardStyle(active: boolean, isMobile?: boolean, expired?: boolean): React.CSSProperties {
-  let borderColor = colors.borderLight
+  let borderColor: string = colors.borderLight
   if (expired) borderColor = colors.red
   else if (active) borderColor = colors.gold
   return {

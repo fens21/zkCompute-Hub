@@ -388,7 +388,7 @@ function AppContent() {
     const job = currentProofJob
     setSubmittingProof(true)
 
-    let proofUrl = ''
+    let proofUrl: string | null = ''
     if (currentProofFile) {
       proofUrl = await uploadProofFile(job.id, address, currentProofFile)
       if (!proofUrl) {
@@ -421,26 +421,6 @@ function AppContent() {
     setProofHash('')
     setCurrentProofJob(null)
     setCurrentProofFile(null)
-  }
-
-  const releasePayment = async (job: Job) => {
-    if (!address) { showToast('Connect wallet first', 'info'); return }
-    try {
-      const hash = await writeContractAsync({
-        address: CONTRACT_ADDRESS as `0x${string}`,
-        abi,
-        functionName: 'releasePayment',
-        args: [BigInt(job.id), address as `0x${string}`],
-      })
-      setMyJobs(prev => prev.map(j =>
-        j.id === job.id ? { ...j, status: 'paid' } : j
-      ))
-      saveWorkerEvent('paid', job, address)
-      showToast(`Payment released! +${job.reward} ${job.tokenSymbol || 'zkLTC'} | Tx: ${hash.slice(0, 10)}...`, 'success')
-      addNotification(`Payment received: +${job.reward} ${job.tokenSymbol || 'zkLTC'} for "${job.title}"`, 'payment', job.title)
-    } catch (e: unknown) {
-      handleTxError(e, 'Release payment', showToast)
-    }
   }
 
   const releasePaymentForWorker = async (workerAddr: string, job: Job) => {
@@ -692,7 +672,6 @@ function AppContent() {
               editDifficulty={editDifficulty} setEditDifficulty={setEditDifficulty}
               onSaveEdit={saveEditedJob}
               onCancelEdit={cancelEdit}
-              address={address}
             />
           } />
           <Route path="/my-jobs" element={
@@ -781,7 +760,7 @@ function AppContent() {
           onCancel={() => setConfirmAction(null)}
           onConfirm={
             confirmAction.type === 'unclaim' ? confirmUnclaim :
-            confirmAction.type === 'deactivate' && confirmAction.job ? () => { deactivateJob(confirmAction.job); setConfirmAction(null) } :
+            confirmAction.type === 'deactivate' ? () => { if (confirmAction.job) deactivateJob(confirmAction.job); setConfirmAction(null) } :
             confirmAction.type === 'dispute' ? confirmDispute :
             confirmAction.type === 'resolveCancel' ? confirmResolveCancel :
             () => {}

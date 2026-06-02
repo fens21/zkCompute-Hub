@@ -9,7 +9,7 @@ type ViewMode = 'grid' | 'list'
 const TOKEN_SYMBOLS: Record<string, string> = { zkLTC: 'zkLTC', USDC: 'USDC', custom: 'CUSTOM' }
 const TOKEN_COLORS: Record<string, string> = { zkLTC: colors.gold, USDC: colors.blue, custom: '#a855f7' }
 
-export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJobs, onPost, onReleaseWorker, onDeactivate, onDispute, loading, deactivating, onEditPostedJob, editingPostedJob, editTitle, setEditTitle, editType, setEditType, editDesc, setEditDesc, editReqs, setEditReqs, editDeadline, setEditDeadline, editDifficulty, setEditDifficulty, onSaveEdit, onCancelEdit, address }: {
+export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJobs, onPost, onReleaseWorker, onDeactivate, onDispute, loading, deactivating, onEditPostedJob, editingPostedJob, editTitle, setEditTitle, editType, setEditType, editDesc, setEditDesc, editReqs, setEditReqs, editDeadline, setEditDeadline, editDifficulty, setEditDifficulty, onSaveEdit, onCancelEdit }: {
   postSubTab: PostSubTab
   setPostSubTab: (v: PostSubTab) => void
   newJob: NewJobForm
@@ -37,7 +37,6 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
   setEditDifficulty: (v: string) => void
   onSaveEdit: () => void
   onCancelEdit: () => void
-  address?: string
 }) {
   const windowWidth = useWindowWidth()
   const isMobile = useIsMobile()
@@ -95,14 +94,14 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
                 <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: radii.xl, overflow: 'hidden' }}>
                   {postedJobs.map((job, i) => (
                     <div key={job.id} style={{ borderBottom: i < postedJobs.length - 1 ? `1px solid ${colors.border}` : 'none' }}>
-                      <PostedJobCard job={job} onRelease={onReleaseWorker} onDeactivate={onDeactivate} onDispute={onDispute} loading={loading} deactivating={deactivating} onEdit={onEditPostedJob} view={postedViewMode} myAddress={address} />
+                      <PostedJobCard job={job} onRelease={onReleaseWorker} onDeactivate={onDeactivate} onDispute={onDispute} loading={loading} deactivating={deactivating} onEdit={onEditPostedJob} view={postedViewMode} />
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="job-grid" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: isMobile ? 12 : 20 }}>
                   {postedJobs.map(job => (
-                    <PostedJobCard key={job.id} job={job} onRelease={onReleaseWorker} onDeactivate={onDeactivate} onDispute={onDispute} loading={loading} deactivating={deactivating} onEdit={onEditPostedJob} view={postedViewMode} myAddress={address} />
+                    <PostedJobCard key={job.id} job={job} onRelease={onReleaseWorker} onDeactivate={onDeactivate} onDispute={onDispute} loading={loading} deactivating={deactivating} onEdit={onEditPostedJob} view={postedViewMode} />
                   ))}
                 </div>
               )}
