@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import heroImg from '../assets/image.png'
 import { colors, radii } from '../styles/tokens'
+import { useIsMobile } from '../hooks/useIsMobile'
 import '../styles/landing.css'
 
 const gold = (a: number) => `rgba(255,215,0,${a})`
@@ -63,19 +64,20 @@ export function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const [copyAnnounce, setCopyAnnounce] = useState('')
+  const isMobile = useIsMobile(768)
   const prefersReducedMotion = typeof window !== 'undefined'
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
     : false
 
   const scrollToCta = () => {
-    document.getElementById('lp-connect-top')?.scrollIntoView({ behavior: 'smooth' })
+    const el = document.getElementById('lp-connect-top')
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: isMobile ? 'nearest' : 'center' })
     setTimeout(() => {
-      const el = document.getElementById('lp-connect-top')
       if (el) {
         el.classList.add('lp-cta-highlight')
         setTimeout(() => el.classList.remove('lp-cta-highlight'), 1700)
       }
-    }, 100)
+    }, 500)
   }
 
   const copy = (v: string) => {
@@ -126,15 +128,7 @@ export function LandingPage() {
                 const ready = mounted && authenticationStatus !== 'loading'
                 return (
                   <button id="lp-connect-top" onClick={openConnectModal} disabled={!ready} aria-label="Connect wallet to enter"
-                    className="lp-cta" style={{ ...ctaBtnSx, opacity: ready ? 1 : 0.6, cursor: ready ? 'pointer' : 'not-allowed' }}
-                    onMouseEnter={e => {
-                      if (ready && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-                        e.currentTarget.style.transform = 'scale(1.03)'
-                    }}
-                    onMouseLeave={e => {
-                      if (ready && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-                        e.currentTarget.style.transform = 'scale(1)'
-                    }}>
+                    className="lp-cta" style={{ ...ctaBtnSx, opacity: ready ? 1 : 0.6, cursor: ready ? 'pointer' : 'not-allowed' }}>
                     {authenticationStatus === 'loading' ? <><span className="lp-spinner" />LOADING…</> : 'CONNECT WALLET'}
                   </button>
                 )

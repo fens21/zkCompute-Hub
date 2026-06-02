@@ -145,6 +145,19 @@
   display: flex; flex-direction: column; align-items: center; gap: 12px;
 }
 
+.lp-cta {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+@media (hover: hover) {
+  .lp-cta:hover {
+    transform: scale(1.03);
+  }
+}
+.lp-cta:active {
+  transform: scale(0.97);
+}
+
 /* ── Secondary CTA ── */
 .lp-secondary-cta {
   font-size: 13px;

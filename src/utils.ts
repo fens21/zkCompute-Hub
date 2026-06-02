@@ -11,17 +11,15 @@ export function handleTxError(error: unknown, action: string, showToast: (messag
 }
 
 export function getDeadlineMs(createdAt: number | undefined, deadline: string): number | null {
-  if (!createdAt) return null
-  // Old format: "4h" (relative hours)
-  if (deadline.includes('h')) {
-    const hours = parseInt(deadline)
-    if (isNaN(hours) || hours <= 0) return null
-    return createdAt + hours * 3600000
-  }
   // New format: ISO date string or timestamp string
   const ts = Date.parse(deadline)
-  if (isNaN(ts)) return null
-  return ts
+  if (!isNaN(ts)) return ts
+  // Old format: "4h" (relative hours) — requires createdAt
+  if (deadline.includes('h') && createdAt) {
+    const hours = parseInt(deadline)
+    if (!isNaN(hours) && hours > 0) return createdAt + hours * 3600000
+  }
+  return null
 }
 
 export function formatTimeRemaining(ms: number): string {

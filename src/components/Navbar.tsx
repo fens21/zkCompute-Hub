@@ -184,26 +184,26 @@ export function Navbar({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, 
                           aria-label="Wallet menu"
                           aria-expanded={showWalletMenu}
                           title={`${address.slice(0, 6)}...${address.slice(-4)}`}
-                          style={{ background: '#151515', color: '#c0d8e8', border: '1px solid #333', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontSize: isMobile ? 11 : 12, fontFamily: "'Space Mono', monospace" }}>
+                          style={{ background: '#151515', color: '#c0d8e8', border: '1px solid #333', padding: '8px 20px', borderRadius: 8, cursor: 'pointer', fontSize: isMobile ? 11 : 12, fontFamily: "'Space Mono', monospace" }}>
                           {address.slice(0, 6)}...{address.slice(-4)}
                         </button>
                         {showWalletMenu && (
-                          <div role="menu" aria-label="Wallet menu" style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, background: '#111', border: '1px solid #333', borderRadius: 8, zIndex: 100, overflow: 'hidden' }}>
-                            <button onClick={() => { setTab('profile'); setShowWalletMenu(false) }} role="menuitem" aria-label="View profile" style={{ width: '100%', background: 'transparent', color: '#e0e0e0', border: 'none', padding: '8px 12px', textAlign: 'left', cursor: 'pointer', fontSize: 12, fontFamily: "'Space Mono', monospace" }}>
+                          <div role="menu" aria-label="Wallet menu" style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, background: '#111', border: '1px solid #333', borderRadius: 8, zIndex: 100, overflow: 'hidden', minWidth: 'max-content' }}>
+                            <button onClick={() => { setTab('profile'); setShowWalletMenu(false) }} role="menuitem" aria-label="View profile" style={{ width: '100%', background: 'transparent', color: '#e0e0e0', border: 'none', padding: '8px 20px', textAlign: 'left', cursor: 'pointer', fontSize: 12, fontFamily: "'Space Mono', monospace" }}>
                               Profile
                             </button>
                             <a
                               href={`https://liteforge.explorer.caldera.xyz/address/${address}`}
                               target="_blank" rel="noopener noreferrer"
-                              style={{ display: 'block', padding: '8px 12px', borderTop: '1px solid #222', borderBottom: '1px solid #222', color: '#ffd700', fontSize: 12, fontFamily: "'Space Mono', monospace", textAlign: 'left', textDecoration: 'none' }}>
+                              style={{ display: 'block', padding: '8px 20px', borderTop: '1px solid #222', borderBottom: '1px solid #222', color: '#ffd700', fontSize: 12, fontFamily: "'Space Mono', monospace", textAlign: 'left', textDecoration: 'none', whiteSpace: 'nowrap' }}>
                               {balance ? `${(Number(balance.value) / 1e18).toFixed(4)} ${balance.symbol}` : '— zkLTC'}
                             </a>
                             {isWrongNetwork && (
-                              <button onClick={() => { onSwitchNetwork(); setShowWalletMenu(false) }} role="menuitem" aria-label="Switch network" style={{ width: '100%', background: 'transparent', color: '#ff6b6b', border: 'none', padding: '8px 12px', textAlign: 'left', cursor: 'pointer', fontSize: 12 }}>
+                              <button onClick={() => { onSwitchNetwork(); setShowWalletMenu(false) }} role="menuitem" aria-label="Switch network" style={{ width: '100%', background: 'transparent', color: '#ff6b6b', border: 'none', padding: '8px 20px', textAlign: 'left', cursor: 'pointer', fontSize: 12 }}>
                                 Switch Network
                               </button>
                             )}
-                            <button onClick={() => { disconnect(); setShowWalletMenu(false) }} role="menuitem" aria-label="Disconnect wallet" style={{ width: '100%', background: 'transparent', color: '#ff6b6b', border: 'none', padding: '8px 12px', textAlign: 'left', cursor: 'pointer', fontSize: 12, fontFamily: "'Space Mono', monospace" }}>
+                            <button onClick={() => { disconnect(); setShowWalletMenu(false) }} role="menuitem" aria-label="Disconnect wallet" style={{ width: '100%', background: 'transparent', color: '#ff6b6b', border: 'none', padding: '8px 20px', textAlign: 'left', cursor: 'pointer', fontSize: 12, fontFamily: "'Space Mono', monospace" }}>
                               Disconnect
                             </button>
                           </div>

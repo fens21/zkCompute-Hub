@@ -3,6 +3,7 @@ import { keccak256 } from 'viem'
 import type { Job, ConfirmAction, DisputeState } from '../types'
 import { uploadAvatar } from '../hooks/useWorkerProfiles'
 import { colors } from '../styles/tokens'
+import { formatDeadlineDate, getDeadlineMs, formatTimeRemaining, COUNTDOWN_REFRESH } from '../utils'
 
 const shorten = (addr: string) => addr.length > 10 ? addr.slice(0, 6) + '...' + addr.slice(-4) : addr
 
@@ -16,6 +17,26 @@ function useEscape(onClose: () => void) {
 
 export function JobDetailModal({ job, onClose, onClaim, loading }: { job: Job; onClose: () => void; onClaim: (job: Job) => void; loading: boolean }) {
   useEscape(onClose)
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    const id = setInterval(() => { if (!document.hidden) setNow(Date.now()) }, COUNTDOWN_REFRESH)
+    return () => clearInterval(id)
+  }, [])
+
+  let deadlineDisplay: React.ReactNode
+  const endMs = getDeadlineMs(job.createdAt, job.deadline)
+  if (endMs === null) {
+    deadlineDisplay = <span style={{ opacity: 0.5 }}>{job.deadline}</span>
+  } else {
+    const remaining = endMs - now
+    if (remaining <= 0) {
+      deadlineDisplay = <span style={{ color: colors.red }}>{formatDeadlineDate(job.createdAt, job.deadline)} (expired)</span>
+    } else {
+      const color = remaining < 3600000 ? colors.orange : colors.textDim
+      deadlineDisplay = <span style={{ color }}>{formatDeadlineDate(job.createdAt, job.deadline)} ({formatTimeRemaining(remaining)} left)</span>
+    }
+  }
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }} role="dialog" aria-modal="true" aria-label={`Job details: ${job.title}`}>
       <div style={{ background: '#111', border: '1px solid #444', padding: 32, borderRadius: 10, maxWidth: 520, width: '90%' }}>
@@ -25,7 +46,7 @@ export function JobDetailModal({ job, onClose, onClaim, loading }: { job: Job; o
           <div><strong>Requirements:</strong> {job.requirements}</div>
           <div><strong>Difficulty:</strong> {job.difficulty}</div>
           <div><strong>Reward:</strong> {job.reward} {job.tokenSymbol || 'zkLTC'}</div>
-          <div><strong>Deadline:</strong> {job.deadline}</div>
+          <div><strong>Deadline:</strong> {deadlineDisplay}</div>
           <div><strong>Slots:</strong> {job.claimedCount}/{job.maxWorkers} workers</div>
           <div><strong>Posted by:</strong> {shorten(job.poster)}</div>
         </div>
