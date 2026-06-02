@@ -1,4 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { readContract } from '@wagmi/core'
+import { config, CONTRACT_ADDRESS } from '../config/chain'
+import abi from '../abi/JobMarketplace.json'
 import type { Job, WorkerEvent } from '../types'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
@@ -226,6 +229,26 @@ export function useMyJobs(address: string | undefined, _syncEnabled: boolean = t
     if (cached.length > 0) {
       setMyJobsState(cached)
       loadedRef.current = true
+      // Background sync on-chain — override status by source of truth
+      const addr = address.toLowerCase()
+      const addresses = cached.map(j => ({ jobId: BigInt(j.id), worker: addr as `0x${string}` }))
+      Promise.all(addresses.map(({ jobId, worker }) =>
+        Promise.all([
+          readContract(config, { address: CONTRACT_ADDRESS as `0x${string}`, abi, functionName: 'paid', args: [jobId, worker] }).catch(() => false),
+          readContract(config, { address: CONTRACT_ADDRESS as `0x${string}`, abi, functionName: 'proofSubmitted', args: [jobId, worker] }).catch(() => false),
+        ])
+      )).then(results => {
+        setMyJobsState(prev => {
+          const next = prev.map((j, i) => {
+            const [isPaid, hasProof] = results[i] || [false, false]
+            if (isPaid && j.status !== 'paid') return { ...j, status: 'paid' as const }
+            if (hasProof && j.status !== 'completed' && j.status !== 'paid') return { ...j, status: 'completed' as const }
+            return j
+          })
+          saveMyJobs(address, next)
+          return next
+        })
+      }).catch(() => {})
       // Background sync from Supabase — upgrades 'completed' → 'paid' etc.
       fetchWorkerActivities(address).then(mergeEvents).catch(() => {})
       return
