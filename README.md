@@ -8,6 +8,7 @@ A decentralized verifiable compute marketplace built on the **LitForge Testnet**
 |---|---|
 | Frontend | React 19, TypeScript 6, Vite 8 |
 | Blockchain | Solidity 0.8.20, Hardhat, Wagmi 3, Viem 2 |
+| Wallet | RainbowKit 2 (MetaMask, Rabby, OKX, WalletConnect, Brave, etc.) |
 | Backend | Supabase (job metadata, activity logs, profiles) |
 
 ## Features
@@ -29,7 +30,7 @@ A decentralized verifiable compute marketplace built on the **LitForge Testnet**
 ## Prerequisites
 
 - Node.js >= 18
-- MetaMask or Brave Wallet
+- RainbowKit-compatible wallet (MetaMask, Rabby, OKX, WalletConnect, Brave, etc.)
 - LitForge Testnet added to wallet (Chain ID: 4441)
 
 ## Installation
