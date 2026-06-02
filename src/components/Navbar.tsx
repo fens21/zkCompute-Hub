@@ -86,7 +86,7 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
           {!isMobile && (
             <div>
               <div style={{ fontSize: 17, fontWeight: 700, color: '#ffd700', letterSpacing: -0.5 }}>zkCompute Hub</div>
-              <div style={{ fontSize: 8, opacity: 0.4, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 8, color: '#8ab0d0', display: 'flex', alignItems: 'center', gap: 6 }}>
                 LITVM &bull; LITECOIN ROLLUP
                 {entered && (
                   <span style={{ background: isWrongNetwork ? '#ff6b6b' : '#1a3c1a', color: isWrongNetwork ? '#000' : '#4ade80', padding: '1px 6px', borderRadius: 10, fontSize: 8, fontWeight: 600 }}>
