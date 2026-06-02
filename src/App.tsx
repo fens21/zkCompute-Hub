@@ -151,6 +151,11 @@ function AppContent() {
     if ((tab === 'stats' || tab === 'leaderboard' || tab === 'profile') && entered) fetchLeaderboard(onChainJobs, false)
   }, [tab, entered, fetchLeaderboard, onChainJobs])
 
+  // Always land on marketplace on entry (first load or reconnect)
+  useEffect(() => {
+    if (entered && location.pathname !== '/') navigate('/')
+  }, [entered])
+
   // Debounced profile save moved above
 
   const isWrongNetwork = entered && chainId !== 4441

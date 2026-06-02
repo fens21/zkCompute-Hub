@@ -149,7 +149,7 @@
 .lp-secondary-cta {
   font-size: 13px;
   font-weight: 600;
-  color: rgba(138, 176, 208, 0.7);
+  color: #8ab0d0;
   text-decoration: none;
   transition: color 0.2s;
 }
@@ -362,11 +362,57 @@
   .lp-ql-link { padding: 8px 18px; font-size: 11px; }
 }
 
+/* ── Focus visible ── */
+.lp-cta:focus-visible,
+.lp-faq-q:focus-visible,
+.lp-copy-btn:focus-visible,
+.lp-ql-link:focus-visible,
+.lp-secondary-cta:focus-visible,
+.lp-footer-social a:focus-visible,
+.lp-footer-links a:focus-visible,
+.lp-back-top:focus-visible {
+  outline: 2px solid var(--lp-gold);
+  outline-offset: 3px;
+}
+
+/* ── FAQ arrow rotation ── */
+.lp-faq-item.open .lp-faq-arrow {
+  transform: rotate(180deg);
+}
+
+/* ── CTA pulse on scroll target ── */
+.lp-cta-highlight {
+  animation: ctaPulse 0.8s ease-out 2 !important;
+}
+@keyframes ctaPulse {
+  0% { box-shadow: 0 0 0 0 rgba(255,215,0,0.6); }
+  50% { box-shadow: 0 0 0 12px rgba(255,215,0,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,215,0,0); }
+}
+
+/* ── Back to top ── */
+.lp-back-top {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 20px;
+  background: rgba(255,215,0,0.06);
+  border: 1px solid rgba(255,215,0,0.15);
+  border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+  color: var(--lp-gold);
+  cursor: pointer;
+  transition: border-color 0.3s, background 0.3s;
+}
+.lp-back-top:hover {
+  border-color: var(--lp-gold);
+  background: rgba(255,215,0,0.1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lp-aurora, .lp-aurora2, .lp-hero-bg, .lp-ring-outer, .lp-ring-inner,
   .lp-dot, .lp-glow, .lp-grid, .lp-feature-card, .lp-scroll-indicator,
   .lp-step-card, .lp-ql-link, .lp-footer-social a, .lp-faq-a,
-  .lp-faq-item, .lp-faq-q, .lp-grid, .lp-copy-btn {
+  .lp-faq-item, .lp-faq-q, .lp-grid, .lp-copy-btn,
+  .lp-cta-highlight, .lp-back-top {
     animation: none !important;
     transition: none !important;
   }

@@ -67,6 +67,17 @@ export function LandingPage() {
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
     : false
 
+  const scrollToCta = () => {
+    document.getElementById('lp-connect-top')?.scrollIntoView({ behavior: 'smooth' })
+    setTimeout(() => {
+      const el = document.getElementById('lp-connect-top')
+      if (el) {
+        el.classList.add('lp-cta-highlight')
+        setTimeout(() => el.classList.remove('lp-cta-highlight'), 1700)
+      }
+    }, 100)
+  }
+
   const copy = (v: string) => {
     navigator.clipboard.writeText(v)
     setCopied(v)
@@ -97,7 +108,6 @@ export function LandingPage() {
         <div className="lp-ring lp-ring-inner" />
         <div className="lp-dot" style={{ top: '38%', left: '38%', animationDelay: '0s' }} />
         <div className="lp-dot" style={{ top: '62%', left: '62%', animationDelay: '2s' }} />
-        <div className="lp-dot" style={{ top: '35%', left: '65%', animationDelay: '4s' }} />
         <div className="lp-glow" />
         <div className="lp-grid" />
 
@@ -115,7 +125,7 @@ export function LandingPage() {
               {({ openConnectModal, authenticationStatus, mounted }) => {
                 const ready = mounted && authenticationStatus !== 'loading'
                 return (
-                  <button onClick={openConnectModal} disabled={!ready} aria-label="Connect wallet to enter"
+                  <button id="lp-connect-top" onClick={openConnectModal} disabled={!ready} aria-label="Connect wallet to enter"
                     className="lp-cta" style={{ ...ctaBtnSx, opacity: ready ? 1 : 0.6, cursor: ready ? 'pointer' : 'not-allowed' }}
                     onMouseEnter={e => {
                       if (ready && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -125,7 +135,7 @@ export function LandingPage() {
                       if (ready && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
                         e.currentTarget.style.transform = 'scale(1)'
                     }}>
-                    CONNECT WALLET
+                    {authenticationStatus === 'loading' ? <><span className="lp-spinner" />LOADING…</> : 'CONNECT WALLET'}
                   </button>
                 )
               }}
@@ -146,6 +156,7 @@ export function LandingPage() {
             <a href="#how-it-works" className="lp-secondary-cta">Learn More →</a>
           </div>
         </div>
+
       </section>
 
       {/* ── How It Works ── */}
@@ -231,14 +242,10 @@ export function LandingPage() {
           ))}
         </div>
         <div style={{ textAlign: 'center', marginTop: 40 }}>
-          <ConnectButton.Custom>
-            {({ openConnectModal }) => (
-              <button onClick={openConnectModal}
-                aria-label="Connect wallet" className="lp-cta" style={{ ...ctaBtnSx, animation: 'glow 3s ease-in-out infinite' }}>
-                CONNECT WALLET
-              </button>
-            )}
-          </ConnectButton.Custom>
+          <button onClick={scrollToCta}
+            aria-label="Get started" className="lp-cta" style={{ ...ctaBtnSx, animation: 'glow 3s ease-in-out infinite' }}>
+            GET STARTED
+          </button>
         </div>
       </section>
       </main>
@@ -246,11 +253,8 @@ export function LandingPage() {
       {/* ── Footer ── */}
       <footer className="lp-footer">
         <div className="lp-footer-inner">
-          <div className="lp-footer-brand">
-            <span className="lp-footer-title">zkCompute Hub</span>
-            <span className="lp-footer-sub">Decentralized verifiable compute on LitVM</span>
-          </div>
-
+          <div style={{ fontSize: 14, fontWeight: 700, color: colors.gold }}>zkCompute Hub</div>
+          <div style={{ fontSize: 11, color: colors.textDim, marginTop: -4 }}>Decentralized verifiable compute on LitVM</div>
           <div className="lp-footer-social">
             <a href="https://x.com/fens21_" target="_blank" rel="noopener noreferrer" aria-label="Follow on X">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
