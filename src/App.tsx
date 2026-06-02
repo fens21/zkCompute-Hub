@@ -408,7 +408,7 @@ function AppContent() {
       })
 
       setMyJobs(prev => prev.map(j =>
-        j.id === job.id ? { ...j, status: 'completed' } : j
+        j.id === job.id && j.status !== 'paid' ? { ...j, status: 'completed' } : j
       ))
       saveWorkerEvent('completed', job, address, proofUrl, proofHash)
       showToast(`Proof submitted! Tx: ${hash.slice(0, 10)}...`, 'success')

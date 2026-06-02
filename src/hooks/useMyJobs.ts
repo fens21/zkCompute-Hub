@@ -180,16 +180,13 @@ export function useMyJobs(address: string | undefined, _syncEnabled: boolean = t
       return
     }
     const cached = loadMyJobs(address)
-    if (cached.length > 0) {
-      setMyJobsState(cached)
-      loadedRef.current = true
-      addressRef.current = address.toLowerCase()
-      return
-    }
-    // No cache — restore from Supabase
     addressRef.current = address.toLowerCase()
-    fetchWorkerActivities(address).then(events => {
+
+    const mergeEvents = (events: (WorkerEvent & { job?: Job })[]) => {
       const jobsMap = new Map<number, Job>()
+      if (cached.length > 0) {
+        for (const j of cached) jobsMap.set(j.id, j)
+      }
       for (const ev of events) {
         const existing = jobsMap.get(ev.jobId)
         if (!existing || ev.job) {
@@ -218,11 +215,24 @@ export function useMyJobs(address: string | undefined, _syncEnabled: boolean = t
           jobsMap.set(ev.jobId, { ...existing, status: ev.status })
         }
       }
-      const restored = [...jobsMap.values()]
-      setMyJobsState(restored)
+      const merged = [...jobsMap.values()]
+      if (merged.length > 0 || cached.length === 0) {
+        setMyJobsState(merged)
+        if (merged.length > 0) saveMyJobs(address, merged)
+      }
+      if (!loadedRef.current) loadedRef.current = true
+    }
+
+    if (cached.length > 0) {
+      setMyJobsState(cached)
       loadedRef.current = true
-      if (restored.length > 0) saveMyJobs(address, restored)
-    }).catch(() => {
+      // Background sync from Supabase — upgrades 'completed' → 'paid' etc.
+      fetchWorkerActivities(address).then(mergeEvents).catch(() => {})
+      return
+    }
+
+    // No cache — restore from Supabase
+    fetchWorkerActivities(address).then(mergeEvents).catch(() => {
       loadedRef.current = true
     })
   }, [address])
