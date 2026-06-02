@@ -6,12 +6,13 @@ import { loadProfilesRemote } from './useWorkerProfiles'
 import type { LeaderboardEntry, Job } from '../types'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
-const CACHE_DURATION = 60 * 1000
+const CACHE_DURATION = 5 * 60 * 1000
 
 export function useLeaderboard() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(false)
   const cacheRef = useRef<{ data: LeaderboardEntry[]; time: number } | null>(null)
+  const fetchingRef = useRef(false)
 
   const fetchLeaderboard = useCallback(async (onChainJobs: Job[], forceRefresh = false) => {
     if (!forceRefresh && cacheRef.current) {
@@ -21,6 +22,8 @@ export function useLeaderboard() {
         return
       }
     }
+    if (fetchingRef.current) return
+    fetchingRef.current = true
 
     setLoading(true)
     try {
@@ -111,6 +114,7 @@ export function useLeaderboard() {
       console.error('Failed to fetch leaderboard:', e)
     }
     setLoading(false)
+    fetchingRef.current = false
   }, [])
 
   return { leaderboard, loading, fetchLeaderboard }

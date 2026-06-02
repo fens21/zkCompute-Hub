@@ -117,8 +117,7 @@ export async function uploadProofFile(jobId: number, worker: string, file: File)
     return null
   }
   try {
-    const ext = file.name.split('.').pop() || 'bin'
-    const filename = `proof-${jobId}-${worker.toLowerCase()}.${ext}`
+    const filename = `proof-${jobId}-${worker.toLowerCase()}.bin`
     const res = await fetch(
       `${SUPABASE_URL}/storage/v1/object/proofs/${filename}`,
       {
@@ -147,8 +146,6 @@ export function getProofUrl(jobId: number, worker: string): string {
   return `${SUPABASE_URL}/storage/v1/object/public/proofs/proof-${jobId}-${worker.toLowerCase()}.bin`
 }
 
-const COMMON_EXTENSIONS = ['zip', 'rar', '7z', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'json', 'txt', 'bin']
-
 export async function discoverProofUrl(jobId: number, worker: string): Promise<string> {
   const base = `${SUPABASE_URL}/storage/v1/object/public/proofs`
   const prefix = `proof-${jobId}-${worker.toLowerCase()}`
@@ -172,13 +169,6 @@ export async function discoverProofUrl(jobId: number, worker: string): Promise<s
     }
   } catch (e) {
     console.error('Storage list API failed:', e)
-  }
-  for (const ext of COMMON_EXTENSIONS) {
-    try {
-      const url = `${base}/${prefix}.${ext}`
-      const head = await fetch(url, { method: 'HEAD' })
-      if (head.ok) return url
-    } catch { /* skip */ }
   }
   return `${base}/${prefix}.bin`
 }

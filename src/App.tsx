@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
 import { useAccount, useBalance, useWriteContract, useSwitchChain, useChainId } from 'wagmi'
 import { readContract } from '@wagmi/core'
+import { parseUnits } from 'viem'
 import abi from './abi/JobMarketplace.json'
 import { config, CONTRACT_ADDRESS, USDC_ADDRESS } from './config/chain'
 import { useToasts } from './hooks/useToasts'
@@ -26,6 +27,7 @@ import type { Job, NewJobForm, ConfirmAction, DisputeState, Tab, PostSubTab, Sor
 import { saveProfile, loadProfiles, uploadProofFile } from './hooks/useWorkerProfiles'
 import { saveJobMetadata } from './hooks/useJobMetadata'
 import { handleTxError, getDeadlineMs } from './utils'
+import { useIsMobile } from './hooks/useIsMobile'
 
 const USDC_DECIMALS = 6
 const ERC20_ABI = [
@@ -47,6 +49,7 @@ function AppContent() {
   const { myJobs, setMyJobs } = useMyJobs(address, true)
   const { leaderboard, loading: leaderboardLoading, fetchLeaderboard } = useLeaderboard()
   const { ltcPrice } = usePrices()
+  const isMobile = useIsMobile()
 
   const navigate = useNavigate()
   const location = useLocation()
@@ -54,19 +57,12 @@ function AppContent() {
   const tab = TAB_PATHS[location.pathname.replace('/', '')] || 'market'
   const setTab = (t: Tab) => navigate(t === 'market' ? '/' : '/' + (t === 'my' ? 'my-jobs' : t))
 
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const [entered, setEntered] = useState(false)
   const [sessionChecked, setSessionChecked] = useState(false)
   const [loading, setLoading] = useState(false)
   const [deactivating, setDeactivating] = useState(false)
   const [submittingProof, setSubmittingProof] = useState(false)
   const [showWalletMenu, setShowWalletMenu] = useState(false)
-
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768)
-    window.addEventListener('resize', handler)
-    return () => window.removeEventListener('resize', handler)
-  }, [])
 
   useEffect(() => {
     const wasEntered = sessionStorage.getItem('zkcompute_session') === 'true'
@@ -150,6 +146,15 @@ function AppContent() {
     }
   }, [address])
 
+  // Save profile with debounce
+  useEffect(() => {
+    if (!address || !(bio || skills.length > 0 || avatarUrl)) return
+    const timer = setTimeout(() => {
+      saveProfile(address, bio, skills, avatarUrl)
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [address, bio, skills, avatarUrl])
+
   // Auto-sync local activities to Supabase on first visit after update
   useEffect(() => {
     if (!address) return
@@ -176,11 +181,7 @@ function AppContent() {
     if ((tab === 'stats' || tab === 'leaderboard' || tab === 'profile') && entered) fetchLeaderboard(onChainJobs, false)
   }, [tab, entered, fetchLeaderboard, onChainJobs])
 
-  useEffect(() => {
-    if (address && (bio || skills.length > 0 || avatarUrl)) {
-      saveProfile(address, bio, skills, avatarUrl)
-    }
-  }, [address, bio, skills, avatarUrl])
+  // Debounced profile save moved above
 
   const isWrongNetwork = entered && chainId !== 4441
 
@@ -250,7 +251,7 @@ function AppContent() {
       let hash: string
 
       if (newJob.token === 'USDC') {
-        const rewardBase = BigInt(Math.round(rewardPerWorker * (10 ** USDC_DECIMALS)))
+        const rewardBase = parseUnits(String(rewardPerWorker), USDC_DECIMALS)
         const totalBase = rewardBase * BigInt(maxWorkers)
 
         const approveHash = await writeContractAsync({
@@ -259,7 +260,7 @@ function AppContent() {
           functionName: 'approve',
           args: [CONTRACT_ADDRESS as `0x${string}`, totalBase],
         })
-        showToast(`Approving ${Number(totalBase) / (10 ** USDC_DECIMALS)} USDC... Tx: ${approveHash.slice(0, 10)}...`, 'success')
+        showToast(`Approving ${rewardPerWorker * maxWorkers} USDC... Tx: ${approveHash.slice(0, 10)}...`, 'success')
 
         hash = await writeContractAsync({
           address: CONTRACT_ADDRESS as `0x${string}`,
@@ -268,7 +269,7 @@ function AppContent() {
           args: [newJob.title || 'Custom Compute Job', newJob.type, rewardBase, BigInt(maxWorkers)],
         })
       } else {
-        const totalWei = BigInt(Math.round(rewardPerWorker * 1e18)) * BigInt(maxWorkers)
+        const totalWei = parseUnits(String(rewardPerWorker), 18) * BigInt(maxWorkers)
 
         hash = await writeContractAsync({
           address: CONTRACT_ADDRESS as `0x${string}`,
@@ -551,7 +552,7 @@ function AppContent() {
         functionName: 'resolveDispute',
         args: [BigInt(confirmAction.job.id), confirmAction.disputeWorker as `0x${string}`, true],
       })
-      setMyJobs(prev => prev.filter(j => j.id !== confirmAction.job!.id))
+      setMyJobs(prev => prev.filter(j => confirmAction.job && j.id !== confirmAction.job.id))
       showToast(`Claim cancelled! Tx: ${hash.slice(0, 10)}...`, 'success')
     } catch (e: unknown) {
       handleTxError(e, 'Resolve cancel', showToast)
@@ -736,6 +737,7 @@ function AppContent() {
               ltcPrice={ltcPrice}
               loading={leaderboardLoading}
               onRetry={() => fetchLeaderboard(onChainJobs, true)}
+              onNavigate={setTab}
             />
           } />
           <Route path="*" element={
@@ -779,7 +781,7 @@ function AppContent() {
           onCancel={() => setConfirmAction(null)}
           onConfirm={
             confirmAction.type === 'unclaim' ? confirmUnclaim :
-            confirmAction.type === 'deactivate' ? () => { deactivateJob(confirmAction.job!); setConfirmAction(null) } :
+            confirmAction.type === 'deactivate' && confirmAction.job ? () => { deactivateJob(confirmAction.job); setConfirmAction(null) } :
             confirmAction.type === 'dispute' ? confirmDispute :
             confirmAction.type === 'resolveCancel' ? confirmResolveCancel :
             () => {}

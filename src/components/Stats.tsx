@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { Job, LeaderboardEntry } from '../types'
 import { colors } from '../styles/tokens'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 const JOB_TYPE_ICONS: Record<string, string> = {
   ML: '🧠', ZK: '🔐', Render: '🎬', 'AI Inference': '🤖',
@@ -8,7 +9,8 @@ const JOB_TYPE_ICONS: Record<string, string> = {
   Scientific: '🔬', 'RAG Pipeline': '🔗', FHE: '🔒', Custom: '⚙️',
 }
 
-function formatUsd(usd: number): string {
+function formatUsd(usd: number | null): string {
+  if (usd === null) return '—'
   if (usd < 1) return '$' + usd.toFixed(2)
   if (usd < 1000) return '$' + usd.toFixed(0)
   return '$' + (usd / 1000).toFixed(1) + 'k'
@@ -27,16 +29,10 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
   error?: string | null
   onRetry?: () => void
 }) {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  const isMobile = useIsMobile()
   const [rewardPage, setRewardPage] = useState(0)
   const [claimedPage, setClaimedPage] = useState(0)
   const PER_PAGE = 20
-
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768)
-    window.addEventListener('resize', handler)
-    return () => window.removeEventListener('resize', handler)
-  }, [])
 
   const totalEscrowedZkltc = onChainJobs.filter(j => j.tokenSymbol !== 'USDC').reduce((s, j) => s + j.reward * j.maxWorkers, 0)
   const totalEscrowedUsdc = onChainJobs.filter(j => j.tokenSymbol === 'USDC').reduce((s, j) => s + j.reward * j.maxWorkers, 0)
@@ -60,7 +56,7 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
     setClaimedPage(0)
   }, [onChainJobs.length])
 
-  const earnedUsd = (ltcPrice ?? 0) * earnedZkltc + earnedUsdc
+  const earnedUsd = ltcPrice !== null ? ltcPrice * earnedZkltc + earnedUsdc : null
 
   if (error) {
     return (
@@ -92,7 +88,7 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
   }
 
   return (
-    <div>
+    <section aria-label="Statistics overview">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div style={{ flex: 1 }} />
         <h2 style={{ fontSize: 20, margin: 0, color: colors.textPrimary, textAlign: 'center' }}>Statistics Overview</h2>
@@ -102,23 +98,25 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: isMobile ? 10 : 16, marginBottom: 28 }}>
-        <div style={{ background: '#111', padding: isMobile ? 14 : 20, border: earnedZkltc + earnedUsdc > 0 ? '1px solid #ffd700' : '1px solid #333', borderRadius: 12 }}>
-          <div style={{ fontSize: 12, opacity: 0.45, textTransform: 'uppercase', letterSpacing: 0.5 }}>My Earned</div>
-          <div style={{ fontSize: isMobile ? 18 : 22, color: '#4ade80', fontWeight: 700, marginTop: 4 }}>{ltcPrice === null ? '...' : formatUsd(earnedUsd)}</div>
-          {earnedZkltc > 0 && <div style={{ fontSize: 11, color: '#ffd700', fontWeight: 600, marginTop: 4 }}>{rewardStr(earnedZkltc)} zkLTC</div>}
-          {earnedUsdc > 0 && <div style={{ fontSize: 11, color: '#2775ca', fontWeight: 600, marginTop: 2 }}>{rewardStr(earnedUsdc)} USDC</div>}
-          {earnedZkltc === 0 && earnedUsdc === 0 && <div style={{ fontSize: 11, opacity: 0.4, marginTop: 4 }}>No earnings yet</div>}
-        </div>
+        <StatCard
+          label="My Earned"
+          value={formatUsd(earnedUsd)}
+          highlight={earnedZkltc + earnedUsdc > 0}
+          isMobile={isMobile}
+          sub={earnedZkltc + earnedUsdc > 0 ? (
+            <>{earnedZkltc > 0 && <span style={{ color: '#ffd700' }}>{rewardStr(earnedZkltc)} zkLTC</span>}{earnedZkltc > 0 && earnedUsdc > 0 ? ' · ' : ''}{earnedUsdc > 0 && <span style={{ color: '#2775ca' }}>{rewardStr(earnedUsdc)} USDC</span>}</>
+          ) : <span style={{ opacity: 0.4 }}>No earnings yet</span>}
+        />
         <StatCard label="My Completed" value={`${jobsPaid}`} isMobile={isMobile} />
         <StatCard label="On-Chain Jobs" value={`${onChainJobs.length}`} isMobile={isMobile} />
-        <div style={{ background: '#111', padding: isMobile ? 14 : 20, border: '1px solid #333', borderRadius: 12 }}>
-          <div style={{ fontSize: 12, opacity: 0.45, textTransform: 'uppercase', letterSpacing: 0.5 }}>Total Escrowed</div>
-          <div style={{ fontSize: isMobile ? 18 : 22, color: '#4ade80', fontWeight: 700, marginTop: 4 }}>
-            {totalEscrowedUsd !== null ? formatUsd(totalEscrowedUsd) : '...'}
-          </div>
-          {totalEscrowedZkltc > 0 && <div style={{ fontSize: 11, color: '#ffd700', fontWeight: 600, marginTop: 4 }}>{rewardStr(totalEscrowedZkltc)} zkLTC</div>}
-          {totalEscrowedUsdc > 0 && <div style={{ fontSize: 11, color: '#2775ca', fontWeight: 600, marginTop: 2 }}>{rewardStr(totalEscrowedUsdc)} USDC</div>}
-        </div>
+        <StatCard
+          label="Total Escrowed"
+          value={formatUsd(totalEscrowedUsd)}
+          isMobile={isMobile}
+          sub={
+            <>{totalEscrowedZkltc > 0 && <span style={{ color: '#ffd700' }}>{rewardStr(totalEscrowedZkltc)} zkLTC</span>}{totalEscrowedZkltc > 0 && totalEscrowedUsdc > 0 ? ' · ' : ''}{totalEscrowedUsdc > 0 && <span style={{ color: '#2775ca' }}>{rewardStr(totalEscrowedUsdc)} USDC</span>}</>
+          }
+        />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(280px, 1fr))', gap: isMobile ? 16 : 20 }}>
@@ -126,11 +124,7 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
         <div style={{ minWidth: 0 }}>
           <h3 style={{ fontSize: 14, marginBottom: 12, color: '#e0e0e0' }}>Top Jobs by Reward</h3>
           {rewardTotalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, padding: '6px 12px', marginBottom: 10, border: '1px solid #333', borderRadius: 8, background: '#1a1a1a' }}>
-              <button onClick={() => setRewardPage(p => Math.max(0, p - 1))} disabled={rewardPage === 0} style={{ background: '#222', color: rewardPage === 0 ? '#444' : '#ccc', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: rewardPage === 0 ? 'default' : 'pointer', fontSize: 11 }}>◀ Prev</button>
-              <span style={{ fontSize: 11, opacity: 0.5 }}>Page {rewardPage + 1} of {rewardTotalPages}</span>
-              <button onClick={() => setRewardPage(p => Math.min(rewardTotalPages - 1, p + 1))} disabled={rewardPage >= rewardTotalPages - 1} style={{ background: '#222', color: rewardPage >= rewardTotalPages - 1 ? '#444' : '#ccc', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: rewardPage >= rewardTotalPages - 1 ? 'default' : 'pointer', fontSize: 11 }}>Next ▶</button>
-            </div>
+            <PaginationBar page={rewardPage} totalPages={rewardTotalPages} onPrev={() => setRewardPage(p => Math.max(0, p - 1))} onNext={() => setRewardPage(p => Math.min(rewardTotalPages - 1, p + 1))} isFirst={rewardPage === 0} isLast={rewardPage >= rewardTotalPages - 1} />
           )}
           {topReward.length === 0 ? (
             <div style={{ background: '#111', border: '1px solid #333', borderRadius: 12, padding: 24, textAlign: 'center', opacity: 0.5, fontSize: 13 }}>
@@ -158,11 +152,7 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
         <div style={{ minWidth: 0 }}>
           <h3 style={{ fontSize: 14, marginBottom: 12, color: '#e0e0e0' }}>Most Claimed Jobs</h3>
           {claimedTotalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, padding: '6px 12px', marginBottom: 10, border: '1px solid #333', borderRadius: 8, background: '#1a1a1a' }}>
-              <button onClick={() => setClaimedPage(p => Math.max(0, p - 1))} disabled={claimedPage === 0} style={{ background: '#222', color: claimedPage === 0 ? '#444' : '#ccc', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: claimedPage === 0 ? 'default' : 'pointer', fontSize: 11 }}>◀ Prev</button>
-              <span style={{ fontSize: 11, opacity: 0.5 }}>Page {claimedPage + 1} of {claimedTotalPages}</span>
-              <button onClick={() => setClaimedPage(p => Math.min(claimedTotalPages - 1, p + 1))} disabled={claimedPage >= claimedTotalPages - 1} style={{ background: '#222', color: claimedPage >= claimedTotalPages - 1 ? '#444' : '#ccc', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: claimedPage >= claimedTotalPages - 1 ? 'default' : 'pointer', fontSize: 11 }}>Next ▶</button>
-            </div>
+            <PaginationBar page={claimedPage} totalPages={claimedTotalPages} onPrev={() => setClaimedPage(p => Math.max(0, p - 1))} onNext={() => setClaimedPage(p => Math.min(claimedTotalPages - 1, p + 1))} isFirst={claimedPage === 0} isLast={claimedPage >= claimedTotalPages - 1} />
           )}
           {topClaimed.length === 0 ? (
             <div style={{ background: '#111', border: '1px solid #333', borderRadius: 12, padding: 24, textAlign: 'center', opacity: 0.5, fontSize: 13 }}>
@@ -176,12 +166,12 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
                     <span style={{ marginRight: 6 }}>{JOB_TYPE_ICONS[j.type] || '📋'}</span>
                     {j.title}
                   </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ color: '#4ade80', fontWeight: 600, flexShrink: 0 }}>{j.claimedCount}/{j.maxWorkers}</span>
-                    <div style={{ width: 60, height: 6, background: '#222', borderRadius: 3, overflow: 'hidden' }}>
-                      <div style={{ width: `${Math.min(100, (j.claimedCount / Math.max(1, j.maxWorkers)) * 100)}%`, height: '100%', background: '#4ade80', borderRadius: 3 }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 auto', minWidth: 0 }}>
+                      <span style={{ color: '#4ade80', fontWeight: 600, flexShrink: 0 }}>{j.claimedCount}/{j.maxWorkers}</span>
+                      <div style={{ flex: 1, height: 6, background: '#222', borderRadius: 3, overflow: 'hidden', minWidth: 40 }}>
+                        <div style={{ width: `${Math.min(100, (j.claimedCount / Math.max(1, j.maxWorkers)) * 100)}%`, height: '100%', background: '#4ade80', borderRadius: 3 }} />
+                      </div>
                     </div>
-                  </div>
                 </div>
               ))}
             </div>
@@ -189,15 +179,28 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
         </div>
 
       </div>
+    </section>
+  )
+}
+
+function PaginationBar({ page, totalPages, onPrev, onNext, isFirst, isLast }: {
+  page: number; totalPages: number; onPrev: () => void; onNext: () => void; isFirst: boolean; isLast: boolean
+}) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, padding: '6px 12px', marginBottom: 10, border: '1px solid #333', borderRadius: 8, background: '#1a1a1a' }}>
+      <button onClick={onPrev} disabled={isFirst} aria-label="Previous page" style={{ background: '#222', color: isFirst ? '#444' : '#ccc', border: 'none', padding: '6px 12px', borderRadius: 4, cursor: isFirst ? 'default' : 'pointer', fontSize: 12, minHeight: 32 }}>← Prev</button>
+      <span style={{ fontSize: 12, opacity: 0.5 }}>Page {page + 1} of {totalPages}</span>
+      <button onClick={onNext} disabled={isLast} aria-label="Next page" style={{ background: '#222', color: isLast ? '#444' : '#ccc', border: 'none', padding: '6px 12px', borderRadius: 4, cursor: isLast ? 'default' : 'pointer', fontSize: 12, minHeight: 32 }}>Next →</button>
     </div>
   )
 }
 
-function StatCard({ label, value, highlight, isMobile }: { label: string; value: string; highlight?: boolean; isMobile?: boolean }) {
+function StatCard({ label, value, highlight, isMobile, sub }: { label: string; value: string; highlight?: boolean; isMobile?: boolean; sub?: React.ReactNode }) {
   return (
-    <div style={{ background: '#111', padding: isMobile ? 14 : 20, border: '1px solid #333', borderRadius: 12 }}>
+    <div style={{ background: '#111', padding: isMobile ? 14 : 20, border: `1px solid ${highlight ? '#ffd700' : '#333'}`, borderRadius: 12 }}>
       <div style={{ fontSize: 12, opacity: 0.45, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
-      <div style={{ fontSize: isMobile ? 18 : 22, color: highlight ? '#ffd700' : '#e0e0e0', fontWeight: 700, marginTop: 6 }}>{value}</div>
+      <div style={{ fontSize: isMobile ? 18 : 22, color: highlight ? '#4ade80' : '#e0e0e0', fontWeight: 700, marginTop: 4, minHeight: '1.2em' }}>{value}</div>
+      {sub && <div style={{ fontSize: 11, fontWeight: 600, marginTop: 4, lineHeight: 1.4 }}>{sub}</div>}
     </div>
   )
 }

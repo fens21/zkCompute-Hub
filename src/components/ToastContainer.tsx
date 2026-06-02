@@ -1,10 +1,20 @@
 import type { Toast } from '../types'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 const ICONS: Record<string, string> = { success: '✓', error: '✕', info: 'ℹ' }
 
 export function ToastContainer({ toasts }: { toasts: Toast[] }) {
+  const isMobile = useIsMobile()
   return (
-    <div role="alert" aria-live="polite" style={{ position: 'fixed', bottom: 24, right: 24, display: 'flex', flexDirection: 'column', gap: 8, zIndex: 300, maxWidth: 360, width: '100%', pointerEvents: 'none' }}>
+    <div role="alert" aria-live="polite" style={{
+      position: 'fixed',
+      bottom: isMobile ? 12 : 24,
+      right: isMobile ? 10 : 24,
+      left: isMobile ? 10 : 'auto',
+      display: 'flex', flexDirection: 'column', gap: 8, zIndex: 300,
+      maxWidth: isMobile ? 'none' : 360,
+      width: '100%', pointerEvents: 'none',
+    }}>
       {toasts.slice(-5).map(toast => {
         const bg = toast.type === 'success' ? '#1a3c1a' : toast.type === 'error' ? '#3c1a1a' : '#1a2a3c'
         const borderColor = toast.type === 'success' ? '#4ade80' : toast.type === 'error' ? '#ff6b6b' : '#444'

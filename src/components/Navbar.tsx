@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import type { Tab, Notification } from '../types'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 export function Navbar({ tab, setTab, account, entered, balance, loading, showWalletMenu, setShowWalletMenu, onConnect, onDisconnect, onSwitchNetwork, isWrongNetwork, notifications, setNotifications, showNotifications, setShowNotifications }: {
   tab: Tab
@@ -20,14 +21,9 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
   setShowNotifications: (v: boolean) => void
 }) {
   const notifRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768)
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -39,6 +35,15 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
 
   // Close mobile menu on tab change
   useEffect(() => { setMobileMenuOpen(false) }, [tab])
+
+  // Close mobile menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMobileMenuOpen(false)
+    }
+    if (mobileMenuOpen) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [mobileMenuOpen])
 
   const unreadCount = notifications.filter(n => !n.read).length
   const markAllRead = () => setNotifications(notifications.map(n => ({ ...n, read: true })))
@@ -76,7 +81,7 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
       }}>
 
         {/* Logo */}
-        <div onClick={() => setTab('market')} role="button" aria-label="Go to marketplace" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, cursor: 'pointer' }}>
+        <div onClick={() => setTab('market')} role="button" aria-label="Go to marketplace" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, cursor: 'pointer', padding: isMobile ? '4px 0' : 0 }}>
           <div style={{ width: 28, height: 28, background: '#ffd700', borderRadius: 6, flexShrink: 0 }}></div>
           {!isMobile && (
             <div>
@@ -123,7 +128,7 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
                 )}
               </button>
               {showNotifications && (
-                <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 6, background: '#111', border: '1px solid #333', borderRadius: 10, width: isMobile ? '90vw' : 320, maxWidth: 360, maxHeight: 360, overflow: 'auto', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}>
+                <div role="dialog" aria-label="Notifications" style={{ position: 'absolute', right: 0, top: '100%', marginTop: 6, background: '#111', border: '1px solid #333', borderRadius: 10, width: isMobile ? '90vw' : 320, maxWidth: 360, maxHeight: 360, overflow: 'auto', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid #222', position: 'sticky', top: 0, background: '#111' }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: '#e0e0e0' }}>Notifications{unreadCount > 0 ? ` (${unreadCount})` : ''}</span>
                     <div style={{ display: 'flex', gap: 8 }}>
@@ -161,8 +166,8 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
             <>
               {/* Balance — hide on mobile */}
               {!isMobile && (
-                <div style={{ background: '#151515', border: '1px solid #333', padding: '7px 12px', borderRadius: 8, fontSize: 11, fontFamily: "'Space Mono', monospace" }}>
-                  {balance ? `${(Number(balance.value) / 1e18).toFixed(4)} ${balance.symbol}` : '0.0000 zkLTC'}
+                <div style={{ background: '#151515', border: '1px solid #333', padding: '7px 12px', borderRadius: 8, fontSize: 11, fontFamily: "'Space Mono', monospace", minWidth: 110, textAlign: 'center' }}>
+                  {balance ? `${(Number(balance.value) / 1e18).toFixed(4)} ${balance.symbol}` : '— zkLTC'}
                 </div>
               )}
               <div style={{ position: 'relative' }}>
@@ -170,26 +175,27 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
                   onClick={() => setShowWalletMenu(!showWalletMenu)}
                   aria-label="Wallet menu"
                   aria-expanded={showWalletMenu}
+                  title={`${account.slice(0, 6)}...${account.slice(-4)}`}
                   style={{ background: '#151515', color: '#c0d8e8', border: '1px solid #333', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontSize: isMobile ? 11 : 12, fontFamily: "'Space Mono', monospace" }}>
                   {account.slice(0, 6)}...{account.slice(-4)}
                 </button>
                 {showWalletMenu && (
-                  <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, background: '#111', border: '1px solid #333', borderRadius: 8, minWidth: 130, zIndex: 100, overflow: 'hidden' }}>
+                  <div role="menu" aria-label="Wallet menu" style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, background: '#111', border: '1px solid #333', borderRadius: 8, minWidth: 150, zIndex: 100, overflow: 'hidden' }}>
                     {/* Balance on mobile inside wallet menu */}
                     {isMobile && balance && (
                       <div style={{ padding: '8px 14px', borderBottom: '1px solid #222', fontSize: 11, color: '#ffd700', fontFamily: "'Space Mono', monospace" }}>
                         {(Number(balance.value) / 1e18).toFixed(4)} {balance.symbol}
                       </div>
                     )}
-                    <button onClick={() => { setTab('profile'); setShowWalletMenu(false) }} aria-label="View profile" style={{ width: '100%', background: 'transparent', color: '#e0e0e0', border: 'none', padding: '8px 14px', textAlign: 'left', cursor: 'pointer', fontSize: 12, fontFamily: "'Space Mono', monospace" }}>
+                    <button onClick={() => { setTab('profile'); setShowWalletMenu(false) }} role="menuitem" aria-label="View profile" style={{ width: '100%', background: 'transparent', color: '#e0e0e0', border: 'none', padding: '8px 14px', textAlign: 'left', cursor: 'pointer', fontSize: 12, fontFamily: "'Space Mono', monospace" }}>
                       Profile
                     </button>
                     {isWrongNetwork && (
-                      <button onClick={() => { onSwitchNetwork(); setShowWalletMenu(false) }} style={{ width: '100%', background: 'transparent', color: '#ff6b6b', border: 'none', padding: '8px 14px', textAlign: 'left', cursor: 'pointer', fontSize: 12 }}>
+                      <button onClick={() => { onSwitchNetwork(); setShowWalletMenu(false) }} role="menuitem" aria-label="Switch network" style={{ width: '100%', background: 'transparent', color: '#ff6b6b', border: 'none', padding: '8px 14px', textAlign: 'left', cursor: 'pointer', fontSize: 12 }}>
                         Switch Network
                       </button>
                     )}
-                    <button onClick={onDisconnect} aria-label="Disconnect wallet" style={{ width: '100%', background: 'transparent', color: '#ff6b6b', border: 'none', padding: '8px 14px', textAlign: 'left', cursor: 'pointer', fontSize: 12, fontFamily: "'Space Mono', monospace" }}>
+                    <button onClick={onDisconnect} role="menuitem" aria-label="Disconnect wallet" style={{ width: '100%', background: 'transparent', color: '#ff6b6b', border: 'none', padding: '8px 14px', textAlign: 'left', cursor: 'pointer', fontSize: 12, fontFamily: "'Space Mono', monospace" }}>
                       Disconnect
                     </button>
                   </div>
@@ -211,8 +217,13 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
       </nav>
 
       {/* Mobile menu drawer */}
-      {isMobile && mobileMenuOpen && (
-        <div style={{ background: '#0a0a0a', borderBottom: '1px solid #222', padding: '8px 16px 16px', zIndex: 90 }}>
+      {isMobile && (
+        <div ref={menuRef} style={{
+          background: '#0a0a0a', borderBottom: '1px solid #222', padding: mobileMenuOpen ? '8px 16px 16px' : '0 16px',
+          zIndex: 90, overflow: 'hidden',
+          maxHeight: mobileMenuOpen ? 500 : 0,
+          transition: 'max-height 0.25s ease, padding 0.25s ease',
+        }}>
           {/* Network badge */}
           {entered && (
             <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'center' }}>
@@ -251,9 +262,9 @@ export function Navbar({ tab, setTab, account, entered, balance, loading, showWa
 
       {/* Wrong network banner */}
       {isWrongNetwork && (
-        <div style={{ background: '#ff6b6b', color: '#000', padding: '10px 24px', textAlign: 'center', fontWeight: 600, fontSize: 12, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-          Wrong network! Please switch to LitForge Testnet (Chain ID 4441)
-          <button onClick={onSwitchNetwork} style={{ background: '#000', color: '#c0d8e8', border: 'none', padding: '6px 14px', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: 11 }}>
+        <div style={{ background: '#ff6b6b', color: '#000', padding: isMobile ? '10px 14px' : '10px 24px', textAlign: 'center', fontWeight: 600, fontSize: isMobile ? 11 : 12, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span>Wrong network — switch to LitForge Testnet (Chain ID 4441)</span>
+          <button onClick={onSwitchNetwork} style={{ background: '#000', color: '#c0d8e8', border: 'none', padding: '8px 16px', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: 12, minHeight: 36 }}>
             SWITCH NETWORK
           </button>
         </div>

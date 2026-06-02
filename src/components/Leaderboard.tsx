@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import type { LeaderboardEntry, Job } from '../types'
 import { shorten } from '../utils'
 import { colors } from '../styles/tokens'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 function formatUsd(entry: LeaderboardEntry, ltcPrice: number | null): string {
-  if (ltcPrice === null) return '...'
+  if (ltcPrice === null) return '—'
   const usd = entry.earnedZkltc * ltcPrice + entry.earnedUsdc
   if (usd < 1) return '$' + usd.toFixed(2)
   if (usd < 1000) return '$' + usd.toFixed(0)
@@ -15,12 +16,12 @@ function fmt(n: number): string {
   return n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 }
 
-const TABLE_COLS = '36px 1fr 60px 100px 60px 60px'
+const TABLE_COLS = '36px 1fr 70px 100px 70px'
 
 function TableHeader() {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: TABLE_COLS, padding: '8px 4px', borderBottom: '1px solid #333', fontSize: 10, opacity: 0.45, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-      <span>#</span><span>Worker</span><span>Jobs</span><span>Earned</span><span>Pts</span><span></span>
+      <span>#</span><span>Worker</span><span>Jobs</span><span>Earned</span><span title="Points calculated from jobs completed and performance" style={{ cursor: 'help' }}>Pts ⓘ</span>
     </div>
   )
 }
@@ -33,16 +34,10 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
   onChainJobs?: Job[]
   onRetry?: () => void
 }) {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  const isMobile = useIsMobile()
   const PER_PAGE = 20
   const [page, setPage] = useState(1)
   const sliced = leaderboard.slice(3)
-
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768)
-    window.addEventListener('resize', handler)
-    return () => window.removeEventListener('resize', handler)
-  }, [])
   const totalPages = Math.max(1, Math.ceil(sliced.length / PER_PAGE))
 
   useEffect(() => { setPage(1) }, [leaderboard.length])
@@ -78,17 +73,21 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <PodiumCard rank={1} entry={leaderboard[0]} onView={onViewWorker} ltcPrice={ltcPrice} isMobile={isMobile} />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <div style={{ width: 2, height: 20, background: '#2a2a2a' }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
-            <PodiumCard rank={2} entry={leaderboard[1]} onView={onViewWorker} ltcPrice={ltcPrice} isMobile={isMobile} />
-            <PodiumCard rank={3} entry={leaderboard[2]} onView={onViewWorker} ltcPrice={ltcPrice} isMobile={isMobile} />
-          </div>
+          {(leaderboard[1] || leaderboard[2]) && (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div style={{ width: 2, height: 20, background: '#2a2a2a' }} />
+            </div>
+          )}
+          {(leaderboard[1] || leaderboard[2]) && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
+              <PodiumCard rank={2} entry={leaderboard[1]} onView={onViewWorker} ltcPrice={ltcPrice} isMobile={isMobile} />
+              <PodiumCard rank={3} entry={leaderboard[2]} onView={onViewWorker} ltcPrice={ltcPrice} isMobile={isMobile} />
+            </div>
+          )}
         </div>
       )}
 
-      {hasData && (
+      {hasData && sliced.length > 0 && (
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
           <span style={{ fontSize: 12, opacity: 0.35, textTransform: 'uppercase', letterSpacing: 1 }}>All Workers</span>
         </div>
@@ -96,9 +95,9 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
 
       {hasData && totalPages > 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} style={{ background: page <= 1 ? '#111' : '#1a1a1a', border: '1px solid #333', color: page <= 1 ? '#555' : '#ccc', padding: '4px 12px', borderRadius: 6, cursor: page <= 1 ? 'default' : 'pointer', fontSize: 11, fontWeight: 600 }}>◀ Prev</button>
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} aria-label="Previous page" style={{ background: page <= 1 ? '#111' : '#1a1a1a', border: '1px solid #333', color: page <= 1 ? '#555' : '#ccc', padding: '6px 14px', borderRadius: 6, cursor: page <= 1 ? 'default' : 'pointer', fontSize: 12, fontWeight: 600, minHeight: 32 }}>← Prev</button>
           <span style={{ fontSize: 12, opacity: 0.6 }}>Page {page} of {totalPages}</span>
-          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} style={{ background: page >= totalPages ? '#111' : '#1a1a1a', border: '1px solid #333', color: page >= totalPages ? '#555' : '#ccc', padding: '4px 12px', borderRadius: 6, cursor: page >= totalPages ? 'default' : 'pointer', fontSize: 11, fontWeight: 600 }}>Next ▶</button>
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} aria-label="Next page" style={{ background: page >= totalPages ? '#111' : '#1a1a1a', border: '1px solid #333', color: page >= totalPages ? '#555' : '#ccc', padding: '6px 14px', borderRadius: 6, cursor: page >= totalPages ? 'default' : 'pointer', fontSize: 12, fontWeight: 600, minHeight: 32 }}>Next →</button>
         </div>
       )}
 
@@ -112,7 +111,6 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
               <span className="skeleton" style={{ width: 40, height: 14, display: 'inline-block' }} />
               <span className="skeleton" style={{ width: 70, height: 24, display: 'inline-block' }} />
               <span className="skeleton" style={{ width: 30, height: 14, display: 'inline-block' }} />
-              <span className="skeleton" style={{ width: 40, height: 22, display: 'inline-block' }} />
             </div>
           ))}
         </div>
@@ -129,14 +127,9 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
               const rank = i + 4 + (page - 1) * PER_PAGE
               const last = i === Math.min(PER_PAGE, sliced.length - (page - 1) * PER_PAGE) - 1
               return (
-                <div key={w.worker} style={{ display: 'grid', gridTemplateColumns: TABLE_COLS, padding: '10px 4px', borderBottom: last ? 'none' : '1px solid #1a1a1a', alignItems: 'center', fontSize: 12 }}>
+                <div key={w.worker} onClick={() => onViewWorker(w.worker, w, rank)} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onViewWorker(w.worker, w, rank) }} style={{ display: 'grid', gridTemplateColumns: TABLE_COLS, padding: '10px 4px', borderBottom: last ? 'none' : '1px solid #1a1a1a', alignItems: 'center', fontSize: 12, cursor: 'pointer', borderRadius: 4, transition: 'background 0.15s' }}>
                   <span style={{ color: '#888', fontWeight: 700 }}>#{rank}</span>
-                  <button
-                    onClick={() => onViewWorker(w.worker, w, rank)}
-                    aria-label={`View worker #${rank}`}
-                    style={{ background: 'transparent', border: 'none', color: '#ffd700', cursor: 'pointer', fontSize: 11, textAlign: 'left', padding: 0, textDecoration: 'underline', textUnderlineOffset: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {shorten(w.worker)}
-                  </button>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#ffd700', fontSize: 11, textAlign: 'left', textDecoration: 'underline', textUnderlineOffset: 2 }}>{shorten(w.worker)}</span>
                   <span style={{ fontSize: 11, opacity: 0.7 }}>{w.jobsPaid}<span style={{ opacity: 0.3 }}>/</span>{w.jobsClaimed}</span>
                   <span style={{ lineHeight: 1.5 }}>
                     <span style={{ color: '#4ade80', fontWeight: 600, fontSize: 11 }}>{formatUsd(w, ltcPrice)}</span>
@@ -144,12 +137,6 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
                     {w.earnedUsdc > 0 && <span style={{ display: 'block', fontSize: 9, opacity: 0.55, color: '#2775ca' }}>{fmt(w.earnedUsdc)} USDC</span>}
                   </span>
                   <span style={{ color: '#4ade80', fontWeight: 600, fontSize: 12 }}>{w.points}</span>
-                  <button
-                    onClick={() => onViewWorker(w.worker, w, rank)}
-                    aria-label={`View worker #${rank} details`}
-                    style={{ background: '#1a1a1a', border: '1px solid #444', color: '#aaa', padding: '3px 8px', borderRadius: 4, cursor: 'pointer', fontSize: 10, fontWeight: 600 }}>
-                    VIEW
-                  </button>
                 </div>
               )
             })}
@@ -172,8 +159,8 @@ function PodiumCard({ rank, entry, onView, ltcPrice, isMobile }: {
   const bg = rank === 1 ? '#1a1a0a' : rank === 2 ? '#1a1a1a' : '#1a0a0a'
   const glow = rank === 1 ? '0 0 14px rgba(255, 215, 0, 0.12)' : rank === 2 ? '0 0 8px rgba(192, 192, 192, 0.08)' : '0 0 8px rgba(205, 127, 50, 0.08)'
   return (
-    <div style={{ background: bg, border: `2px solid ${border}`, borderRadius: 10, padding: isMobile ? '8px 12px' : '10px 20px', textAlign: 'center', minWidth: isMobile ? 140 : 220, opacity: entry ? 1 : 0.25, boxShadow: glow }}>
-      <div style={{ fontSize: 22, marginBottom: 2 }}>{medal}</div>
+    <div style={{ background: bg, border: `2px solid ${border}`, borderRadius: 10, padding: isMobile ? '8px 12px' : '10px 20px', textAlign: 'center', minWidth: isMobile ? 140 : 220, opacity: entry ? 1 : 0.3, boxShadow: glow }}>
+      {entry && <div style={{ fontSize: 22, marginBottom: 2 }}>{medal}</div>}
       {entry ? (
         <>
           <button

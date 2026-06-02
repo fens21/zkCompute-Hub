@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import type { Job, NewJobForm, PostSubTab } from '../types'
 import { PostedJobCard } from './PostedJobCard'
 import { colors, radii } from '../styles/tokens'
+import { useIsMobile, useWindowWidth } from '../hooks/useIsMobile'
 
 type ViewMode = 'grid' | 'list'
 
@@ -38,19 +39,13 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
   onCancelEdit: () => void
   address?: string
 }) {
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth)
-  const isMobile = windowWidth < 768
+  const windowWidth = useWindowWidth()
+  const isMobile = useIsMobile()
   const isTablet = windowWidth >= 768 && windowWidth < 1024
   const [postedViewMode, setPostedViewMode] = useState<ViewMode>('grid')
   const editDeadlineMs = editDeadline ? Date.parse(editDeadline) : NaN
   const editDeadlineInvalid = editDeadline ? isNaN(editDeadlineMs) : false
   const editDeadlinePast = !editDeadlineInvalid && !isNaN(editDeadlineMs) && editDeadlineMs <= Date.now()
-
-  useEffect(() => {
-    const handler = () => setWindowWidth(window.innerWidth)
-    window.addEventListener('resize', handler)
-    return () => window.removeEventListener('resize', handler)
-  }, [])
 
   return (
     <div>
@@ -213,7 +208,7 @@ function NewJobForm({ newJob, setNewJob, onPost, loading, isMobile }: {
     <div style={{ maxWidth: 600, margin: '0 auto' }}>
       <form onSubmit={e => { e.preventDefault(); setTouched({ title: true, reward: true, workers: true }); if (!canSubmit) return; onPost() }} style={{ background: colors.bgCard, padding: 24, border: `1px solid ${colors.borderLight}`, borderRadius: radii.lg, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
         <div style={{ ...flexRow(10), marginBottom: 14 }}>
-          <div style={{ flex: isMobile ? 'none' : 1 }}>
+          <div style={{ flex: isMobile ? '1 1 100%' : 1 }}>
             <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Payment Token</div>
             <select
               value={newJob.token}
@@ -226,7 +221,7 @@ function NewJobForm({ newJob, setNewJob, onPost, loading, isMobile }: {
             </select>
           </div>
           {newJob.token === 'custom' && (
-            <div style={{ flex: isMobile ? 'none' : 1 }}>
+            <div style={{ flex: isMobile ? '1 1 100%' : 1 }}>
               <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Token Contract (CA)</div>
               <input
                 placeholder="0x..."
@@ -243,7 +238,7 @@ function NewJobForm({ newJob, setNewJob, onPost, loading, isMobile }: {
       <textarea placeholder="Job Description" maxLength={500} value={newJob.description} onChange={e => update({ description: e.target.value })} aria-label="Job description" style={{ width: '100%', background: '#000', border: `1px solid ${colors.border}`, padding: 10, color: '#c0d8e8', marginBottom: 10, fontSize: 13, minHeight: 70, boxSizing: 'border-box', borderRadius: radii.sm, resize: 'none' }} />
       <textarea placeholder="Requirements (CPU/GPU/RAM)" maxLength={300} value={newJob.requirements} onChange={e => update({ requirements: e.target.value })} aria-label="Job requirements" style={{ width: '100%', background: '#000', border: `1px solid ${colors.border}`, padding: 10, color: '#c0d8e8', marginBottom: 10, fontSize: 13, minHeight: 70, boxSizing: 'border-box', borderRadius: radii.sm, resize: 'none' }} />
       <div style={{ ...flexRow(), marginBottom: 10 }}>
-        <div style={{ flex: isMobile ? 'none' : 1 }}>
+        <div style={{ flex: isMobile ? '1 1 100%' : 1 }}>
           <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Job Type</div>
           <select
             value={newJob.type}
@@ -263,7 +258,7 @@ function NewJobForm({ newJob, setNewJob, onPost, loading, isMobile }: {
             <option value="Custom">Custom</option>
           </select>
         </div>
-        <div style={{ flex: isMobile ? 'none' : 1 }}>
+        <div style={{ flex: isMobile ? '1 1 100%' : 1 }}>
           <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Difficulty</div>
           <select
             value={newJob.difficulty}
@@ -275,20 +270,20 @@ function NewJobForm({ newJob, setNewJob, onPost, loading, isMobile }: {
             <option value="Expert">Expert</option>
           </select>
         </div>
-        <div style={{ flex: isMobile ? 'none' : 1 }}>
+        <div style={{ flex: isMobile ? '1 1 100%' : 1 }}>
           <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Reward Amount ({tokenSymbol})</div>
           {touched.reward && rewardZero && <div style={{ fontSize: 9, color: colors.red, marginBottom: 4 }}>Reward must be greater than 0</div>}
-          <input type="number" step="0.01" min="0.01" required placeholder="e.g. 0.5" value={isNaN(newJob.reward) ? '' : newJob.reward} onChange={e => update({ reward: e.target.value === '' ? NaN : parseFloat(e.target.value) })} onBlur={() => setTouched(p => ({ ...p, reward: true }))} aria-label="Reward amount" style={{ width: '100%', background: '#000', border: `1px solid ${touched.reward && rewardZero ? colors.red : colors.border}`, padding: 10, color: '#c0d8e8', fontSize: 12, boxSizing: 'border-box', borderRadius: radii.sm }} />
+          <input type="number" step="0.01" min="0.01" required placeholder="e.g. 0.5" value={Number.isNaN(newJob.reward) ? '' : newJob.reward} onChange={e => { const v = e.target.value; update({ reward: v === '' ? 0 : parseFloat(v) }) }} onBlur={() => setTouched(p => ({ ...p, reward: true }))} aria-label="Reward amount" style={{ width: '100%', background: '#000', border: `1px solid ${touched.reward && rewardZero ? colors.red : colors.border}`, padding: 10, color: '#c0d8e8', fontSize: 12, boxSizing: 'border-box', borderRadius: radii.sm }} />
         </div>
       </div>
 
       <div style={{ ...flexRow(), marginBottom: 14 }}>
-        <div style={{ flex: isMobile ? 'none' : 1 }}>
+        <div style={{ flex: isMobile ? '1 1 100%' : 1 }}>
           <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Number of Workers</div>
           {touched.workers && workersInvalid && <div style={{ fontSize: 9, color: colors.red, marginBottom: 4 }}>At least 1 worker required</div>}
-          <input type="number" min={1} max={100} required placeholder="e.g. 3" value={isNaN(newJob.maxWorkers) ? '' : newJob.maxWorkers} onChange={e => { const v = e.target.value.replace(/^0+/, ''); update({ maxWorkers: v === '' ? NaN : parseInt(v) || 1 }) }} onBlur={() => setTouched(p => ({ ...p, workers: true }))} aria-label="Number of workers" style={{ width: '100%', background: '#000', border: `1px solid ${touched.workers && workersInvalid ? colors.red : colors.border}`, padding: 10, color: '#c0d8e8', fontSize: 12, boxSizing: 'border-box', borderRadius: radii.sm }} />
+          <input type="number" min={1} max={100} required placeholder="e.g. 3" value={Number.isNaN(newJob.maxWorkers) ? '' : newJob.maxWorkers} onChange={e => { const v = e.target.value.replace(/^0+/, ''); update({ maxWorkers: v === '' ? 1 : parseInt(v) || 1 }) }} onBlur={() => setTouched(p => ({ ...p, workers: true }))} aria-label="Number of workers" style={{ width: '100%', background: '#000', border: `1px solid ${touched.workers && workersInvalid ? colors.red : colors.border}`, padding: 10, color: '#c0d8e8', fontSize: 12, boxSizing: 'border-box', borderRadius: radii.sm }} />
         </div>
-        <div style={{ flex: isMobile ? 'none' : 1 }}>
+        <div style={{ flex: isMobile ? '1 1 100%' : 1 }}>
           <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Deadline</div>
           <input
             type="datetime-local"

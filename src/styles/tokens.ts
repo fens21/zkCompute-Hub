@@ -47,6 +47,7 @@ export const input = {
   padding: '9px 14px',
   color: colors.textPrimary,
   borderRadius: radii.sm,
+  boxSizing: 'border-box',
 }
 
 export const modalOverlay = {

@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import type { Job, LeaderboardEntry } from '../types'
+import type { Job, LeaderboardEntry, Tab } from '../types'
 import { generateIdenticon, shorten } from '../utils'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 type Badge = { icon: string; label: string; desc: string; color: string }
 
@@ -27,14 +28,14 @@ function fmt(n: number): string {
   return n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 }
 
-function formatUsd(usd: number, ltcPrice: number | null): string {
-  if (ltcPrice === null) return '...'
+function formatUsd(usd: number | null): string {
+  if (usd === null) return '—'
   if (usd < 1) return '$' + usd.toFixed(2)
   if (usd < 1000) return '$' + usd.toFixed(0)
   return '$' + (usd / 1000).toFixed(1) + 'k'
 }
 
-export function Profile({ account, myJobs, bio, skills, avatarUrl, setEditBio, setShowEditProfile, leaderboard, ltcPrice, loading, onRetry }: {
+export function Profile({ account, myJobs, bio, skills, avatarUrl, setEditBio, setShowEditProfile, leaderboard, ltcPrice, loading, onRetry, onNavigate }: {
   account: string
   myJobs: Job[]
   bio: string
@@ -46,10 +47,11 @@ export function Profile({ account, myJobs, bio, skills, avatarUrl, setEditBio, s
   ltcPrice: number | null
   loading?: boolean
   onRetry?: () => void
+  onNavigate?: (tab: Tab) => void
 }) {
+  const isMobile = useIsMobile()
   const [copied, setCopied] = useState(false)
-  const [tooltipBadge, setTooltipBadge] = useState<Badge | null>(null)
-  const [clickedBadge, setClickedBadge] = useState<Badge | null>(null)
+  const [activeBadge, setActiveBadge] = useState<Badge | null>(null)
 
   const ownEntry  = leaderboard.find(e => e.worker.toLowerCase() === account.toLowerCase())
   const rank      = leaderboard.findIndex(e => e.worker.toLowerCase() === account.toLowerCase()) + 1
@@ -58,7 +60,7 @@ export function Profile({ account, myJobs, bio, skills, avatarUrl, setEditBio, s
   const jobsPaid     = ownEntry?.jobsPaid    ?? 0
   const earnedZkltc  = ownEntry?.earnedZkltc ?? 0
   const earnedUsdc   = ownEntry?.earnedUsdc  ?? 0
-  const earnedUsd    = (ltcPrice ?? 0) * earnedZkltc + earnedUsdc
+  const earnedUsd    = ltcPrice !== null ? ltcPrice * earnedZkltc + earnedUsdc : earnedUsdc > 0 ? earnedUsdc : null
   const successRate  = jobsClaimed > 0 ? Math.round((jobsPaid / jobsClaimed) * 100) : 0
   const inProgress   = myJobs.filter(j => j.status === 'claimed').length
   const awaitingPayment = myJobs.filter(j => j.status === 'completed').length
@@ -81,11 +83,9 @@ export function Profile({ account, myJobs, bio, skills, avatarUrl, setEditBio, s
   const displayAvatar = avatarUrl || generateIdenticon(account)
   const hasEarnings = earnedZkltc + earnedUsdc > 0
 
-  const showBadgeTooltip = (badge: Badge) => tooltipBadge === badge || clickedBadge === badge
-
   return (
     <div style={{ maxWidth: 720, margin: '0 auto' }}>
-      <div style={{ background: '#111', padding: 28, border: '1px solid #333', borderRadius: 16 }}>
+      <div style={{ background: '#111', padding: isMobile ? 16 : 28, border: '1px solid #333', borderRadius: 16 }}>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
           <img
@@ -139,36 +139,30 @@ export function Profile({ account, myJobs, bio, skills, avatarUrl, setEditBio, s
           </div>
         </div>
 
-        {loading ? (
-          <div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 16 }}>
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} style={{ background: '#111', borderRadius: 8, padding: 12 }}>
-                  <div style={{ height: 10, width: '50%', background: '#222', borderRadius: 4, marginBottom: 8 }} />
-                  <div style={{ height: 18, width: '30%', background: '#222', borderRadius: 4 }} />
+          {loading ? (
+            <div>
+              {[1, 2].map(row => (
+                <div key={row} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: row === 1 ? 16 : 24 }}>
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} style={{ background: '#111', borderRadius: 8, padding: 12 }}>
+                      <div style={{ height: 10, width: '50%', background: '#222', borderRadius: 4, marginBottom: 8 }} />
+                      <div style={{ height: 18, width: '30%', background: '#222', borderRadius: 4 }} />
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 24 }}>
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} style={{ background: '#111', borderRadius: 8, padding: 12 }}>
-                  <div style={{ height: 10, width: '50%', background: '#222', borderRadius: 4, marginBottom: 8 }} />
-                  <div style={{ height: 18, width: '30%', background: '#222', borderRadius: 4 }} />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
+          ) : (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 16 }}>
               <MiniStat label="Rank"         value={rank > 0 ? `#${rank}` : '—'} color={rankColor} />
-              <MiniStat label="Points"       value={`${points} pts`}              highlight />
+              <MiniStat label="Points"       value={`${points} pts`}              color="#ffd700" />
               <MiniStat label="Success Rate" value={`${successRate}%`}
                 color={successRate >= 80 ? '#4ade80' : successRate >= 50 ? '#ffd700' : jobsClaimed === 0 ? '#555' : '#ff6b6b'} />
               <div style={{ background: '#111', padding: 12, borderRadius: 8, textAlign: 'center' }}>
                 <div style={{ fontSize: 9, opacity: 0.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>Total Earned</div>
                 <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4, color: '#4ade80' }}>
-                  {earnedZkltc + earnedUsdc === 0 ? '—' : formatUsd(earnedUsd, ltcPrice)}
+                  {formatUsd(earnedUsd)}
                 </div>
                 {earnedZkltc > 0 && <div style={{ fontSize: 11, color: '#ffd700', fontWeight: 600 }}>{fmt(earnedZkltc)} zkLTC</div>}
                 {earnedUsdc  > 0 && <div style={{ fontSize: 11, color: '#2775ca', fontWeight: 600 }}>{fmt(earnedUsdc)} USDC</div>}
@@ -191,15 +185,15 @@ export function Profile({ account, myJobs, bio, skills, avatarUrl, setEditBio, s
                   {badges.map((badge, i) => (
                     <div
                       key={i}
-                      onClick={() => setClickedBadge(clickedBadge === badge ? null : badge)}
-                      onMouseEnter={() => setTooltipBadge(badge)}
-                      onMouseLeave={() => setTooltipBadge(null)}
+                      onClick={() => setActiveBadge(activeBadge === badge ? null : badge)}
+                      onMouseEnter={() => setActiveBadge(badge)}
+                      onMouseLeave={() => setActiveBadge(null)}
                       style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: '#1a1a1a', border: `1px solid ${badge.color}33`, borderRadius: 999, fontSize: 11, color: badge.color, cursor: 'default' }}
                     >
                       <span>{badge.icon}</span>
                       <span style={{ fontWeight: 600 }}>{badge.label}</span>
-                      {showBadgeTooltip(badge) && (
-                        <div style={{ position: 'absolute', bottom: '120%', left: '50%', transform: 'translateX(-50%)', background: '#222', border: '1px solid #444', borderRadius: 6, padding: '5px 10px', fontSize: 10, color: '#ccc', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
+                      {activeBadge === badge && (
+                        <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', background: '#222', border: '1px solid #444', borderRadius: 6, padding: '5px 10px', fontSize: 10, color: '#ccc', whiteSpace: 'nowrap', zIndex: 10, marginBottom: 6 }}>
                           {badge.desc}
                         </div>
                       )}
@@ -246,8 +240,9 @@ export function Profile({ account, myJobs, bio, skills, avatarUrl, setEditBio, s
         <div style={{ borderTop: '1px solid #333', paddingTop: 16 }}>
           <div style={{ fontSize: 11, opacity: 0.5, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>Recent Activity</div>
           {recentActivity.length === 0 ? (
-            <div style={{ textAlign: 'center', opacity: 0.35, fontSize: 11, padding: '16px 0' }}>
-              No activity yet — claim a job to get started
+            <div style={{ textAlign: 'center', fontSize: 11, padding: '16px 0' }}>
+              <span style={{ opacity: 0.35 }}>No activity yet — </span>
+              {onNavigate && <span onClick={() => onNavigate('market')} style={{ color: '#ffd700', cursor: 'pointer', textDecoration: 'underline', fontWeight: 600 }}>browse jobs</span>}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -273,11 +268,11 @@ export function Profile({ account, myJobs, bio, skills, avatarUrl, setEditBio, s
   )
 }
 
-function MiniStat({ label, value, highlight, color }: { label: string; value: string; highlight?: boolean; color?: string }) {
+function MiniStat({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div style={{ background: '#111', padding: 12, borderRadius: 8, textAlign: 'center' }}>
       <div style={{ fontSize: 10, opacity: 0.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
-      <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4, color: color ?? (highlight ? '#ffd700' : '#c0c0c0') }}>{value}</div>
+      <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4, color: color ?? '#c0c0c0' }}>{value}</div>
     </div>
   )
 }

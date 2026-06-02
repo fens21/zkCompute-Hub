@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import type { Job, SortBy } from '../types'
 import { shorten, getDeadlineMs, formatTimeRemaining, formatDeadlineDate, COUNTDOWN_REFRESH } from '../utils'
 import { colors, radii, fontSizes, card, input } from '../styles/tokens'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 const JOB_TYPE_ICONS: Record<string, string> = {
   ML: '🧠', ZK: '🔐', Render: '🎬', 'AI Inference': '🤖',
@@ -31,13 +32,7 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
   const [page, setPage] = useState(1)
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [dismissed, setDismissed] = useState(false)
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
-
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768)
-    window.addEventListener('resize', handler)
-    return () => window.removeEventListener('resize', handler)
-  }, [])
+  const isMobile = useIsMobile()
 
   const totalPages = Math.max(1, Math.ceil(jobs.length / PER_PAGE))
   const pagedJobs = jobs.slice((page - 1) * PER_PAGE, page * PER_PAGE)

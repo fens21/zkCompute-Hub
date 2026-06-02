@@ -4,15 +4,29 @@
    import './mobile.css'
    ============================================ */
 
+/* ── Base mobile: tap highlight, touch-action, overscroll ── */
+@media (max-width: 768px) {
+  * {
+    -webkit-tap-highlight-color: rgba(255, 215, 0, 0.2);
+  }
+
+  button, a, [role="button"], select, summary {
+    touch-action: manipulation;
+  }
+
+  input, textarea {
+    touch-action: manipulation;
+    font-size: 16px; /* Cegah zoom otomatis di iOS */
+  }
+}
+
 /* ── Layout utama ── */
 @media (max-width: 768px) {
-  /* Padding horizontal konsisten di semua halaman */
   #root > * {
     padding-left: 14px !important;
     padding-right: 14px !important;
   }
 
-  /* Container wrapper di App.tsx / halaman utama */
   .app-container,
   [class*="container"] {
     padding-left: 14px !important;
@@ -22,7 +36,6 @@
 
 /* ── Navbar ── */
 @media (max-width: 768px) {
-  /* Navbar: wrap items, kurangi gap */
   nav,
   header,
   [class*="navbar"],
@@ -32,7 +45,6 @@
     padding: 10px 14px !important;
   }
 
-  /* Wallet address / tombol connect */
   nav button,
   header button {
     font-size: 12px !important;
@@ -40,9 +52,16 @@
   }
 }
 
+/* ── Mobile menu drawer ── */
+@media (max-width: 768px) {
+  [class*="menu-drawer"] {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 /* ── Tab navigasi ── */
 @media (max-width: 768px) {
-  /* Tab row: scroll horizontal jika tidak muat */
   [role="tablist"],
   [class*="tab-bar"],
   [class*="TabBar"] {
@@ -69,7 +88,6 @@
 
 /* ── Grid cards ── */
 @media (max-width: 768px) {
-  /* Semua grid job: 1 kolom di mobile */
   .job-grid {
     grid-template-columns: 1fr !important;
     gap: 12px !important;
@@ -78,12 +96,10 @@
 
 /* ── Job cards ── */
 @media (max-width: 768px) {
-  /* Pastikan tombol DETAILS & CLAIM mudah diklik (min 44px touch target) */
   button {
     min-height: 36px !important;
   }
 
-  /* Tombol aksi utama lebih tinggi */
   button[aria-label*="Claim"],
   button[aria-label*="claim"],
   button[aria-label*="details"],
@@ -92,7 +108,6 @@
     font-size: 13px !important;
   }
 
-  /* Carousel dot indicators — tetap lingkaran, jangan kena min-height */
   div[style*="gap: 5"] > button {
     min-height: 7px !important;
     width: 7px !important;
@@ -103,13 +118,11 @@
 
 /* ── Stats grid ── */
 @media (max-width: 768px) {
-  /* Stats cards: 2 kolom di mobile (cukup untuk 4 stat cards) */
   div[style*="minmax(200px"] {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 10px !important;
   }
 
-  /* Stats value lebih kecil agar tidak overflow */
   div[style*="fontSize: 22"] {
     font-size: 18px !important;
   }
@@ -117,12 +130,10 @@
 
 /* ── Leaderboard table ── */
 @media (max-width: 768px) {
-  /* Paksa leaderboard table bisa scroll horizontal */
   div[style*="minWidth: 500"] {
     min-width: 460px !important;
   }
 
-  /* Wrapper table: pastikan bisa di-scroll */
   div[style*="overflowX: auto"] {
     -webkit-overflow-scrolling: touch !important;
   }
@@ -130,45 +141,44 @@
 
 /* ── Podium leaderboard ── */
 @media (max-width: 768px) {
-  /* Podium cards lebih kecil */
   div[style*="minWidth: 220"] {
     min-width: 140px !important;
     padding: 8px 12px !important;
   }
 }
 
-/* ── Form / Post Job ── */
+/* ── Modal / Dialog ── */
 @media (max-width: 768px) {
-  /* Form input & select full-width */
-  input[style*="boxSizing: border-box"],
-  select[style*="boxSizing: border-box"],
-  textarea[style*="boxSizing: border-box"] {
-    font-size: 16px !important; /* Cegah zoom otomatis di iOS */
+  /* Modal overlay: cegah scroll background */
+  div[role="dialog"],
+  div[aria-modal="true"] {
+    overscroll-behavior: contain;
   }
 
-  /* Row 2-kolom di form: stack jadi 1 kolom */
-  div[style*="display: flex"][style*="gap: 12"] > div[style*="flex: 1"] {
-    flex: unset !important;
-    width: 100% !important;
+  div[role="dialog"] > div,
+  div[aria-modal="true"] > div {
+    width: 92% !important;
+    max-width: 92% !important;
+    padding: 20px 16px !important;
+    max-height: 85dvh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 }
 
-/* ── Modal / Dialog ── */
+/* ── Toast container ── */
 @media (max-width: 768px) {
-  /* Modal: full width di mobile */
-  div[role="dialog"] > div,
-  div[aria-modal="true"] > div {
-    width: 95% !important;
-    max-width: 95% !important;
-    padding: 20px 16px !important;
-    max-height: 90vh !important;
-    overflow-y: auto !important;
+  div[role="alert"][aria-live="polite"] {
+    right: 10px !important;
+    left: 10px !important;
+    bottom: 12px !important;
+    max-width: none !important;
+    width: auto !important;
   }
 }
 
 /* ── Carousel banner ── */
 @media (max-width: 768px) {
-  /* Carousel: padding lebih kecil */
   div[style*="borderRadius"][style*="marginBottom: 24"] {
     padding: 10px 12px !important;
     gap: 8px !important;
@@ -190,7 +200,6 @@
 
 /* ── Typography scaling ── */
 @media (max-width: 768px) {
-  /* Heading marketplace */
   h1[style*="fontSize: 28"],
   h1[style*="fontSize: 32"],
   h1[style*="fontSize: 36"] {
@@ -206,11 +215,4 @@
 /* ── Scroll behavior ── */
 html {
   scroll-behavior: smooth;
-}
-
-/* Smooth scrolling untuk semua container */
-@media (max-width: 768px) {
-  * {
-    -webkit-tap-highlight-color: rgba(255, 215, 0, 0.2);
-  }
 }

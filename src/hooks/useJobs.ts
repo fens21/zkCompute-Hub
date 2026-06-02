@@ -5,7 +5,6 @@ import { config, CONTRACT_ADDRESS } from '../config/chain'
 import type { Job } from '../types'
 import { fetchJobMetadata } from './useJobMetadata'
 
-const DEMO_JOBS: Job[] = []
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 function parseJob(raw: [bigint, string, string, bigint, string, string, bigint, bigint, boolean]): Job {
@@ -105,10 +104,9 @@ export function useJobs(autoFetch: boolean) {
       } catch { /* table may not exist yet */ }
 
       const merged = mergeMetadata(onChain, metaMap)
-      const mergedWithDemo = mergeMetadata([...onChain, ...DEMO_JOBS], metaMap)
 
       setOnChainJobs(merged)
-      setJobs(mergedWithDemo)
+      setJobs(merged)
     } catch (e) {
       console.error('Failed to fetch on-chain jobs:', e)
       setError('Failed to load jobs. Please check your wallet connection.')

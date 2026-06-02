@@ -6,9 +6,6 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 const MYJOBS_KEY = 'zkcompute_myjobs_v2'
 const WORKER_KEY = 'zkcompute_workers'
 
-// Supabase proxy base URL (server side)
-const PROXY_BASE = '/api'
-
 function loadMyJobs(address?: string): Job[] {
   if (!address) return []
   const addr = address.toLowerCase()
@@ -41,7 +38,7 @@ function saveMyJobs(address: string, jobs: Job[]) {
 
 async function saveActivityToSupabase(status: string, job: Job, workerAddr: string, proofUrl?: string, proofHash?: string) {
   try {
-    const res = await fetch(`${PROXY_BASE}/activities`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/activities`, {
       method: 'POST',
       headers: {
         apikey: SUPABASE_KEY,
@@ -71,7 +68,7 @@ async function saveActivityToSupabase(status: string, job: Job, workerAddr: stri
 export async function fetchWorkerActivities(workerAddr: string): Promise<(WorkerEvent & { job?: Job })[]> {
   try {
     const res = await fetch(
-      `${PROXY_BASE}/activities?worker=eq.${workerAddr.toLowerCase()}&order=created_at.desc&limit=50&select=*`,
+      `${SUPABASE_URL}/rest/v1/activities?worker=eq.${workerAddr.toLowerCase()}&order=created_at.desc&limit=50&select=*`,
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
     )
     const data = await res.json()
@@ -103,16 +100,16 @@ export async function fetchWorkerActivities(workerAddr: string): Promise<(Worker
   }
 }
 
-export async function fetchProofUrl(jobId: number, workerAddr: string): Promise<string | null> {
+export async function fetchProofField(jobId: number, workerAddr: string, field: 'proof_url' | 'proof_hash'): Promise<string | null> {
   try {
     const res = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/activities?job_id=eq.${jobId}&worker=eq.${workerAddr.toLowerCase()}&status=eq.completed&select=proof_url&order=created_at.desc&limit=1`,
+      `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/activities?job_id=eq.${jobId}&worker=eq.${workerAddr.toLowerCase()}&status=eq.completed&select=${field}&order=created_at.desc&limit=1`,
       { headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` } }
     )
     if (!res.ok) return null
     const data = await res.json()
-    if (Array.isArray(data) && data.length > 0 && data[0].proof_url) {
-      return data[0].proof_url
+    if (Array.isArray(data) && data.length > 0 && data[0][field]) {
+      return data[0][field]
     }
     return null
   } catch {
@@ -120,22 +117,8 @@ export async function fetchProofUrl(jobId: number, workerAddr: string): Promise<
   }
 }
 
-export async function fetchProofHash(jobId: number, workerAddr: string): Promise<string | null> {
-  try {
-    const res = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/activities?job_id=eq.${jobId}&worker=eq.${workerAddr.toLowerCase()}&status=eq.completed&select=proof_hash&order=created_at.desc&limit=1`,
-      { headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` } }
-    )
-    if (!res.ok) return null
-    const data = await res.json()
-    if (Array.isArray(data) && data.length > 0 && data[0].proof_hash) {
-      return data[0].proof_hash
-    }
-    return null
-  } catch {
-    return null
-  }
-}
+export const fetchProofUrl = (jobId: number, workerAddr: string) => fetchProofField(jobId, workerAddr, 'proof_url')
+export const fetchProofHash = (jobId: number, workerAddr: string) => fetchProofField(jobId, workerAddr, 'proof_hash')
 
 export function saveWorkerEvent(status: 'claimed' | 'completed' | 'paid', job: Job, workerAddr?: string, proofUrl?: string, proofHash?: string) {
   if (!workerAddr) return
@@ -184,7 +167,7 @@ export function getLeaderboardLocal() {
 }
 
 export function useMyJobs(address: string | undefined, _syncEnabled: boolean = true) {
-  void _syncEnabled
+  // _syncEnabled reserved for future use
   const [myJobs, setMyJobsState] = useState<Job[]>([])
   const loadedRef = useRef(false)
   const addressRef = useRef<string | undefined>(undefined)

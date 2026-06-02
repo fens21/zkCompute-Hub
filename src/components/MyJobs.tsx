@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { Job } from '../types'
 import { getDeadlineMs, formatTimeRemaining, formatDeadlineDate, COUNTDOWN_REFRESH } from '../utils'
 import { colors, radii } from '../styles/tokens'
+import { useIsMobile, useWindowWidth } from '../hooks/useIsMobile'
 
 const JOB_TYPE_ICONS: Record<string, string> = {
   ML: '🧠', ZK: '🔐', Render: '🎬', 'AI Inference': '🤖',
@@ -23,16 +24,10 @@ export function MyJobs({ myJobs, onOpenProof, onUnclaim, loading, submittingProo
 }) {
   const [now, setNow] = useState(Date.now())
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth)
-  const isMobile = windowWidth < 768
+  const windowWidth = useWindowWidth()
+  const isMobile = useIsMobile()
   const isTablet = windowWidth >= 768 && windowWidth < 1024
   const navigate = useNavigate()
-
-  useEffect(() => {
-    const handler = () => setWindowWidth(window.innerWidth)
-    window.addEventListener('resize', handler)
-    return () => window.removeEventListener('resize', handler)
-  }, [])
 
   useEffect(() => {
     const id = setInterval(() => {

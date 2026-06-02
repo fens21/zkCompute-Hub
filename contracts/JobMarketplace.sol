@@ -26,6 +26,7 @@ contract JobMarketplace {
         uint256 maxWorkers;
         uint256 claimedCount;
         bool active;
+        uint256 deadline; // block.timestamp deadline, 0 = no deadline
     }
 
     uint256 public jobCount;
@@ -47,13 +48,16 @@ contract JobMarketplace {
     function postJobNative(
         string memory _title,
         string memory _type,
-        uint256 _maxWorkers
+        uint256 _maxWorkers,
+        uint256 _deadline
     ) external payable {
         require(msg.value > 0, "Reward required");
         require(_maxWorkers > 0, "Need at least 1 worker");
-        require(msg.value >= _maxWorkers, "Value too small");
+        require(_maxWorkers <= msg.value, "Value too small");
+        require(_deadline == 0 || _deadline > block.timestamp, "Deadline must be in future");
 
         uint256 rewardPerWorker = msg.value / _maxWorkers;
+        uint256 remainder = msg.value - (rewardPerWorker * _maxWorkers);
 
         jobCount++;
         jobs[jobCount] = Job({
@@ -65,20 +69,29 @@ contract JobMarketplace {
             poster: msg.sender,
             maxWorkers: _maxWorkers,
             claimedCount: 0,
-            active: true
+            active: true,
+            deadline: _deadline
         });
 
-        emit JobPosted(jobCount, msg.sender, msg.value, address(0));
+        // Refund remainder dust to poster
+        if (remainder > 0) {
+            (bool sent, ) = payable(msg.sender).call{value: remainder}("");
+            require(sent, "Remainder refund failed");
+        }
+
+        emit JobPosted(jobCount, msg.sender, msg.value - remainder, address(0));
     }
 
     function postJobUSDC(
         string memory _title,
         string memory _type,
         uint256 _reward,
-        uint256 _maxWorkers
+        uint256 _maxWorkers,
+        uint256 _deadline
     ) external {
         require(_reward > 0, "Reward required");
         require(_maxWorkers > 0, "Need at least 1 worker");
+        require(_deadline == 0 || _deadline > block.timestamp, "Deadline must be in future");
 
         uint256 totalAmount = _reward * _maxWorkers;
         require(IERC20(USDC).transferFrom(msg.sender, address(this), totalAmount), "USDC transfer failed");
@@ -93,15 +106,22 @@ contract JobMarketplace {
             poster: msg.sender,
             maxWorkers: _maxWorkers,
             claimedCount: 0,
-            active: true
+            active: true,
+            deadline: _deadline
         });
 
         emit JobPosted(jobCount, msg.sender, totalAmount, USDC);
     }
 
+    function isExpired(uint256 _jobId) public view returns (bool) {
+        Job storage job = jobs[_jobId];
+        return job.deadline > 0 && block.timestamp > job.deadline;
+    }
+
     function claimJob(uint256 _jobId) external {
         Job storage job = jobs[_jobId];
         require(job.active, "Job not active");
+        require(!isExpired(_jobId), "Job has expired");
         require(job.claimedCount < job.maxWorkers, "No slots left");
         require(!hasClaimed[_jobId][msg.sender], "Already claimed");
 
@@ -166,7 +186,7 @@ contract JobMarketplace {
         emit DisputeRaised(_jobId, _worker, msg.sender, _reason);
     }
 
-    function resolveDispute(uint256 _jobId, address _worker, bool _acceptCancellation) external {
+    function resolveDispute(uint256 _jobId, address _worker, bool _acceptCancellation) external nonReentrant {
         require(disputed[_jobId][_worker], "No dispute");
         disputed[_jobId][_worker] = false;
 
