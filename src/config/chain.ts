@@ -15,7 +15,11 @@ export const litforge = {
   }
 } as const satisfies Chain
 
-export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || '0xaaf4555aad78b7981e4e619124a28fc137faffd8'
+// Hardcoded to the fresh deployment contract so that the live site
+// (even if old VITE_CONTRACT_ADDRESS is still in Vercel dashboard env)
+// shows empty Marketplace / Posted Jobs.
+// Update this + Vercel env var when you do another fresh deploy.
+export const CONTRACT_ADDRESS = '0xaaf4555aad78b7981e4e619124a28fc137faffd8'
 export const USDC_ADDRESS = '0xd5118dEe968d1533B2A57aB66C266010AD8957fa'
 
 export const config = createConfig({
