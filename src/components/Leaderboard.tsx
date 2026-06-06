@@ -1,26 +1,14 @@
 import { useState, useEffect } from 'react'
 import type { LeaderboardEntry, Job } from '../types'
-import { shorten } from '../utils'
-import { colors } from '../styles/tokens'
+import { shorten, formatUsd, fmt } from '../utils'
+import { colors, radii, fontSizes } from '../styles/tokens'
 import { useIsMobile } from '../hooks/useIsMobile'
-
-function formatUsd(entry: LeaderboardEntry, ltcPrice: number | null): string {
-  if (ltcPrice === null) return '—'
-  const usd = entry.earnedZkltc * ltcPrice + entry.earnedUsdc
-  if (usd < 1) return '$' + usd.toFixed(2)
-  if (usd < 1000) return '$' + usd.toFixed(0)
-  return '$' + (usd / 1000).toFixed(1) + 'k'
-}
-
-function fmt(n: number): string {
-  return n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })
-}
 
 const TABLE_COLS = '36px 1fr 70px 100px 70px'
 
 function TableHeader() {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: TABLE_COLS, padding: '8px 4px', borderBottom: '1px solid #333', fontSize: 10, opacity: 0.45, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: TABLE_COLS, padding: '8px 4px', borderBottom: `1px solid ${colors.borderLight}`, fontSize: fontSizes.xs, opacity: 0.45, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
       <span>#</span><span>Worker</span><span>Jobs</span><span>Earned</span><span title="Points calculated from jobs completed and performance" style={{ cursor: 'help' }}>Pts ⓘ</span>
     </div>
   )
@@ -49,12 +37,12 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
     return (
       <div>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 24, position: 'relative' }}>
-          <h2 style={{ fontSize: 20, margin: 0, color: colors.textPrimary }}>Top Worker Leaderboard</h2>
+          <h2 style={{ fontSize: 20, margin: 0, color: colors.textPrimary }}>Top Worker</h2>
         </div>
-        <div style={{ background: '#111', border: '1px solid #ff6b6b', borderRadius: 12, padding: 40, textAlign: 'center' }}>
-          <div style={{ fontSize: 28, marginBottom: 12 }}>⚠️</div>
-          <div style={{ opacity: 0.7, marginBottom: 16, fontSize: 13 }}>Failed to load leaderboard data.</div>
-          {onRetry && <button onClick={onRetry} style={{ background: '#ffd700', color: '#000', border: 'none', padding: '10px 24px', fontWeight: 700, borderRadius: 8, cursor: 'pointer' }}>RETRY</button>}
+        <div style={{ background: colors.bgCard, border: `1px solid ${colors.red}`, borderRadius: radii.xl, padding: 40, textAlign: 'center' }}>
+          <div style={{ fontSize: 28, marginBottom: 12 }}>!</div>
+          <div style={{ opacity: 0.7, marginBottom: 16, fontSize: fontSizes.md }}>Failed to load Top Worker data.</div>
+          {onRetry && <button onClick={onRetry} style={{ background: colors.gold, color: '#000', border: 'none', padding: '10px 24px', fontWeight: 700, borderRadius: radii.md, cursor: 'pointer' }}>RETRY</button>}
         </div>
       </div>
     )
@@ -63,10 +51,10 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 8, position: 'relative' }}>
-        <h2 style={{ fontSize: 20, margin: 0, color: colors.textPrimary }}>Top Worker Leaderboard</h2>
-        {onRetry && <div style={{ position: 'absolute', right: 0 }}><button onClick={onRetry} aria-label="Refresh leaderboard" style={{ background: '#222', color: '#888', border: 'none', width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Refresh">↻</button></div>}
+        <h2 style={{ fontSize: 20, margin: 0, color: colors.textPrimary }}>Top Worker</h2>
+        {onRetry && <div style={{ position: 'absolute', right: 0 }}><button onClick={onRetry} aria-label="Refresh leaderboard" style={{ background: colors.bgElevated, color: colors.textMuted, border: 'none', width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, borderRadius: radii.sm, cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Refresh data">↻</button></div>}
       </div>
-      <p style={{ textAlign: 'center', opacity: 0.6, fontSize: 12, marginBottom: 24 }}>Rankings based on jobs completed and points earned on-chain</p>
+      <p style={{ textAlign: 'center', opacity: 0.6, fontSize: fontSizes.base, marginBottom: 24 }}>Rankings based on jobs completed and points earned on-chain</p>
 
       {hasData && (
         <div style={{ marginBottom: 32 }}>
@@ -75,7 +63,7 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
           </div>
           {(leaderboard[1] || leaderboard[2]) && (
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <div style={{ width: 2, height: 20, background: '#2a2a2a' }} />
+              <div style={{ width: 2, height: 20, background: colors.border }} />
             </div>
           )}
           {(leaderboard[1] || leaderboard[2]) && (
@@ -89,54 +77,53 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
 
       {hasData && sliced.length > 0 && (
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
-          <span style={{ fontSize: 12, opacity: 0.35, textTransform: 'uppercase', letterSpacing: 1 }}>All Workers</span>
+          <span style={{ fontSize: fontSizes.base, opacity: 0.35, textTransform: 'uppercase', letterSpacing: 1 }}>All Workers</span>
         </div>
       )}
 
       {hasData && totalPages > 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} aria-label="Previous page" style={{ background: page <= 1 ? '#111' : '#1a1a1a', border: '1px solid #333', color: page <= 1 ? '#555' : '#ccc', padding: '6px 14px', borderRadius: 6, cursor: page <= 1 ? 'default' : 'pointer', fontSize: 12, fontWeight: 600, minHeight: 32 }}>← Prev</button>
-          <span style={{ fontSize: 12, opacity: 0.6 }}>Page {page} of {totalPages}</span>
-          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} aria-label="Next page" style={{ background: page >= totalPages ? '#111' : '#1a1a1a', border: '1px solid #333', color: page >= totalPages ? '#555' : '#ccc', padding: '6px 14px', borderRadius: 6, cursor: page >= totalPages ? 'default' : 'pointer', fontSize: 12, fontWeight: 600, minHeight: 32 }}>Next →</button>
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} aria-label="Previous page" style={{ background: page <= 1 ? colors.bgCard : colors.bgElevated, border: `1px solid ${colors.borderLight}`, color: page <= 1 ? colors.border : colors.textSecondary, padding: '6px 14px', borderRadius: radii.sm, cursor: page <= 1 ? 'default' : 'pointer', fontSize: fontSizes.base, fontWeight: 600, minHeight: isMobile ? 44 : 32 }}>← Prev</button>
+          <span style={{ fontSize: fontSizes.base, opacity: 0.6 }}>Page {page} of {totalPages} ({sliced.length} total)</span>
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} aria-label="Next page" style={{ background: page >= totalPages ? colors.bgCard : colors.bgElevated, border: `1px solid ${colors.borderLight}`, color: page >= totalPages ? colors.border : colors.textSecondary, padding: '6px 14px', borderRadius: radii.sm, cursor: page >= totalPages ? 'default' : 'pointer', fontSize: fontSizes.base, fontWeight: 600, minHeight: isMobile ? 44 : 32 }}>Next →</button>
         </div>
       )}
 
       {leaderboardLoading ? (
-        <div style={{ background: '#111', border: '1px solid #333', borderRadius: 12, padding: '8px 12px' }}>
+        <div style={{ background: colors.bgCard, border: `1px solid ${colors.borderLight}`, borderRadius: radii.xl, padding: '8px 12px' }}>
           <TableHeader />
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: TABLE_COLS, padding: '10px 4px', borderBottom: i < 4 ? '1px solid #1a1a1a' : 'none', alignItems: 'center' }}>
-              <span className="skeleton" style={{ width: 24, height: 14, display: 'inline-block' }} />
-              <span className="skeleton" style={{ width: '60%', height: 14, display: 'inline-block' }} />
-              <span className="skeleton" style={{ width: 40, height: 14, display: 'inline-block' }} />
-              <span className="skeleton" style={{ width: 70, height: 24, display: 'inline-block' }} />
-              <span className="skeleton" style={{ width: 30, height: 14, display: 'inline-block' }} />
+          {['Rank', 'Worker', 'Jobs', 'Earned', 'Points'].map((label, i) => (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: TABLE_COLS, padding: '10px 4px', borderBottom: i < 4 ? `1px solid ${colors.bgElevated}` : 'none', alignItems: 'center' }}>
+              <div style={{ height: 12, width: 24, background: colors.bgElevated, borderRadius: radii.sm }} aria-label={`Loading ${label}`} />
+              <div style={{ height: 12, width: '60%', background: colors.bgElevated, borderRadius: radii.sm }} aria-label={`Loading ${label}`} />
+              <div style={{ height: 12, width: 40, background: colors.bgElevated, borderRadius: radii.sm }} aria-label={`Loading ${label}`} />
+              <div style={{ height: 20, width: 70, background: colors.bgElevated, borderRadius: radii.sm }} aria-label={`Loading ${label}`} />
+              <div style={{ height: 12, width: 30, background: colors.bgElevated, borderRadius: radii.sm }} aria-label={`Loading ${label}`} />
             </div>
           ))}
         </div>
       ) : !hasData ? (
-        <div style={{ background: '#111', border: '1px solid #333', borderRadius: 12, padding: 40, textAlign: 'center' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🏆</div>
+        <div style={{ background: colors.bgCard, border: `1px solid ${colors.borderLight}`, borderRadius: radii.xl, padding: 40, textAlign: 'center' }}>
           <div style={{ marginBottom: 16, opacity: 0.7 }}>No workers yet &mdash; be the first to claim a job!</div>
         </div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <div style={{ background: '#111', border: '1px solid #333', borderRadius: 12, padding: '8px 12px', minWidth: 500 }}>
+          <div style={{ background: colors.bgCard, border: `1px solid ${colors.borderLight}`, borderRadius: radii.xl, padding: '8px 12px', minWidth: 500 }}>
             <TableHeader />
             {sliced.slice((page - 1) * PER_PAGE, page * PER_PAGE).map((w, i) => {
               const rank = i + 4 + (page - 1) * PER_PAGE
               const last = i === Math.min(PER_PAGE, sliced.length - (page - 1) * PER_PAGE) - 1
               return (
-                <div key={w.worker} onClick={() => onViewWorker(w.worker, w, rank)} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onViewWorker(w.worker, w, rank) }} style={{ display: 'grid', gridTemplateColumns: TABLE_COLS, padding: '10px 4px', borderBottom: last ? 'none' : '1px solid #1a1a1a', alignItems: 'center', fontSize: 12, cursor: 'pointer', borderRadius: 4, transition: 'background 0.15s' }}>
-                  <span style={{ color: '#888', fontWeight: 700 }}>#{rank}</span>
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#ffd700', fontSize: 11, textAlign: 'left', textDecoration: 'underline', textUnderlineOffset: 2 }}>{shorten(w.worker)}</span>
-                  <span style={{ fontSize: 11, opacity: 0.7 }}>{w.jobsPaid}<span style={{ opacity: 0.3 }}>/</span>{w.jobsClaimed}</span>
+                <div key={w.worker} onClick={() => onViewWorker(w.worker, w, rank)} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onViewWorker(w.worker, w, rank) }} style={{ display: 'grid', gridTemplateColumns: TABLE_COLS, padding: '10px 4px', borderBottom: last ? 'none' : `1px solid ${colors.bgElevated}`, alignItems: 'center', fontSize: fontSizes.base, cursor: 'pointer', borderRadius: radii.sm, transition: 'background 0.15s' }}>
+                  <span style={{ color: colors.textMuted, fontWeight: 700 }}>#{rank}</span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: colors.gold, fontSize: fontSizes.sm, textAlign: 'left', textDecoration: 'underline', textUnderlineOffset: 2 }}>{shorten(w.worker)}</span>
+                  <span style={{ fontSize: fontSizes.sm, opacity: 0.7 }}>{w.jobsPaid}<span style={{ opacity: 0.3 }}>/</span>{w.jobsClaimed}</span>
                   <span style={{ lineHeight: 1.5 }}>
-                    <span style={{ color: '#4ade80', fontWeight: 600, fontSize: 11 }}>{formatUsd(w, ltcPrice)}</span>
-                    {w.earnedZkltc > 0 && <span style={{ display: 'block', fontSize: 9, opacity: 0.55, color: '#ffd700' }}>{fmt(w.earnedZkltc)} zkLTC</span>}
-                    {w.earnedUsdc > 0 && <span style={{ display: 'block', fontSize: 9, opacity: 0.55, color: '#2775ca' }}>{fmt(w.earnedUsdc)} USDC</span>}
+                    <span style={{ color: colors.green, fontWeight: 600, fontSize: fontSizes.sm }}>{formatUsd(ltcPrice !== null ? w.earnedZkltc * ltcPrice + w.earnedUsdc : null)}</span>
+                    {w.earnedZkltc > 0 && <span style={{ display: 'block', fontSize: 9, opacity: 0.55, color: colors.gold }}>{fmt(w.earnedZkltc)} zkLTC</span>}
+                    {w.earnedUsdc > 0 && <span style={{ display: 'block', fontSize: 9, opacity: 0.55, color: colors.blue }}>{fmt(w.earnedUsdc)} USDC</span>}
                   </span>
-                  <span style={{ color: '#4ade80', fontWeight: 600, fontSize: 12 }}>{w.points}</span>
+                  <span style={{ color: colors.green, fontWeight: 600, fontSize: fontSizes.base }}>{w.points}</span>
                 </div>
               )
             })}
@@ -155,25 +142,25 @@ function PodiumCard({ rank, entry, onView, ltcPrice, isMobile }: {
   isMobile?: boolean
 }) {
   const medal = rank === 1 ? '\u{1F947}' : rank === 2 ? '\u{1F948}' : '\u{1F949}'
-  const border = rank === 1 ? '#ffd700' : rank === 2 ? '#c0c0c0' : '#cd7f32'
-  const bg = rank === 1 ? '#1a1a0a' : rank === 2 ? '#1a1a1a' : '#1a0a0a'
+  const border = rank === 1 ? colors.gold : rank === 2 ? '#c0c0c0' : '#cd7f32'
+  const bg = rank === 1 ? '#1a1a0a' : rank === 2 ? colors.bgElevated : '#1a0a0a'
   const glow = rank === 1 ? '0 0 14px rgba(255, 215, 0, 0.12)' : rank === 2 ? '0 0 8px rgba(192, 192, 192, 0.08)' : '0 0 8px rgba(205, 127, 50, 0.08)'
   return (
-    <div style={{ background: bg, border: `2px solid ${border}`, borderRadius: 10, padding: isMobile ? '8px 12px' : '10px 20px', textAlign: 'center', minWidth: isMobile ? 140 : 220, opacity: entry ? 1 : 0.3, boxShadow: glow }}>
-      {entry && <div style={{ fontSize: 22, marginBottom: 2 }}>{medal}</div>}
+    <div style={{ background: bg, border: `2px solid ${border}`, borderRadius: radii.lg, padding: isMobile ? '8px 12px' : '10px 20px', textAlign: 'center', minWidth: isMobile ? 140 : 220, opacity: entry ? 1 : 0.3, boxShadow: glow }}>
+      {entry && <div style={{ fontSize: fontSizes.heading, marginBottom: 2 }}>{medal}</div>}
       {entry ? (
         <>
           <button
             onClick={() => onView(entry.worker, entry, rank)}
             aria-label={`View #${rank} worker details`}
-            style={{ background: 'transparent', border: 'none', color: '#ffd700', cursor: 'pointer', fontSize: 12, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+            style={{ background: 'transparent', border: 'none', color: colors.gold, cursor: 'pointer', fontSize: fontSizes.base, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
             {shorten(entry.worker)}
           </button>
-          <div style={{ color: '#4ade80', fontWeight: 700, fontSize: 14, marginTop: 4 }}>{formatUsd(entry, ltcPrice)}</div>
-          <div style={{ fontSize: 10, opacity: 0.6, marginTop: 3 }}>{entry.jobsPaid}/{entry.jobsClaimed} jobs &bull; {entry.points} pts</div>
+          <div style={{ color: colors.green, fontWeight: 700, fontSize: fontSizes.lg, marginTop: 4 }}>{formatUsd(ltcPrice !== null ? entry.earnedZkltc * ltcPrice + entry.earnedUsdc : null)}</div>
+          <div style={{ fontSize: fontSizes.xs, opacity: 0.6, marginTop: 3 }}>{entry.jobsPaid}/{entry.jobsClaimed} jobs · {entry.points} pts</div>
         </>
       ) : (
-        <div style={{ fontSize: 11, opacity: 0.4, marginTop: 4 }}>—</div>
+        <div style={{ fontSize: fontSizes.sm, opacity: 0.4, marginTop: 4 }}>—</div>
       )}
     </div>
   )

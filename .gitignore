@@ -63,3 +63,14 @@ vite.config.ts.timestamp-*
 tmp/
 temp/
 .vercel
+
+# Contract deployment addresses
+.real-verifier-addr
+.rv-addr
+
+# Compiled Solidity output (generated from snarkjs)
+out.sol
+
+# ZK build artifacts
+zk/build/
+zk/powersOfTau28_hez_final_*.ptau

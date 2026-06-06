@@ -46,6 +46,21 @@ export function formatDeadlineDate(createdAt: number | undefined, deadline: stri
 
 export const COUNTDOWN_REFRESH = 30_000
 
+export function formatUsd(usd: number | null): string {
+  if (usd === null) return '\u2014'
+  if (usd < 1) return '$' + usd.toFixed(2)
+  if (usd < 1000) return '$' + usd.toFixed(0)
+  if (usd < 1_000_000) return '$' + (usd / 1000).toFixed(1) + 'k'
+  if (usd < 1_000_000_000) return '$' + (usd / 1_000_000).toFixed(1) + 'M'
+  return '$' + (usd / 1_000_000_000).toFixed(2) + 'B'
+}
+
+export function fmt(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k'
+  return n.toLocaleString(undefined, { maximumFractionDigits: 0 })
+}
+
 export function generateIdenticon(address: string): string {
   const clean = address.toLowerCase().replace('0x', '')
   const colors = ['#ffd700', '#4ade80', '#f97316', '#a78bfa', '#38bdf8', '#fb7185', '#34d399']

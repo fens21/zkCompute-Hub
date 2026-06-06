@@ -1,0 +1,43 @@
+specVersion: 1.2.0
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: JobMarketplace
+    network: litforge
+    source:
+      address: "0x9ac77f8fda6dfbf6b76c1f7de139012219fa5a70"
+      abi: JobMarketplace
+      startBlock: 15184000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Worker
+        - Job
+        - Claim
+        - Payment
+        - ProofSubmission
+        - Dispute
+      abis:
+        - name: JobMarketplace
+          file: ../src/abi/JobMarketplace.json
+      eventHandlers:
+        - event: JobPosted(indexed uint256,indexed address,uint256,address)
+          handler: handleJobPosted
+        - event: JobClaimed(indexed uint256,indexed address)
+          handler: handleJobClaimed
+        - event: PaymentReleased(indexed uint256,indexed address,uint256)
+          handler: handlePaymentReleased
+        - event: JobDeactivated(indexed uint256)
+          handler: handleJobDeactivated
+        - event: ProofSubmitted(indexed uint256,indexed address,string)
+          handler: handleProofSubmitted
+        - event: DisputeRaised(indexed uint256,indexed address,indexed address,string)
+          handler: handleDisputeRaised
+        - event: DisputeResolved(indexed uint256,indexed address,bool)
+          handler: handleDisputeResolved
+        - event: ReputationSnapshotUpdated(indexed address,uint256,uint256,uint256,bytes32)
+          handler: handleReputationSnapshotUpdated
+      file: ./src/mapping.ts

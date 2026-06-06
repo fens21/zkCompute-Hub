@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { readContract } from '@wagmi/core'
+import { formatUnits } from 'viem'
 import abi from '../abi/JobMarketplace.json'
 import { config, CONTRACT_ADDRESS } from '../config/chain'
 import type { Job } from '../types'
@@ -11,7 +12,7 @@ function parseJob(raw: [bigint, string, string, bigint, string, string, bigint, 
   const tokenAddr = (raw[4] as string).toLowerCase()
   const isNative = tokenAddr === ZERO_ADDRESS.toLowerCase()
   const decimals = isNative ? 18 : 6
-  const rewardNum = Number(raw[3]) / 10 ** decimals
+  const rewardNum = Number(formatUnits(raw[3], decimals))
   const tokenSymbol = isNative ? 'zkLTC' : 'USDC'
   const difficulty = rewardNum >= 150 ? 'Expert' : rewardNum >= 80 ? 'Hard' : 'Medium'
   return {
@@ -19,7 +20,7 @@ function parseJob(raw: [bigint, string, string, bigint, string, string, bigint, 
     title: raw[1],
     type: raw[2],
     reward: rewardNum,
-    deadline: 'N/A',
+    deadline: '',
     description: `${raw[2]} job — ${rewardNum} ${tokenSymbol} reward`,
     requirements: `Posted by ${(raw[5] as string).slice(0, 6)}...`,
     poster: raw[5] as string,
@@ -42,6 +43,10 @@ function mergeMetadata(jobs: Job[], metaMap: Map<number, import('./useJobMetadat
       requirements: meta.requirements,
       deadline: meta.deadline,
       difficulty: meta.difficulty || j.difficulty,
+      parameters: meta.parameters || j.parameters,
+      inputData: meta.input_data || j.inputData,
+      expectedOutput: meta.expected_output || j.expectedOutput,
+      verificationMethod: meta.verification_method || j.verificationMethod,
     }
   })
 }
@@ -74,12 +79,10 @@ export function useJobs(autoFetch: boolean) {
   const [onChainJobs, setOnChainJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const hasFetched = useRef(false)
 
-  const fetchOnChainJobs = useCallback(async () => {
-    setLoading(true)
+  const fetchOnChainJobs = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     setError(null)
-    hasFetched.current = true
     try {
       const count = await readContract(config, {
         address: CONTRACT_ADDRESS as `0x${string}`,

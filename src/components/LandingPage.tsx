@@ -1,8 +1,7 @@
 import { useState, type CSSProperties } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import heroImg from '../assets/image.png'
-import { colors, radii } from '../styles/tokens'
-import { useIsMobile } from '../hooks/useIsMobile'
+import { colors, radii, fontSizes } from '../styles/tokens'
 import '../styles/landing.css'
 
 const gold = (a: number) => `rgba(255,215,0,${a})`
@@ -31,9 +30,9 @@ const titleStyle: CSSProperties = {
 }
 
 const FEATURES = [
-  { icon: '⚡', title: 'Post Compute Jobs', desc: 'Create ML, ZK, rendering & AI inference jobs with escrowed payments in zkLTC or USDC' },
-  { icon: '🏗️', title: 'Complete & Earn', desc: 'Workers claim jobs, run computations, submit proofs, and get paid automatically' },
-  { icon: '🔗', title: 'On-Chain Verifiable', desc: 'Every proof, payment, and dispute is recorded on the LitForge blockchain' },
+  { icon: '', title: 'Post Compute Jobs', desc: 'Create ML, ZK, rendering & AI inference jobs with escrowed payments in zkLTC or USDC' },
+  { icon: '', title: 'Complete & Earn', desc: 'Workers claim jobs, run computations, submit proofs, and get paid automatically' },
+  { icon: '', title: 'On-Chain Verifiable', desc: 'Every proof, payment, and dispute is recorded on the LitForge blockchain' },
 ]
 
 const STEPS = [
@@ -64,18 +63,18 @@ export function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const [copyAnnounce, setCopyAnnounce] = useState('')
-  const isMobile = useIsMobile(768)
   const prefersReducedMotion = typeof window !== 'undefined'
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
     : false
 
   const scrollToCta = () => {
-    const el = document.getElementById('lp-connect-top')
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: isMobile ? 'nearest' : 'center' })
+    const el = document.getElementById('hero')
+    if (el) el.scrollIntoView({ block: 'start' })
     setTimeout(() => {
-      if (el) {
-        el.classList.add('lp-cta-highlight')
-        setTimeout(() => el.classList.remove('lp-cta-highlight'), 1700)
+      const btn = document.getElementById('lp-connect-top')
+      if (btn) {
+        btn.classList.add('lp-cta-highlight')
+        setTimeout(() => btn.classList.remove('lp-cta-highlight'), 1700)
       }
     }, 500)
   }
@@ -89,8 +88,8 @@ export function LandingPage() {
 
   const ctaBtnSx: CSSProperties = {
     background: `linear-gradient(135deg, ${colors.gold}, #e6a800)`,
-    color: colors.bgInput, border: 'none', padding: '16px 56px', fontSize: 15, fontWeight: 700,
-    cursor: 'pointer', borderRadius: radii.lg, opacity: 1,
+    color: colors.bgInput, border: 'none', padding: '10px 24px', fontSize: fontSizes.md, fontWeight: 700,
+    cursor: 'pointer', borderRadius: radii.md, opacity: 1,
     transition: prefersReducedMotion ? 'none' : 'transform 0.2s, box-shadow 0.2s',
     animation: prefersReducedMotion ? 'none' : 'glow 3s ease-in-out infinite', letterSpacing: '0.5px',
   }
@@ -140,8 +139,8 @@ export function LandingPage() {
             {FEATURES.map((f, i) => (
               <div key={i} className="lp-feature-card">
                 <div style={{ fontSize: 28, marginBottom: 8 }}>{f.icon}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: colors.gold, marginBottom: 6 }}>{f.title}</div>
-                <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.6 }}>{f.desc}</div>
+                <div style={{ fontSize: fontSizes.md, fontWeight: 700, color: colors.gold, marginBottom: 6 }}>{f.title}</div>
+                <div style={{ fontSize: fontSizes.base, color: colors.textDim, lineHeight: 1.6 }}>{f.desc}</div>
               </div>
             ))}
           </div>
@@ -157,7 +156,7 @@ export function LandingPage() {
       <section className="lp-section" aria-label="How It Works" id="how-it-works">
         <div style={sectionHdr}>
           <h2 style={sectionTitle}>How It Works</h2>
-          <p style={{ color: colors.textDim, fontSize: 14 }}>From job creation to verified result — four simple steps</p>
+          <p style={{ color: colors.textDim, fontSize: fontSizes.lg }}>From job creation to verified result — four simple steps</p>
         </div>
         <div className="lp-steps-grid">
           {STEPS.map((s, i) => (
@@ -177,7 +176,7 @@ export function LandingPage() {
       <section className="lp-section lp-section-alt" aria-label="Network Information" id="network">
         <div style={sectionHdr}>
           <h2 style={sectionTitle}>zkCompute Hub Network</h2>
-          <p style={{ color: colors.textDim, fontSize: 14 }}>Built on LitVM — Litecoin's Virtual Machine</p>
+          <p style={{ color: colors.textDim, fontSize: fontSizes.lg }}>Built on LitVM — Litecoin's Virtual Machine</p>
         </div>
         <div role="status" aria-live="polite" className="sr-only">{copyAnnounce}</div>
         <div className="lp-net-grid">
@@ -221,7 +220,7 @@ export function LandingPage() {
       <section className="lp-section" aria-label="Frequently Asked Questions" id="faq">
         <div style={sectionHdr}>
           <h2 style={sectionTitle}>Common Questions</h2>
-          <p style={{ color: colors.textDim, fontSize: 14 }}>Everything you need to know about zkCompute Hub</p>
+          <p style={{ color: colors.textDim, fontSize: fontSizes.lg }}>Everything you need to know about zkCompute Hub</p>
         </div>
         <div className="lp-faq">
           {FAQ_DATA.map((item, i) => (
@@ -247,8 +246,8 @@ export function LandingPage() {
       {/* ── Footer ── */}
       <footer className="lp-footer">
         <div className="lp-footer-inner">
-          <div style={{ fontSize: 14, fontWeight: 700, color: colors.gold }}>zkCompute Hub</div>
-          <div style={{ fontSize: 11, color: colors.textDim, marginTop: -4 }}>Decentralized verifiable compute on LitVM</div>
+          <div style={{ fontSize: fontSizes.lg, fontWeight: 700, color: colors.gold }}>zkCompute Hub</div>
+          <div style={{ fontSize: fontSizes.sm, color: colors.textDim, marginTop: -4 }}>Decentralized verifiable compute on LitVM</div>
           <div className="lp-footer-social">
             <a href="https://x.com/fens21_" target="_blank" rel="noopener noreferrer" aria-label="Follow on X">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">

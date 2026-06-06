@@ -185,50 +185,54 @@ export function useMyJobs(address: string | undefined, _syncEnabled: boolean = t
     const cached = loadMyJobs(address)
     addressRef.current = address.toLowerCase()
 
+    // Mark loaded true BEFORE any async ops so setMyJobs can always persist
+    loadedRef.current = true
+
     const mergeEvents = (events: (WorkerEvent & { job?: Job })[]) => {
-      const jobsMap = new Map<number, Job>()
-      if (cached.length > 0) {
-        for (const j of cached) jobsMap.set(j.id, j)
-      }
-      for (const ev of events) {
-        const existing = jobsMap.get(ev.jobId)
-        if (!existing || ev.job) {
-          if (ev.job) {
-            jobsMap.set(ev.jobId, { ...ev.job, status: ev.status })
-          } else {
-            jobsMap.set(ev.jobId, {
-              id: ev.jobId,
-              title: ev.title,
-              type: 'Custom',
-              reward: ev.reward,
-              deadline: '',
-              description: '',
-              requirements: '',
-              poster: '',
-              claimedCount: 1,
-              maxWorkers: 1,
-              difficulty: 'Medium',
-              tokenSymbol: ev.tokenSymbol,
-              status: ev.status,
-              createdAt: ev.time,
-              claimedBy: address?.toLowerCase(),
-            })
+      setMyJobsState(prev => {
+        const jobsMap = new Map<number, Job>()
+        for (const j of prev) jobsMap.set(j.id, j)
+        if (cached.length > 0) {
+          for (const j of cached) {
+            if (!jobsMap.has(j.id)) jobsMap.set(j.id, j)
           }
-        } else if (ev.status === 'paid' || (ev.status === 'completed' && existing.status !== 'paid')) {
-          jobsMap.set(ev.jobId, { ...existing, status: ev.status })
         }
-      }
-      const merged = [...jobsMap.values()]
-      if (merged.length > 0 || cached.length === 0) {
-        setMyJobsState(merged)
+        for (const ev of events) {
+          const existing = jobsMap.get(ev.jobId)
+          if (!existing || ev.job) {
+            if (ev.job) {
+              jobsMap.set(ev.jobId, { ...ev.job, status: ev.status })
+            } else {
+              jobsMap.set(ev.jobId, {
+                id: ev.jobId,
+                title: ev.title,
+                type: 'Custom',
+                reward: ev.reward,
+                deadline: '',
+                description: '',
+                requirements: '',
+                poster: '',
+                claimedCount: 1,
+                maxWorkers: 1,
+                difficulty: 'Medium',
+                tokenSymbol: ev.tokenSymbol,
+                status: ev.status,
+                createdAt: ev.time,
+                claimedBy: address?.toLowerCase(),
+              })
+            }
+          } else if (ev.status === 'paid' || (ev.status === 'completed' && existing.status !== 'paid')) {
+            jobsMap.set(ev.jobId, { ...existing, status: ev.status })
+          }
+        }
+        const merged = [...jobsMap.values()]
         if (merged.length > 0) saveMyJobs(address, merged)
-      }
-      if (!loadedRef.current) loadedRef.current = true
+        return merged.length > 0 ? merged : prev
+      })
     }
 
     if (cached.length > 0) {
       setMyJobsState(cached)
-      loadedRef.current = true
       // Background sync on-chain — override status by source of truth
       const addr = address.toLowerCase()
       const addresses = cached.map(j => ({ jobId: BigInt(j.id), worker: addr as `0x${string}` }))
@@ -255,18 +259,14 @@ export function useMyJobs(address: string | undefined, _syncEnabled: boolean = t
     }
 
     // No cache — restore from Supabase
-    fetchWorkerActivities(address).then(mergeEvents).catch(() => {
-      loadedRef.current = true
-    })
+    fetchWorkerActivities(address).then(mergeEvents).catch(() => {})
   }, [address])
 
   const setMyJobs = useCallback((updater: Job[] | ((prev: Job[]) => Job[])) => {
     if (!address) return
     setMyJobsState(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater
-      if (loadedRef.current) {
-        saveMyJobs(address, next)
-      }
+      saveMyJobs(address, next)
       return next
     })
   }, [address])

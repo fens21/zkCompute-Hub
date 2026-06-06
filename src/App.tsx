@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
 import { useAccount, useWriteContract, useSwitchChain, useChainId } from 'wagmi'
-import { RainbowKitProvider, lightTheme } from '@rainbow-me/rainbowkit'
+import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit'
 import { readContract } from '@wagmi/core'
 import { parseUnits } from 'viem'
 import abi from './abi/JobMarketplace.json'
@@ -28,6 +28,7 @@ import type { Job, NewJobForm, ConfirmAction, DisputeState, Tab, PostSubTab, Sor
 import { saveProfile, loadProfiles, uploadProofFile } from './hooks/useWorkerProfiles'
 import { saveJobMetadata } from './hooks/useJobMetadata'
 import { handleTxError, getDeadlineMs } from './utils'
+import { generateZKProof } from './utils/zkProof'
 import { useIsMobile } from './hooks/useIsMobile'
 
 const USDC_DECIMALS = 6
@@ -37,6 +38,11 @@ const ERC20_ABI = [
 
 const queryClient = new QueryClient()
 let notifIdCounter = 0
+let refreshTimer: ReturnType<typeof setTimeout> | null = null
+function scheduleRefresh(fn: () => void, delayMs = 2000) {
+  if (refreshTimer) clearTimeout(refreshTimer)
+  refreshTimer = setTimeout(() => { refreshTimer = null; fn() }, delayMs)
+}
 
 function AppContent() {
   const { address } = useAccount()
@@ -51,6 +57,17 @@ function AppContent() {
   const { ltcPrice } = usePrices()
   const isMobile = useIsMobile()
 
+  // Periodic auto-refresh every 30s
+  const onChainJobsRef = useRef(onChainJobs)
+  onChainJobsRef.current = onChainJobs
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetchJobs(true)
+      fetchLeaderboard(onChainJobsRef.current, false)
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [refetchJobs, fetchLeaderboard])
+
   const navigate = useNavigate()
   const location = useLocation()
   const TAB_PATHS: Record<string, Tab> = { '': 'market', post: 'post', 'my-jobs': 'my', stats: 'stats', leaderboard: 'leaderboard', profile: 'profile' }
@@ -58,7 +75,10 @@ function AppContent() {
   const setTab = (t: Tab) => navigate(t === 'market' ? '/' : '/' + (t === 'my' ? 'my-jobs' : t))
 
   const [loading, setLoading] = useState(false)
+  const [releaseRefreshKey, setReleaseRefreshKey] = useState(0)
+  const [claimingJobId, setClaimingJobId] = useState<number | null>(null)
   const [deactivating, setDeactivating] = useState(false)
+  const [editSaving, setEditSaving] = useState(false)
   const [submittingProof, setSubmittingProof] = useState(false)
   const entered = !!address
 
@@ -77,7 +97,8 @@ function AppContent() {
 
   const [postSubTab, setPostSubTab] = useState<PostSubTab>('new')
   const [newJob, setNewJob] = useState<NewJobForm>({
-    title: '', type: 'ML', reward: 50, deadline: '', description: '', requirements: '', maxWorkers: 3, token: 'zkLTC', customToken: '', difficulty: 'Medium'
+    title: '', type: 'ML', reward: 50, deadline: '', description: '', requirements: '', maxWorkers: 3, token: 'zkLTC', customToken: '', difficulty: 'Medium',
+    parameters: {}, inputData: '', expectedOutput: '', verificationMethod: 'hash-check',
   })
 
   const [bio, setBio] = useState('')
@@ -102,7 +123,10 @@ function AppContent() {
   const [editDesc, setEditDesc] = useState('')
   const [editReqs, setEditReqs] = useState('')
   const [editDeadline, setEditDeadline] = useState('')
-  const [editDifficulty, setEditDifficulty] = useState('')
+  const [editParameters, setEditParameters] = useState<Record<string, string>>({})
+  const [editInputData, setEditInputData] = useState('')
+  const [editExpectedOutput, setEditExpectedOutput] = useState('')
+  const [editVerificationMethod, setEditVerificationMethod] = useState('')
 
   useEffect(() => {
     if (address) {
@@ -121,6 +145,7 @@ function AppContent() {
     if (!address || !(bio || skills.length > 0 || avatarUrl)) return
     const timer = setTimeout(() => {
       saveProfile(address, bio, skills, avatarUrl)
+      scheduleRefresh(refetchJobs)
     }, 1000)
     return () => clearTimeout(timer)
   }, [address, bio, skills, avatarUrl])
@@ -200,7 +225,7 @@ function AppContent() {
           address: CONTRACT_ADDRESS as `0x${string}`,
           abi,
           functionName: 'postJobUSDC',
-          args: [newJob.title || 'Custom Compute Job', newJob.type, rewardBase, BigInt(maxWorkers)],
+          args: [newJob.title || 'Custom Compute Job', newJob.type, rewardBase, BigInt(maxWorkers), BigInt(Math.floor(deadlineTs / 1000))],
         })
       } else {
         const totalWei = parseUnits(String(rewardPerWorker), 18) * BigInt(maxWorkers)
@@ -209,7 +234,7 @@ function AppContent() {
           address: CONTRACT_ADDRESS as `0x${string}`,
           abi,
           functionName: 'postJobNative',
-          args: [newJob.title || 'Custom Compute Job', newJob.type, BigInt(maxWorkers)],
+          args: [newJob.title || 'Custom Compute Job', newJob.type, BigInt(maxWorkers), BigInt(Math.floor(deadlineTs / 1000))],
           value: totalWei,
         })
       }
@@ -232,8 +257,11 @@ function AppContent() {
         poster: address,
         claimedCount: 0,
         maxWorkers,
-        difficulty: newJob.difficulty,
         tokenSymbol: newJob.token === 'USDC' ? 'USDC' : 'zkLTC',
+        parameters: newJob.parameters,
+        inputData: newJob.inputData,
+        expectedOutput: newJob.expectedOutput,
+        verificationMethod: newJob.verificationMethod,
       }
       setJobs(prev => [...prev, job])
       saveJobMetadata({
@@ -245,12 +273,16 @@ function AppContent() {
         requirements: job.requirements,
         deadline: job.deadline,
         token_symbol: job.tokenSymbol || 'zkLTC',
-        difficulty: job.difficulty,
+        parameters: newJob.parameters,
+        input_data: newJob.inputData,
+        expected_output: newJob.expectedOutput,
+        verification_method: newJob.verificationMethod,
       })
       const tokenLabel = newJob.token === 'USDC' ? 'USDC' : 'zkLTC'
-      setNewJob({ title: '', type: 'ML', reward: 50, deadline: '', description: '', requirements: '', maxWorkers: 3, token: 'zkLTC', customToken: '', difficulty: 'Medium' })
+      setNewJob({ title: '', type: 'ML', reward: 50, deadline: '', description: '', requirements: '', maxWorkers: 3, token: 'zkLTC', customToken: '', difficulty: 'Medium', parameters: {}, inputData: '', expectedOutput: '', verificationMethod: 'hash-check' })
       showToast(`Job posted! ${rewardPerWorker * maxWorkers} ${tokenLabel} escrowed | Tx: ${hash.slice(0, 10)}...`, 'success')
       addNotification(`Job posted: "${job.title}" — ${rewardPerWorker * maxWorkers} ${tokenLabel} escrowed`, 'post', job.title)
+      scheduleRefresh(refetchJobs)
     } catch (e: unknown) {
       handleTxError(e, 'Post job', showToast)
     }
@@ -259,6 +291,7 @@ function AppContent() {
 
   const claimJob = async (job: Job) => {
     if (!address) { showToast('Connect wallet first', 'info'); return }
+    setClaimingJobId(job.id)
     setLoading(true)
     try {
       const hash = await writeContractAsync({
@@ -273,17 +306,20 @@ function AppContent() {
       } else {
         setJobs(prev => prev.map(j => j.id === job.id ? { ...j, claimedCount: newClaimedCount } : j))
       }
-      setMyJobs(prev => {
-        if (prev.some(j => j.id === job.id)) return prev
-        return [...prev, { ...job, status: 'claimed', escrow: true, claimedBy: address }]
-      })
+        setMyJobs(prev => {
+            const seen = new Map(prev.map(j => [j.id, j]))
+            seen.set(job.id, { ...job, status: 'claimed', escrow: true, claimedBy: address })
+            return [...seen.values()]
+        })
       setSelectedJob(null)
       saveWorkerEvent('claimed', job, address)
       showToast(`Job claimed! Tx: ${hash.slice(0, 10)}...`, 'success')
       addNotification(`Job claimed: "${job.title}" — +${job.reward} ${job.tokenSymbol || 'zkLTC'}`, 'claim', job.title)
+      scheduleRefresh(refetchJobs)
     } catch (e: unknown) {
       handleTxError(e, 'Claim job', showToast)
     }
+    setClaimingJobId(null)
     setLoading(false)
   }
 
@@ -348,11 +384,49 @@ function AppContent() {
       showToast(`Proof submitted! Tx: ${hash.slice(0, 10)}...`, 'success')
       addNotification(`Proof submitted: "${job.title}"`, 'proof', job.title)
       setTimeout(() => showToast('Stats updated: +1 job completed', 'info'), 800)
+      scheduleRefresh(refetchJobs)
     } catch (e: unknown) {
       handleTxError(e, 'Submit proof', showToast)
     }
     setSubmittingProof(false)
     setProofHash('')
+    setCurrentProofJob(null)
+    setCurrentProofFile(null)
+  }
+
+  const submitZKProof = async () => {
+    if (!currentProofJob || !address) {
+      showToast('Missing job or wallet', 'info')
+      return
+    }
+    const job = currentProofJob
+    setSubmittingProof(true)
+    setShowProofModal(false)
+
+    try {
+      showToast('Generating ZK proof...', 'info')
+      const { a, b, c, input, commitHash } = await generateZKProof(job.id)
+
+      showToast(`Submitting ZK proof for verification...`, 'info')
+      const hash = await writeContractAsync({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi,
+        functionName: 'submitZKProof',
+        args: [BigInt(job.id), a, b, c, input],
+      })
+
+      setMyJobs(prev => prev.map(j =>
+        j.id === job.id && j.status !== 'paid' ? { ...j, status: 'paid' } : j
+      ))
+      saveWorkerEvent('paid', job, address, '', commitHash)
+      showToast(`ZK proof verified & auto-paid! Tx: ${hash.slice(0, 10)}...`, 'success')
+      addNotification(`ZK proof auto-paid: "${job.title}"`, 'payment', job.title)
+      setTimeout(() => showToast('Stats updated: +1 job completed & paid', 'info'), 800)
+      scheduleRefresh(() => { refetchJobs(); fetchLeaderboard(onChainJobs, true) })
+    } catch (e: unknown) {
+      handleTxError(e, 'Submit ZK proof', showToast)
+    }
+    setSubmittingProof(false)
     setCurrentProofJob(null)
     setCurrentProofFile(null)
   }
@@ -370,7 +444,9 @@ function AppContent() {
       setMyJobs(prev => prev.map(j =>
         j.id === job.id ? { ...j, status: 'paid' } : j
       ))
+      setReleaseRefreshKey(k => k + 1)
       showToast(`Payment released to ${workerAddr.slice(0, 6)}...${workerAddr.slice(-4)}! +${job.reward} ${job.tokenSymbol || 'zkLTC'} | Tx: ${hash.slice(0, 10)}...`, 'success')
+      scheduleRefresh(() => { refetchJobs(); fetchLeaderboard(onChainJobs, true) })
     } catch (e: unknown) {
       handleTxError(e, 'Release payment for worker', showToast)
     }
@@ -393,6 +469,7 @@ function AppContent() {
       setMyJobs(prev => prev.filter(j => j.id !== job.id))
       showToast(`Job cancelled! +${refundAmount} ${token} refunded | Tx: ${hash.slice(0, 10)}...`, 'success')
       addNotification(`Job cancelled & refunded: "${job.title}" — +${refundAmount} ${token}`, 'payment', job.title)
+      scheduleRefresh(refetchJobs)
     } catch (e: unknown) {
       handleTxError(e, 'Cancel job', showToast)
     }
@@ -410,6 +487,10 @@ function AppContent() {
       showToast('Please enter a reason', 'info')
       return
     }
+    if (disputeState.reason.trim().length < 10) {
+      showToast('Reason must be at least 10 characters', 'info')
+      return
+    }
     const worker = disputeState.worker || (address as string)
     setConfirmAction({ type: 'dispute', job: disputeState.job, disputeWorker: worker, disputeReason: disputeState.reason })
     setShowDisputeModal(false)
@@ -417,16 +498,21 @@ function AppContent() {
 
   const confirmDispute = async () => {
     if (!confirmAction?.job || !confirmAction.disputeWorker) return
+    const job = confirmAction.job
     setLoading(true)
     try {
       const hash = await writeContractAsync({
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi,
         functionName: 'raiseDispute',
-        args: [BigInt(confirmAction.job.id), confirmAction.disputeWorker as `0x${string}`, confirmAction.disputeReason || ''],
+        args: [BigInt(job.id), confirmAction.disputeWorker as `0x${string}`, confirmAction.disputeReason || ''],
       })
+      setMyJobs(prev => prev.map(j =>
+        j.id === job.id ? { ...j, status: 'disputed' } : j
+      ))
       showToast(`Dispute filed! Tx: ${hash.slice(0, 10)}...`, 'success')
-      addNotification(`Dispute filed for "${confirmAction.job.title}"`, 'dispute', confirmAction.job.title)
+      addNotification(`Dispute filed for "${job.title}"`, 'dispute', job.title)
+      scheduleRefresh(refetchJobs)
     } catch (e: unknown) {
       handleTxError(e, 'Raise dispute', showToast)
     }
@@ -468,6 +554,7 @@ function AppContent() {
       })
       setMyJobs(prev => prev.filter(j => confirmAction.job && j.id !== confirmAction.job.id))
       showToast(`Claim cancelled! Tx: ${hash.slice(0, 10)}...`, 'success')
+      scheduleRefresh(refetchJobs)
     } catch (e: unknown) {
       handleTxError(e, 'Resolve cancel', showToast)
     }
@@ -511,13 +598,20 @@ function AppContent() {
     setEditDesc(job.description)
     setEditReqs(job.requirements)
     setEditDeadline(job.deadline && job.deadline !== 'N/A' ? job.deadline : '')
-    setEditDifficulty(job.difficulty)
+    setEditParameters(job.parameters || {})
+    setEditInputData(job.inputData || '')
+    setEditExpectedOutput(job.expectedOutput || '')
+    setEditVerificationMethod(job.verificationMethod || '')
   }
 
-  const saveEditedJob = () => {
+  const saveEditedJob = async () => {
     if (!editingPostedJob) return
-    setJobs(prev => prev.map(j => j.id === editingPostedJob.id ? { ...j, title: editTitle, type: editType, description: editDesc, requirements: editReqs, deadline: editDeadline || j.deadline, difficulty: editDifficulty } : j))
-    saveJobMetadata({
+    if (!editTitle.trim() || !editDeadline?.trim()) return
+    setEditSaving(true)
+    const prev = jobs.find(j => j.id === editingPostedJob.id)
+    const updated = { ...prev, title: editTitle, type: editType, description: editDesc, requirements: editReqs, deadline: editDeadline || (prev?.deadline ?? ''), parameters: editParameters, inputData: editInputData, expectedOutput: editExpectedOutput, verificationMethod: editVerificationMethod }
+    setJobs(prevJobs => prevJobs.map(j => j.id === editingPostedJob.id ? updated : j))
+    const ok = await saveJobMetadata({
       job_id: editingPostedJob.id,
       poster: editingPostedJob.poster.toLowerCase(),
       title: editTitle,
@@ -526,10 +620,21 @@ function AppContent() {
       requirements: editReqs,
       deadline: editDeadline || editingPostedJob.deadline,
       token_symbol: editingPostedJob.tokenSymbol || 'zkLTC',
-      difficulty: editDifficulty || editingPostedJob.difficulty,
+      parameters: editParameters,
+      input_data: editInputData,
+      expected_output: editExpectedOutput,
+      verification_method: editVerificationMethod,
     })
+    if (!ok) {
+      setJobs(prevJobs => prevJobs.map(j => j.id === editingPostedJob.id ? prev : j))
+      showToast('Failed to save metadata — changes reverted', 'error')
+      setEditSaving(false)
+      return
+    }
     setEditingPostedJob(null)
     showToast('Job updated!', 'success')
+    scheduleRefresh(refetchJobs)
+    setEditSaving(false)
   }
 
   const cancelEdit = () => {
@@ -539,7 +644,10 @@ function AppContent() {
     setEditDesc('')
     setEditReqs('')
     setEditDeadline('')
-    setEditDifficulty('')
+    setEditParameters({})
+    setEditInputData('')
+    setEditExpectedOutput('')
+    setEditVerificationMethod('')
   }
 
   const handleViewWorker = (workerAddr: string, entry: LeaderboardEntry, rank: number) => {
@@ -565,7 +673,7 @@ function AppContent() {
         setShowNotifications={setShowNotifications}
       />
 
-      <div style={{ padding: isMobile ? '14px 14px' : '20px 24px' }}>
+      <div key={tab} style={{ padding: isMobile ? '14px 14px' : '20px 24px', animation: 'fadeIn 0.2s ease-out' }}>
         <Routes>
           <Route path="/" element={
             <Marketplace
@@ -574,7 +682,7 @@ function AppContent() {
               typeFilter={typeFilter} setTypeFilter={setTypeFilter}
               sortBy={sortBy} setSortBy={setSortBy}
               onClaim={claimJob} onDetail={setSelectedJob}
-              loading={loading} jobsLoading={jobsLoading}
+              claimingJobId={claimingJobId} jobsLoading={jobsLoading}
               jobsError={jobsError} onRetry={refetchJobs}
             />
           } />
@@ -595,15 +703,19 @@ function AppContent() {
               editDesc={editDesc} setEditDesc={setEditDesc}
               editReqs={editReqs} setEditReqs={setEditReqs}
               editDeadline={editDeadline} setEditDeadline={setEditDeadline}
-              editDifficulty={editDifficulty} setEditDifficulty={setEditDifficulty}
-              onSaveEdit={saveEditedJob}
-              onCancelEdit={cancelEdit}
+              editParameters={editParameters} setEditParameters={setEditParameters}
+              editInputData={editInputData} setEditInputData={setEditInputData}
+              editExpectedOutput={editExpectedOutput} setEditExpectedOutput={setEditExpectedOutput}
+              editVerificationMethod={editVerificationMethod} setEditVerificationMethod={setEditVerificationMethod}
+              onSaveEdit={saveEditedJob} onCancelEdit={cancelEdit} editSaving={editSaving}
+              releaseRefreshKey={releaseRefreshKey}
             />
           } />
           <Route path="/my-jobs" element={
             <MyJobs
               myJobs={myJobs}
               onOpenProof={openProofModal}
+              onSubmitZKProof={submitZKProof}
               onUnclaim={unclaimJob}
               loading={loading}
               submittingProof={submittingProof}
@@ -673,7 +785,7 @@ function AppContent() {
           editSkillInput={editSkillInput} setEditSkillInput={setEditSkillInput}
           skills={skills} setSkills={setSkills}
           onClose={() => setShowEditProfile(false)}
-          onSave={() => { setBio(editBio); setShowEditProfile(false); if (address) saveProfile(address, editBio, skills, avatarUrl) }}
+          onSave={() => { setBio(editBio); setShowEditProfile(false); if (address) { saveProfile(address, editBio, skills, avatarUrl); scheduleRefresh(refetchJobs) } }}
           account={address || ''}
           currentAvatarUrl={avatarUrl}
           onAvatarChange={(url) => setAvatarUrl(url)}
@@ -730,7 +842,7 @@ export default function App() {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={lightTheme({ accentColor: '#ffd700', accentColorForeground: '#000', borderRadius: 'small', fontStack: 'system' })}>
+        <RainbowKitProvider theme={darkTheme({ accentColor: '#ffd700', accentColorForeground: '#000', borderRadius: 'small', fontStack: 'system' })}>
           <BrowserRouter>
             <AppContent />
           </BrowserRouter>

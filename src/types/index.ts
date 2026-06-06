@@ -15,6 +15,10 @@ export interface Job {
   tokenSymbol?: string
   claimedBy?: string
   createdAt?: number
+  parameters?: Record<string, string>
+  inputData?: string
+  expectedOutput?: string
+  verificationMethod?: string
 }
 
 export interface Notification {
@@ -86,6 +90,30 @@ export interface NewJobForm {
   token: 'zkLTC' | 'USDC' | 'custom'
   customToken?: string
   difficulty: string
+  parameters: Record<string, string>
+  inputData: string
+  expectedOutput: string
+  verificationMethod: string
+}
+
+export interface JobParameterField {
+  key: string
+  label: string
+  type: 'text' | 'number' | 'select' | 'textarea'
+  placeholder?: string
+  options?: { value: string; label: string }[]
+  required?: boolean
+  hint?: string
+}
+
+export interface JobTypeConfig {
+  label: string
+  color: string
+  fields: JobParameterField[]
+  inputHint: string
+  inputPlaceholder: string
+  outputHint: string
+  verificationOptions: { value: string; label: string }[]
 }
 
 export interface ConfirmAction {
@@ -100,6 +128,22 @@ export interface DisputeState {
   job: Job | null
   worker?: string
   reason: string
+}
+
+export interface ReputationSnapshot {
+  worker: string
+  jobsClaimed: number
+  jobsPaid: number
+  totalEarned: string
+  reputationHash: string
+  lastUpdated: number
+}
+
+export interface Groth16Proof {
+  a: [bigint, bigint]
+  b: [[bigint, bigint], [bigint, bigint]]
+  c: [bigint, bigint]
+  input: bigint[]
 }
 
 export type Tab = 'market' | 'post' | 'my' | 'stats' | 'leaderboard' | 'profile'

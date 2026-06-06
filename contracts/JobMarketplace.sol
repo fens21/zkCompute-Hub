@@ -6,6 +6,8 @@ interface IERC20 {
     function transfer(address to, uint256 amount) external returns (bool);
 }
 
+import "./IVerifier.sol";
+
 contract JobMarketplace {
     bool private locked;
     modifier nonReentrant() {
@@ -29,6 +31,14 @@ contract JobMarketplace {
         uint256 deadline; // block.timestamp deadline, 0 = no deadline
     }
 
+    struct ReputationSnapshot {
+        uint256 jobsClaimed;
+        uint256 jobsPaid;
+        uint256 totalEarned;
+        bytes32 reputationHash; // keccak256(worker, jobsClaimed, jobsPaid, totalEarned, lastUpdated)
+        uint256 lastUpdated;
+    }
+
     uint256 public jobCount;
     mapping(uint256 => Job) public jobs;
     mapping(uint256 => mapping(address => bool)) public hasClaimed;
@@ -37,6 +47,21 @@ contract JobMarketplace {
     mapping(uint256 => address[]) public claimants;
     mapping(uint256 => mapping(address => bool)) public disputed;
 
+    mapping(address => ReputationSnapshot) public reputationSnapshots;
+
+    address public owner;
+    IVerifier public verifier;
+    bool public zkEnabled;
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner");
+        _;
+    }
+
     event JobPosted(uint256 indexed id, address indexed poster, uint256 reward, address token);
     event JobClaimed(uint256 indexed id, address indexed worker);
     event ProofSubmitted(uint256 indexed id, address indexed worker, string proofHash);
@@ -44,6 +69,8 @@ contract JobMarketplace {
     event JobDeactivated(uint256 indexed id);
     event DisputeRaised(uint256 indexed jobId, address indexed worker, address indexed initiator, string reason);
     event DisputeResolved(uint256 indexed jobId, address indexed worker, bool cancelled);
+    event ReputationSnapshotUpdated(address indexed worker, uint256 jobsClaimed, uint256 jobsPaid, uint256 totalEarned, bytes32 reputationHash);
+    event UnprovenRefunded(uint256 indexed jobId, address indexed worker, address indexed poster, uint256 amount);
 
     function postJobNative(
         string memory _title,
@@ -129,6 +156,8 @@ contract JobMarketplace {
         job.claimedCount++;
         claimants[_jobId].push(msg.sender);
 
+        reputationSnapshots[msg.sender].jobsClaimed++;
+
         emit JobClaimed(_jobId, msg.sender);
     }
 
@@ -155,7 +184,59 @@ contract JobMarketplace {
             require(IERC20(job.token).transfer(_worker, job.reward), "Token transfer failed");
         }
 
+        ReputationSnapshot storage rep = reputationSnapshots[_worker];
+        rep.jobsPaid++;
+        rep.totalEarned += job.reward;
+        rep.lastUpdated = block.timestamp;
+        rep.reputationHash = keccak256(
+            abi.encodePacked(_worker, rep.jobsClaimed, rep.jobsPaid, rep.totalEarned, rep.lastUpdated)
+        );
+
+        emit ReputationSnapshotUpdated(_worker, rep.jobsClaimed, rep.jobsPaid, rep.totalEarned, rep.reputationHash);
         emit PaymentReleased(_jobId, _worker, job.reward);
+    }
+
+    function setVerifier(address _verifier) external onlyOwner {
+        verifier = IVerifier(_verifier);
+        zkEnabled = _verifier != address(0);
+    }
+
+    function submitZKProof(
+        uint256 _jobId,
+        uint256[2] memory a,
+        uint256[2][2] memory b,
+        uint256[2] memory c,
+        uint256[] memory input
+    ) external nonReentrant {
+        require(zkEnabled, "ZK verifier not set");
+        require(hasClaimed[_jobId][msg.sender], "Not claimed this job");
+        require(!proofSubmitted[_jobId][msg.sender], "Proof already submitted");
+        require(!paid[_jobId][msg.sender], "Already paid");
+        require(jobs[_jobId].active, "Job not active");
+        require(verifier.verifyProof(a, b, c, input), "ZK proof invalid");
+
+        proofSubmitted[_jobId][msg.sender] = true;
+        paid[_jobId][msg.sender] = true;
+
+        Job storage job = jobs[_jobId];
+
+        if (job.token == address(0)) {
+            (bool sent, ) = payable(msg.sender).call{value: job.reward}("");
+            require(sent, "zkLTC transfer failed");
+        } else {
+            require(IERC20(job.token).transfer(msg.sender, job.reward), "Token transfer failed");
+        }
+
+        ReputationSnapshot storage rep = reputationSnapshots[msg.sender];
+        rep.jobsPaid++;
+        rep.totalEarned += job.reward;
+        rep.lastUpdated = block.timestamp;
+        rep.reputationHash = keccak256(
+            abi.encodePacked(msg.sender, rep.jobsClaimed, rep.jobsPaid, rep.totalEarned, rep.lastUpdated)
+        );
+
+        emit ReputationSnapshotUpdated(msg.sender, rep.jobsClaimed, rep.jobsPaid, rep.totalEarned, rep.reputationHash);
+        emit PaymentReleased(_jobId, msg.sender, job.reward);
     }
 
     function deactivateJob(uint256 _jobId) external nonReentrant {
@@ -201,5 +282,30 @@ contract JobMarketplace {
         }
 
         emit DisputeResolved(_jobId, _worker, _acceptCancellation);
+    }
+
+    function releaseUnproven(uint256 _jobId, address _worker) external nonReentrant {
+        Job storage job = jobs[_jobId];
+        require(msg.sender == job.poster, "Only poster");
+        require(isExpired(_jobId), "Job not yet expired");
+        require(hasClaimed[_jobId][_worker], "Worker hasn't claimed");
+        require(!proofSubmitted[_jobId][_worker], "Proof already submitted");
+        require(!paid[_jobId][_worker], "Already paid");
+        require(job.active, "Job not active");
+
+        hasClaimed[_jobId][_worker] = false;
+        proofSubmitted[_jobId][_worker] = false;
+        unchecked {
+            job.claimedCount--;
+        }
+
+        if (job.token == address(0)) {
+            (bool sent, ) = payable(msg.sender).call{value: job.reward}("");
+            require(sent, "zkLTC refund failed");
+        } else {
+            require(IERC20(job.token).transfer(msg.sender, job.reward), "Token refund failed");
+        }
+
+        emit UnprovenRefunded(_jobId, _worker, msg.sender, job.reward);
     }
 }

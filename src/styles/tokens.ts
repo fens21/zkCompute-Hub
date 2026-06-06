@@ -4,12 +4,12 @@ export const colors = {
   bgCard: '#111',
   bgElevated: '#1a1a1a',
   bgInput: '#000',
-  border: '#444',
-  borderLight: '#333',
-  textPrimary: '#c0d8e8',
-  textSecondary: '#8ab0d0',
-  textMuted: '#5a7a98',
-  textDim: '#6a8aaa',
+  border: '#555',
+  borderLight: '#3a3a3a',
+  textPrimary: '#e0edf5',
+  textSecondary: '#a8cce8',
+  textMuted: '#7a9aba',
+  textDim: '#8ab0d0',
   green: '#4ade80',
   red: '#ff6b6b',
   orange: '#f97316',
@@ -25,12 +25,12 @@ export const radii = {
 } as const
 
 export const fontSizes = {
-  xs: 10,
-  sm: 11,
-  base: 12,
-  md: 13,
-  lg: 14,
-  xl: 15,
+  xs: 11,
+  sm: 12,
+  base: 13,
+  md: 14,
+  lg: 15,
+  xl: 16,
   heading: 22,
 } as const
 

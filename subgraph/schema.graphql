@@ -1,0 +1,59 @@
+type Worker @entity(immutable: false) {
+  id: ID!
+  address: Bytes!
+  jobsClaimed: BigInt!
+  jobsPaid: BigInt!
+  totalEarned: BigInt!
+  lastUpdated: BigInt!
+  reputationHash: Bytes
+  claims: [Claim!]! @derivedFrom(field: "worker")
+  payments: [Payment!]! @derivedFrom(field: "worker")
+  proofs: [ProofSubmission!]! @derivedFrom(field: "worker")
+  disputes: [Dispute!]! @derivedFrom(field: "worker")
+}
+
+type Job @entity(immutable: false) {
+  id: ID!
+  poster: Bytes!
+  reward: BigInt!
+  token: Bytes!
+  active: Boolean!
+  claims: [Claim!]! @derivedFrom(field: "job")
+  payments: [Payment!]! @derivedFrom(field: "job")
+  proofs: [ProofSubmission!]! @derivedFrom(field: "job")
+  disputes: [Dispute!]! @derivedFrom(field: "job")
+}
+
+type Claim @entity(immutable: true) {
+  id: ID!
+  job: Job!
+  worker: Worker!
+  timestamp: BigInt!
+}
+
+type Payment @entity(immutable: true) {
+  id: ID!
+  job: Job!
+  worker: Worker!
+  amount: BigInt!
+  timestamp: BigInt!
+}
+
+type ProofSubmission @entity(immutable: true) {
+  id: ID!
+  job: Job!
+  worker: Worker!
+  proofHash: String!
+  timestamp: BigInt!
+}
+
+type Dispute @entity(immutable: false) {
+  id: ID!
+  job: Job!
+  worker: Worker!
+  initiator: Bytes!
+  reason: String!
+  resolved: Boolean!
+  acceptedCancellation: Boolean
+  timestamp: BigInt!
+}

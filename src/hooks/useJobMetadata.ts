@@ -18,9 +18,13 @@ export interface JobMetadata {
   deadline: string
   token_symbol: string
   difficulty?: string
+  parameters?: Record<string, string>
+  input_data?: string
+  expected_output?: string
+  verification_method?: string
 }
 
-export async function saveJobMetadata(meta: JobMetadata) {
+export async function saveJobMetadata(meta: JobMetadata): Promise<boolean> {
   try {
     const res = await fetch(API, {
       method: 'POST',
@@ -30,9 +34,12 @@ export async function saveJobMetadata(meta: JobMetadata) {
     if (!res.ok) {
       const text = await res.text()
       console.error('saveJobMetadata failed:', res.status, text)
+      return false
     }
+    return true
   } catch (e) {
     console.error('saveJobMetadata threw:', e)
+    return false
   }
 }
 

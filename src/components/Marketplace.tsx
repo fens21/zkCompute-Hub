@@ -3,17 +3,12 @@ import type { Job, SortBy } from '../types'
 import { shorten, getDeadlineMs, formatTimeRemaining, formatDeadlineDate, COUNTDOWN_REFRESH } from '../utils'
 import { colors, radii, fontSizes, card, input } from '../styles/tokens'
 import { useIsMobile } from '../hooks/useIsMobile'
-
-const JOB_TYPE_ICONS: Record<string, string> = {
-  ML: '🧠', ZK: '🔐', Render: '🎬', 'AI Inference': '🤖',
-  'AI Training': '⚡', Scientific: '🔬', 'Data Labeling': '🏷️',
-  'Video Transcoding': '🎥', 'RAG Pipeline': '📚', FHE: '🔒', Custom: '⚙️',
-}
+import { JOB_TYPE_CONFIGS } from '../constants/jobTypes'
 
 const PER_PAGE = 12
 type ViewMode = 'grid' | 'list'
 
-export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter, sortBy, setSortBy, onClaim, onDetail, loading, jobsLoading, jobsError, onRetry }: {
+export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter, sortBy, setSortBy, onClaim, onDetail, claimingJobId, jobsLoading, jobsError, onRetry }: {
   jobs: Job[]
   search: string
   setSearch: (v: string) => void
@@ -23,12 +18,11 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
   setSortBy: (v: SortBy) => void
   onClaim: (job: Job) => void
   onDetail: (job: Job) => void
-  loading: boolean
+  claimingJobId?: number | null
   jobsLoading?: boolean
   jobsError?: string | null
   onRetry?: () => void
 }) {
-  const [now, setNow] = useState(Date.now())
   const [page, setPage] = useState(1)
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [dismissed, setDismissed] = useState(false)
@@ -42,16 +36,15 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
     setPage(1)
   }, [search, typeFilter, sortBy, jobs.length])
 
+  // Grid columns: 2 kolom di mobile (1 kolom di HP kecil), auto-fill di desktop
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth)
   useEffect(() => {
-    const tick = () => {
-      if (!document.hidden) setNow(Date.now())
-    }
-    const id = setInterval(tick, COUNTDOWN_REFRESH)
-    return () => clearInterval(id)
+    const onResize = () => setWindowWidth(window.innerWidth)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
   }, [])
-
-  // Grid columns: 1 kolom di mobile, auto-fill di desktop
-  const gridCols = isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))'
+  const isTiny = windowWidth < 420
+  const gridCols = isMobile && !isTiny ? 'repeat(2, 1fr)' : isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))'
 
   return (
     <>
@@ -84,8 +77,8 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
         gap: isMobile ? 8 : 10,
       }}>
         <div style={{ display: 'flex', gap: 4, marginRight: 'auto' }}>
-          <button onClick={() => setViewMode('grid')} aria-label="Grid view" style={{ background: viewMode === 'grid' ? colors.gold : '#222', color: viewMode === 'grid' ? '#000' : '#888', border: 'none', width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Grid view">▦</button>
-          <button onClick={() => setViewMode('list')} aria-label="List view" style={{ background: viewMode === 'list' ? colors.gold : '#222', color: viewMode === 'list' ? '#000' : '#888', border: 'none', width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="List view">☰</button>
+          <button onClick={() => setViewMode('grid')} aria-label="Grid view" style={{ background: viewMode === 'grid' ? colors.gold : '#222', color: viewMode === 'grid' ? '#000' : '#888', border: 'none', width: 32, height: 32, borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.lg, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Grid view">▦</button>
+          <button onClick={() => setViewMode('list')} aria-label="List view" style={{ background: viewMode === 'list' ? colors.gold : '#222', color: viewMode === 'list' ? '#000' : '#888', border: 'none', width: 32, height: 32, borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.lg, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="List view">[]</button>
         </div>
         {/* Di mobile: search full width di baris sendiri */}
         <input
@@ -102,17 +95,17 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
           style={{ ...input, flex: isMobile ? '1' : 'none', minWidth: 0, boxSizing: 'border-box' as const }}
         >
           <option value="">All Types</option>
-          <option value="ML">{JOB_TYPE_ICONS.ML} ML</option>
-          <option value="ZK">{JOB_TYPE_ICONS.ZK} ZK Proof</option>
-          <option value="Render">{JOB_TYPE_ICONS.Render} Render</option>
-          <option value="AI Inference">{JOB_TYPE_ICONS['AI Inference']} AI Inference</option>
-          <option value="AI Training">{JOB_TYPE_ICONS['AI Training']} AI Training</option>
-          <option value="Scientific">{JOB_TYPE_ICONS.Scientific} Scientific</option>
-          <option value="Data Labeling">{JOB_TYPE_ICONS['Data Labeling']} Data Labeling</option>
-          <option value="Video Transcoding">{JOB_TYPE_ICONS['Video Transcoding']} Transcoding</option>
-          <option value="RAG Pipeline">{JOB_TYPE_ICONS['RAG Pipeline']} RAG Pipeline</option>
-          <option value="FHE">{JOB_TYPE_ICONS.FHE} FHE</option>
-          <option value="Custom">{JOB_TYPE_ICONS.Custom} Custom</option>
+          <option value="ML">ML</option>
+          <option value="ZK">ZK Proof</option>
+          <option value="Render">Render</option>
+          <option value="AI Inference">AI Inference</option>
+          <option value="AI Training">AI Training</option>
+          <option value="Scientific">Scientific</option>
+          <option value="Data Labeling">Data Labeling</option>
+          <option value="Video Transcoding">Transcoding</option>
+          <option value="RAG Pipeline">RAG Pipeline</option>
+          <option value="FHE">FHE</option>
+          <option value="Custom">Custom</option>
         </select>
         <select
           value={sortBy}
@@ -125,13 +118,13 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
         </select>
       </div>
 
-      {jobsLoading ? (
+      {jobsLoading && jobs.length === 0 ? (
         <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 12 : 20 }}>
           {Array.from({ length: 6 }).map((_, i) => <SkeletonJobCard key={i} />)}
         </div>
       ) : jobsError ? (
         <div style={{ textAlign: 'center', padding: 60, background: colors.bgCard, border: `1px solid ${colors.red}`, borderRadius: radii.xl }}>
-          <div style={{ opacity: 0.7, fontSize: 13, marginBottom: 16 }}>{jobsError}</div>
+          <div style={{ opacity: 0.7, fontSize: fontSizes.md, marginBottom: 16 }}>{jobsError}</div>
           {onRetry && (
             <button onClick={onRetry} style={{ background: colors.gold, color: '#000', border: 'none', padding: '10px 24px', fontWeight: 700, borderRadius: radii.sm, cursor: 'pointer' }}>
               RETRY
@@ -139,9 +132,9 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
           )}
         </div>
       ) : jobs.length === 0 ? (
-        <div style={{ textAlign: 'center', opacity: 0.7, padding: 60, fontSize: 13 }}>
+        <div style={{ textAlign: 'center', opacity: 0.7, padding: 60, fontSize: fontSizes.md }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>
-            {search || typeFilter ? '🔍' : '📭'}
+            {search || typeFilter ? '🔍 Search' : 'No Jobs'}
           </div>
           {search || typeFilter
             ? 'No jobs match your search criteria — try adjusting your filters.'
@@ -151,31 +144,31 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
         <>
           {totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} style={{ background: page <= 1 ? colors.bgCard : colors.bgElevated, border: `1px solid ${colors.borderLight}`, color: page <= 1 ? '#555' : '#ccc', padding: '4px 12px', borderRadius: 6, cursor: page <= 1 ? 'default' : 'pointer', fontSize: 11, fontWeight: 600 }}>◀ Prev</button>
-              <span style={{ fontSize: 12, opacity: 0.6 }}>Page {page} of {totalPages}</span>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={!hasMore} style={{ background: !hasMore ? colors.bgCard : colors.bgElevated, border: `1px solid ${colors.borderLight}`, color: !hasMore ? '#555' : '#ccc', padding: '4px 12px', borderRadius: 6, cursor: !hasMore ? 'default' : 'pointer', fontSize: 11, fontWeight: 600 }}>Next ▶</button>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} style={{ background: page <= 1 ? colors.bgCard : colors.bgElevated, border: `1px solid ${colors.borderLight}`, color: page <= 1 ? '#555' : '#ccc', padding: '4px 12px', borderRadius: radii.sm, cursor: page <= 1 ? 'default' : 'pointer', fontSize: fontSizes.sm, fontWeight: 600 }}>Prev</button>
+              <span style={{ fontSize: fontSizes.base, opacity: 0.6 }}>Page {page} of {totalPages}</span>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={!hasMore} style={{ background: !hasMore ? colors.bgCard : colors.bgElevated, border: `1px solid ${colors.borderLight}`, color: !hasMore ? '#555' : '#ccc', padding: '4px 12px', borderRadius: radii.sm, cursor: !hasMore ? 'default' : 'pointer', fontSize: fontSizes.sm, fontWeight: 600 }}>Next</button>
             </div>
           )}
           {viewMode === 'list' ? (
             <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: radii.xl, overflow: 'hidden' }}>
               {pagedJobs.map((job, i) => (
                 <div key={job.id} className="job-card-list-row" style={{ borderBottom: i < pagedJobs.length - 1 ? `1px solid ${colors.border}` : 'none' }}>
-                  <JobCardList job={job} onClaim={onClaim} onDetail={onDetail} loading={loading} now={now} isMobile={isMobile} />
+                  <JobCardList job={job} onClaim={onClaim} onDetail={onDetail} claimingJobId={claimingJobId} isMobile={isMobile} />
                 </div>
               ))}
             </div>
           ) : (
-            <div key={`${search}-${typeFilter}-${sortBy}`} className="job-grid" style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 12 : 20 }}>
+            <div key={`${search}-${typeFilter}-${sortBy}`} className="job-grid" style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 10 : 16 }}>
               {pagedJobs.map(job => (
-                <JobCard key={job.id} job={job} onClaim={onClaim} onDetail={onDetail} loading={loading} now={now} />
+                <JobCard key={job.id} job={job} onClaim={onClaim} onDetail={onDetail} claimingJobId={claimingJobId} />
               ))}
             </div>
           )}
           {totalPages > 1 && (
             <div className="pagination-bar" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} style={{ background: page <= 1 ? colors.bgCard : colors.bgElevated, border: `1px solid ${colors.borderLight}`, color: page <= 1 ? '#555' : '#ccc', padding: '4px 12px', borderRadius: 6, cursor: page <= 1 ? 'default' : 'pointer', fontSize: 11, fontWeight: 600 }}>◀ Prev</button>
-              <span style={{ fontSize: 12, opacity: 0.6 }}>Page {page} of {totalPages}</span>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={!hasMore} style={{ background: !hasMore ? colors.bgCard : colors.bgElevated, border: `1px solid ${colors.borderLight}`, color: !hasMore ? '#555' : '#ccc', padding: '4px 12px', borderRadius: 6, cursor: !hasMore ? 'default' : 'pointer', fontSize: 11, fontWeight: 600 }}>Next ▶</button>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} style={{ background: page <= 1 ? colors.bgCard : colors.bgElevated, border: `1px solid ${colors.borderLight}`, color: page <= 1 ? '#555' : '#ccc', padding: '4px 12px', borderRadius: radii.sm, cursor: page <= 1 ? 'default' : 'pointer', fontSize: fontSizes.sm, fontWeight: 600 }}>Prev</button>
+              <span style={{ fontSize: fontSizes.base, opacity: 0.6 }}>Page {page} of {totalPages}</span>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={!hasMore} style={{ background: !hasMore ? colors.bgCard : colors.bgElevated, border: `1px solid ${colors.borderLight}`, color: !hasMore ? '#555' : '#ccc', padding: '4px 12px', borderRadius: radii.sm, cursor: !hasMore ? 'default' : 'pointer', fontSize: fontSizes.sm, fontWeight: 600 }}>Next</button>
             </div>
           )}
         </>
@@ -197,8 +190,7 @@ function JobCarousel({ jobs, onDetail, onClose }: { jobs: Job[]; onDetail: (job:
   const job = jobs[idx]
   if (!job) return null
 
-  const icon = JOB_TYPE_ICONS[job.type] || '📋'
-  const rewardStr = job.reward.toLocaleString(undefined, { minimumFractionDigits: 2 })
+  const rewardStr = job.reward.toLocaleString(undefined, { maximumFractionDigits: 0 })
 
   return (
     <div
@@ -206,11 +198,11 @@ function JobCarousel({ jobs, onDetail, onClose }: { jobs: Job[]; onDetail: (job:
       onMouseLeave={() => setPaused(false)}
       style={{ background: `linear-gradient(90deg, ${colors.bgElevated}, ${colors.bgCard})`, padding: '12px 20px', borderRadius: radii.xl, marginBottom: 24, border: `1px solid ${colors.borderLight}`, display: 'flex', alignItems: 'center', gap: 12 }}
     >
-      <div style={{ background: colors.gold, color: '#000', fontSize: 11, fontWeight: 800, padding: '2px 8px', borderRadius: 4, flexShrink: 0, whiteSpace: 'nowrap', letterSpacing: 0.3 }}>✨ NEW</div>
+      <div style={{ background: colors.gold, color: '#000', fontSize: fontSizes.sm, fontWeight: 800, padding: '2px 8px', borderRadius: 4, flexShrink: 0, whiteSpace: 'nowrap', letterSpacing: 0.3 }}>NEW</div>
       <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
         <div key={idx} style={{ animation: 'fadeSlideIn 0.4s ease-out' }}>
           <span onClick={() => onDetail(job)} role="button" tabIndex={0} style={{ fontSize: fontSizes.lg, fontWeight: 600, color: colors.textPrimary, cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', textAlign: 'center' }}>
-            {icon} {job.title}
+            {job.title}
           </span>
         </div>
       </div>
@@ -223,14 +215,16 @@ function JobCarousel({ jobs, onDetail, onClose }: { jobs: Job[]; onDetail: (job:
               onClick={() => setIdx(i)}
               aria-label={`Slide ${i + 1} of ${jobs.length}`}
               style={{
-                width: 7, height: 7, borderRadius: '50%', border: 'none', padding: 0, cursor: 'pointer',
-                background: i === idx ? colors.gold : '#444', transition: 'background 0.3s', flexShrink: 0
+                width: 12, height: 12, borderRadius: '50%', border: 'none', padding: 16, cursor: 'pointer',
+                background: i === idx ? colors.gold : colors.border, transition: 'background 0.3s', flexShrink: 0,
+                backgroundClip: 'content-box',
               }}
             />
           ))}
         </div>
       )}
-      <button onClick={onClose} aria-label="Dismiss banner" style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontSize: 14, padding: '0 0 0 4px', flexShrink: 0, lineHeight: 1 }}>✕</button>
+      <button onClick={() => setPaused(p => !p)} aria-label={paused ? 'Resume carousel' : 'Pause carousel'} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontSize: fontSizes.lg, padding: 0, flexShrink: 0, lineHeight: 1 }}>{paused ? '>' : '||'}</button>
+      <button onClick={onClose} aria-label="Dismiss banner" style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontSize: fontSizes.lg, padding: '0 0 0 4px', flexShrink: 0, lineHeight: 1 }}>X</button>
     </div>
   )
 }
@@ -255,7 +249,12 @@ function SkeletonJobCard() {
   )
 }
 
-function DeadlineValue({ createdAt, deadline, now }: { createdAt?: number; deadline: string; now: number }) {
+function DeadlineValue({ createdAt, deadline }: { createdAt?: number; deadline: string }) {
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    const id = setInterval(() => { if (!document.hidden) setNow(Date.now()) }, COUNTDOWN_REFRESH)
+    return () => clearInterval(id)
+  }, [])
   const endMs = getDeadlineMs(createdAt, deadline)
   if (endMs === null) return <span style={{ opacity: 0.5 }}>{deadline}</span>
   const remaining = endMs - now
@@ -264,47 +263,49 @@ function DeadlineValue({ createdAt, deadline, now }: { createdAt?: number; deadl
   return <span style={{ color: colors.textDim }}>{formatDeadlineDate(createdAt, deadline)} ({formatTimeRemaining(remaining)} left)</span>
 }
 
-function JobCard({ job, onClaim, onDetail, loading, now }: { job: Job; onClaim: (job: Job) => void; onDetail: (job: Job) => void; loading: boolean; now: number }) {
-  const rewardStr = job.reward.toLocaleString(undefined, { minimumFractionDigits: 2 })
+function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim: (job: Job) => void; onDetail: (job: Job) => void; claimingJobId?: number | null }) {
+  const isMobile = useIsMobile()
+  const rewardStr = job.reward.toLocaleString(undefined, { maximumFractionDigits: 0 })
   const claimedRatio = job.maxWorkers > 0 ? job.claimedCount / job.maxWorkers : 0
+  const pad = isMobile ? 10 : 24
 
   return (
-    <div className="job-card" style={card}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-        <div style={{ background: colors.borderLight, color: colors.gold, padding: '4px 12px', borderRadius: radii.full, fontSize: fontSizes.base, fontWeight: 600 }}>{JOB_TYPE_ICONS[job.type] || '📋'} {job.type}</div>
-        <div style={{ color: colors.gold, fontWeight: 700 }}>{job.difficulty}</div>
+    <div className="job-card" style={{ ...card, padding: pad }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? 4 : 12 }}>
+        <div style={{ background: colors.borderLight, color: JOB_TYPE_CONFIGS[job.type]?.color || colors.gold, padding: isMobile ? '1px 6px' : '4px 12px', borderRadius: radii.full, fontSize: isMobile ? fontSizes.xs : fontSizes.sm, fontWeight: 600 }}>{JOB_TYPE_CONFIGS[job.type]?.label || job.type}</div>
+        <div style={{ color: colors.gold, fontWeight: 700, fontSize: isMobile ? fontSizes.xs : fontSizes.sm }}>{job.difficulty}</div>
       </div>
-      <div style={{ fontSize: fontSizes.xl, fontWeight: 700, marginBottom: 8 }}>{job.title}</div>
-      <div style={{ opacity: 0.7, fontSize: fontSizes.base, marginBottom: 8 }}>{job.description}</div>
-      <div style={{ fontSize: fontSizes.sm, marginBottom: 12 }}>
-        Deadline: <DeadlineValue createdAt={job.createdAt} deadline={job.deadline} now={now} />
+      <div style={{ fontSize: isMobile ? fontSizes.md : fontSizes.xl, fontWeight: 700, marginBottom: isMobile ? 2 : 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.title}</div>
+      {!isMobile && <div style={{ opacity: 0.7, fontSize: fontSizes.sm, marginBottom: 8 }}>{job.description}</div>}
+      <div style={{ fontSize: isMobile ? fontSizes.xs : fontSizes.sm, marginBottom: isMobile ? 4 : 12 }}>
+        <DeadlineValue createdAt={job.createdAt} deadline={job.deadline} />
       </div>
-      <div style={{ margin: '16px 0', fontSize: 20, color: colors.gold, fontWeight: 700 }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
-      <div style={{ fontSize: fontSizes.sm, opacity: 0.7, marginBottom: 8 }}>Posted by {shorten(job.poster)}</div>
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: fontSizes.sm, opacity: 0.7, marginBottom: 4 }}>
-          <span>{job.claimedCount}/{job.maxWorkers} claimed</span>
+      <div style={{ margin: isMobile ? '4px 0' : '16px 0', fontSize: isMobile ? 14 : 20, color: colors.gold, fontWeight: 700 }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
+      {!isMobile && <div style={{ fontSize: fontSizes.xs, opacity: 0.7, marginBottom: 8 }}>Posted by {shorten(job.poster)}</div>}
+      <div style={{ marginBottom: isMobile ? 6 : 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isMobile ? 9 : fontSizes.xs, opacity: 0.7, marginBottom: 2 }}>
+          <span>{job.claimedCount}/{job.maxWorkers}</span>
           <span>{Math.round(claimedRatio * 100)}%</span>
         </div>
-        <div style={{ background: colors.bgElevated, borderRadius: 4, height: 6, overflow: 'hidden' }}>
+        <div style={{ background: colors.bgElevated, borderRadius: 4, height: isMobile ? 4 : 6, overflow: 'hidden' }}>
           <div style={{ width: `${Math.min(claimedRatio * 100, 100)}%`, background: claimedRatio >= 1 ? colors.green : colors.gold, height: '100%', borderRadius: 4, transition: 'width 0.3s' }} />
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: isMobile ? 4 : 8 }}>
         <button
           onClick={() => onDetail(job)}
           aria-label={`View details for ${job.title}`}
-          style={{ flex: 1, background: 'transparent', border: `1px solid ${colors.textDim}`, padding: '11px 9px', color: colors.textSecondary, cursor: 'pointer', borderRadius: radii.sm, fontWeight: 600, fontSize: fontSizes.base, minHeight: 44 }}
+          style={{ flex: 1, background: 'transparent', border: `1px solid ${colors.textDim}`, padding: isMobile ? '10px 4px' : '11px 9px', color: colors.textSecondary, cursor: 'pointer', borderRadius: radii.sm, fontWeight: 600, fontSize: isMobile ? fontSizes.xs : fontSizes.base, minHeight: 44 }}
         >
           DETAILS
         </button>
         <button
           onClick={() => onClaim(job)}
-          disabled={loading}
+          disabled={claimingJobId === job.id}
           aria-label={`Claim job: ${job.title}`}
-          style={{ flex: 1, background: colors.gold, color: '#000', border: 'none', padding: '11px 9px', fontWeight: 700, cursor: 'pointer', borderRadius: radii.sm, fontSize: fontSizes.base, minHeight: 44 }}
+          style={{ flex: 1, background: colors.gold, color: '#000', border: 'none', padding: isMobile ? '10px 4px' : '11px 9px', fontWeight: 700, cursor: 'pointer', borderRadius: radii.sm, fontSize: isMobile ? fontSizes.xs : fontSizes.base, minHeight: 44 }}
         >
-          {loading ? 'CLAIMING...' : 'CLAIM'}
+          {claimingJobId === job.id ? '...' : 'CLAIM'}
         </button>
       </div>
     </div>
@@ -312,8 +313,8 @@ function JobCard({ job, onClaim, onDetail, loading, now }: { job: Job; onClaim: 
 }
 
 // Di mobile, list view jadi card sederhana agar mudah dibaca
-function JobCardList({ job, onClaim, onDetail, loading, now, isMobile }: { job: Job; onClaim: (job: Job) => void; onDetail: (job: Job) => void; loading: boolean; now: number; isMobile: boolean }) {
-  const rewardStr = job.reward.toLocaleString(undefined, { minimumFractionDigits: 2 })
+function JobCardList({ job, onClaim, onDetail, claimingJobId, isMobile }: { job: Job; onClaim: (job: Job) => void; onDetail: (job: Job) => void; claimingJobId?: number | null; isMobile: boolean }) {
+  const rewardStr = job.reward.toLocaleString(undefined, { maximumFractionDigits: 0 })
   const claimedRatio = job.maxWorkers > 0 ? job.claimedCount / job.maxWorkers : 0
 
   const sep = <div style={{ width: 1, height: 22, background: colors.border, flexShrink: 0 }} />
@@ -323,15 +324,15 @@ function JobCardList({ job, onClaim, onDetail, loading, now, isMobile }: { job: 
     return (
       <div style={{ padding: '12px 14px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, flex: 1, marginRight: 8 }}>{job.title}</div>
-          <div style={{ color: colors.gold, fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap' }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
+          <div style={{ fontWeight: 700, fontSize: fontSizes.md, flex: 1, marginRight: 8 }}>{job.title}</div>
+          <div style={{ color: colors.gold, fontWeight: 700, fontSize: fontSizes.lg, whiteSpace: 'nowrap' }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 11, color: colors.gold }}>{JOB_TYPE_ICONS[job.type] || '📋'} {job.type}</div>
+          <div style={{ fontSize: fontSizes.sm, color: JOB_TYPE_CONFIGS[job.type]?.color || colors.gold }}>{JOB_TYPE_CONFIGS[job.type]?.label || job.type}</div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={() => onDetail(job)} style={{ background: 'transparent', border: `1px solid ${colors.textDim}`, color: colors.textSecondary, padding: '5px 10px', borderRadius: radii.sm, cursor: 'pointer', fontSize: 11, fontWeight: 600, minHeight: 34 }}>DETAILS</button>
-            <button onClick={() => onClaim(job)} disabled={loading} style={{ background: colors.gold, color: '#000', border: 'none', padding: '5px 12px', borderRadius: radii.sm, fontWeight: 700, cursor: 'pointer', fontSize: 11, minHeight: 34 }}>
-              {loading ? '...' : 'CLAIM'}
+            <button onClick={() => onDetail(job)} style={{ background: 'transparent', border: `1px solid ${colors.textDim}`, color: colors.textSecondary, padding: '5px 10px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.sm, fontWeight: 600, minHeight: isMobile ? 44 : 34 }}>DETAILS</button>
+            <button onClick={() => onClaim(job)} disabled={claimingJobId === job.id} style={{ background: colors.gold, color: '#000', border: 'none', padding: '5px 12px', borderRadius: radii.sm, fontWeight: 700, cursor: 'pointer', fontSize: fontSizes.sm, minHeight: isMobile ? 44 : 34 }}>
+              {claimingJobId === job.id ? '...' : 'CLAIM'}
             </button>
           </div>
         </div>
@@ -343,12 +344,12 @@ function JobCardList({ job, onClaim, onDetail, loading, now, isMobile }: { job: 
     <div style={{ background: 'transparent', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10, fontSize: fontSizes.base }}>
       <div style={{ fontWeight: 700, flex: '1 1 160px', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.title}</div>
       {sep}
-      <div style={{ flex: '0 0 90px', color: colors.gold, fontSize: fontSizes.sm, fontWeight: 600 }}>{JOB_TYPE_ICONS[job.type] || '📋'} {job.type}</div>
+      <div style={{ flex: '0 0 90px', color: JOB_TYPE_CONFIGS[job.type]?.color || colors.gold, fontSize: fontSizes.sm, fontWeight: 600 }}>{JOB_TYPE_CONFIGS[job.type]?.label || job.type}</div>
       {sep}
       <div style={{ flex: '0 0 120px', color: colors.gold, fontWeight: 600, whiteSpace: 'nowrap' }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
       {sep}
       <div style={{ flex: '1 1 110px', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: fontSizes.sm, opacity: 0.5 }}>
-        <DeadlineValue createdAt={job.createdAt} deadline={job.deadline} now={now} />
+        <DeadlineValue createdAt={job.createdAt} deadline={job.deadline} />
       </div>
       {sep}
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: '0 0 70px', fontSize: fontSizes.xs, color: colors.textDim }}>
@@ -359,8 +360,8 @@ function JobCardList({ job, onClaim, onDetail, loading, now, isMobile }: { job: 
       </div>
       <div style={{ display: 'flex', gap: 4, marginLeft: 4 }}>
         <button onClick={() => onDetail(job)} aria-label={`View details for ${job.title}`} style={{ background: 'transparent', border: `1px solid ${colors.textDim}`, color: colors.textSecondary, padding: '3px 8px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 600 }}>DETAILS</button>
-        <button onClick={() => onClaim(job)} disabled={loading} aria-label={`Claim job: ${job.title}`} style={{ background: colors.gold, color: '#000', border: 'none', padding: '3px 10px', borderRadius: radii.sm, fontWeight: 700, cursor: 'pointer', fontSize: fontSizes.xs }}>
-          {loading ? '...' : 'CLAIM'}
+        <button onClick={() => onClaim(job)} disabled={claimingJobId === job.id} aria-label={`Claim job: ${job.title}`} style={{ background: colors.gold, color: '#000', border: 'none', padding: '3px 10px', borderRadius: radii.sm, fontWeight: 700, cursor: 'pointer', fontSize: fontSizes.xs }}>
+          {claimingJobId === job.id ? '...' : 'CLAIM'}
         </button>
       </div>
     </div>

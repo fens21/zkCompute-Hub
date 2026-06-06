@@ -1,17 +1,26 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { readContract } from '@wagmi/core'
+import { keccak256 } from 'viem'
 import abi from '../abi/JobMarketplace.json'
 import { config, CONTRACT_ADDRESS } from '../config/chain'
 import type { Job } from '../types'
 import { shorten, formatDeadlineDate, getDeadlineMs } from '../utils'
-import { colors, radii } from '../styles/tokens'
+import { colors, radii, fontSizes } from '../styles/tokens'
+import { JOB_TYPE_CONFIGS } from '../constants/jobTypes'
 import { getProofUrl, discoverProofUrl } from '../hooks/useWorkerProfiles'
 import { fetchProofUrl, fetchProofHash } from '../hooks/useMyJobs'
 
-export function PostedJobCard({ job, onRelease, onDeactivate, onDispute, loading, deactivating, onEdit, view = 'grid' }: { job: Job; onRelease: (worker: string, j: Job) => void; onDeactivate: (j: Job) => void; onDispute: (j: Job, worker?: string) => void; loading: boolean; deactivating?: boolean; onEdit?: (j: Job) => void; view?: 'grid' | 'list' }) {
+export function PostedJobCard({ job, onRelease, onDeactivate, onDispute, loading, deactivating, onEdit, view = 'grid', releaseRefreshKey }: { job: Job; onRelease: (worker: string, j: Job) => void; onDeactivate: (j: Job) => void; onDispute: (j: Job, worker?: string) => void; loading: boolean; deactivating?: boolean; onEdit?: (j: Job) => void; view?: 'grid' | 'list'; releaseRefreshKey?: number }) {
   const [claimantsList, setClaimantsList] = useState<string[]>([])
   const [claimantsLoading, setClaimantsLoading] = useState(true)
   const [claimantsRefreshKey, setClaimantsRefreshKey] = useState(0)
+  const prevReleaseKey = useRef(releaseRefreshKey)
+  useEffect(() => {
+    if (releaseRefreshKey !== undefined && releaseRefreshKey !== prevReleaseKey.current) {
+      prevReleaseKey.current = releaseRefreshKey
+      setClaimantsRefreshKey(k => k + 1)
+    }
+  }, [releaseRefreshKey])
 
   useEffect(() => {
     let cancelled = false
@@ -35,86 +44,111 @@ export function PostedJobCard({ job, onRelease, onDeactivate, onDispute, loading
     return () => { cancelled = true }
   }, [job.id, job.claimedCount, claimantsRefreshKey])
 
-  const rewardStr = job.reward.toLocaleString(undefined, { minimumFractionDigits: 2 })
-  const isExpired = job.createdAt ? (getDeadlineMs(job.createdAt, job.deadline) ?? Infinity) <= Date.now() : false
+  const rewardNum = isNaN(job.reward) ? 0 : job.reward
+  const rewardStr = rewardNum.toLocaleString(undefined, { minimumFractionDigits: 2 })
+  const isExpired = job.createdAt ? (getDeadlineMs(job.createdAt, job.deadline) ?? 0) <= Date.now() : false
   const sep = <div style={{ width: 1, height: 22, background: colors.border, flexShrink: 0 }} />
   const refreshClaimants = () => setClaimantsRefreshKey(k => k + 1)
+  const handleReleaseRequest = (workerAddr: string, j: Job) => setReleaseConfirmWorker(workerAddr)
 
   const [listOpen, setListOpen] = useState(false)
+  const [releaseConfirmWorker, setReleaseConfirmWorker] = useState<string | null>(null)
 
   return (
     <>
       {view === 'list' ? (
     <>
-      <div onClick={() => claimantsList.length > 0 && setListOpen(!listOpen)} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); claimantsList.length > 0 && setListOpen(!listOpen) } }} aria-expanded={claimantsList.length > 0 ? listOpen : undefined} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, padding: '10px 16px', cursor: claimantsList.length > 0 ? 'pointer' : 'default' }}>
-        <span style={{ color: colors.textMuted, fontSize: 10, width: 16, flexShrink: 0, textAlign: 'center' }}>
-          {claimantsList.length > 0 ? (listOpen ? '▼' : '▶') : ''}
+      <div onClick={() => claimantsList.length > 0 && setListOpen(!listOpen)} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); claimantsList.length > 0 && setListOpen(!listOpen) } }} aria-expanded={claimantsList.length > 0 ? listOpen : undefined} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: fontSizes.base, padding: '10px 16px', cursor: claimantsList.length > 0 ? 'pointer' : 'default', outline: 'none' }} onFocus={e => e.currentTarget.style.outline = '2px solid ' + colors.gold} onBlur={e => e.currentTarget.style.outline = 'none'}>
+        <span style={{ color: colors.textMuted, fontSize: fontSizes.xs, width: 16, flexShrink: 0, textAlign: 'center' }}>
+          {claimantsList.length > 0 ? (listOpen ? 'v' : '>') : ''}
         </span>
         <div style={{ fontWeight: 700, flex: '1 1 140px', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: isExpired ? 0.5 : 1 }}>{job.title}{isExpired ? ' (expired)' : ''}</div>
-        <div style={{ flex: '0 0 100px', fontSize: 10, color: colors.gold, background: isExpired ? '#333' : colors.borderLight, padding: '2px 6px', borderRadius: radii.full, textAlign: 'center', opacity: isExpired ? 0.6 : 1 }}>{isExpired ? 'EXPIRED' : job.type}</div>
+        <div style={{ flex: '0 0 100px', fontSize: fontSizes.xs, color: JOB_TYPE_CONFIGS[job.type]?.color || colors.gold, background: isExpired ? colors.borderLight : colors.borderLight, padding: '2px 6px', borderRadius: radii.full, textAlign: 'center', opacity: isExpired ? 0.6 : 1 }}>{isExpired ? 'EXPIRED' : JOB_TYPE_CONFIGS[job.type]?.label || job.type}</div>
         {sep}
         <div style={{ flex: '0 0 100px', whiteSpace: 'nowrap', color: colors.gold, fontWeight: 600 }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
         {sep}
         <div style={{ flex: '0 0 70px', opacity: 0.6 }}>{job.claimedCount}/{job.maxWorkers} claimed</div>
         {sep}
-        <div style={{ flex: '0 0 140px', opacity: 0.5, fontSize: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{formatDeadlineDate(job.createdAt, job.deadline)}</div>
+        <div style={{ flex: '0 0 140px', opacity: 0.5, fontSize: fontSizes.xs, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{formatDeadlineDate(job.createdAt, job.deadline)}</div>
         {sep}
         <div style={{ flex: '1 1 100px', minWidth: 0, display: 'flex', gap: 4, overflow: 'hidden' }}>
           {claimantsLoading ? (
             <span style={{ opacity: 0.4 }}>Loading...</span>
           ) : claimantsList.length > 0 ? (
-            <span style={{ opacity: 0.4, fontSize: 10 }}>{claimantsList.length} worker{claimantsList.length > 1 ? 's' : ''}</span>
+            <span style={{ opacity: 0.4, fontSize: fontSizes.xs }}>{claimantsList.length} worker{claimantsList.length > 1 ? 's' : ''}</span>
           ) : (
             <span style={{ opacity: 0.4 }}>No workers</span>
           )}
         </div>
         <div style={{ display: 'flex', gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-          {onEdit && <button type="button" onClick={() => onEdit(job)} aria-label={`Edit job: ${job.title}`} style={{ background: 'transparent', color: colors.gold, border: `1px solid ${colors.gold}`, padding: '3px 10px', borderRadius: radii.sm, cursor: 'pointer', fontSize: 10, fontWeight: 600 }}>EDIT</button>}
-          <button type="button" onClick={() => onDeactivate(job)} disabled={deactivating} aria-label={`Cancel and refund job: ${job.title}`} style={{ background: colors.red, color: '#000', border: 'none', padding: '4px 10px', borderRadius: radii.sm, cursor: deactivating ? 'not-allowed' : 'pointer', fontSize: 10, fontWeight: 700, opacity: deactivating ? 0.5 : 1 }}>{deactivating ? 'CANCELLING...' : 'CANCEL & REFUND'}</button>
+          {onEdit && <button type="button" onClick={() => onEdit(job)} disabled={isExpired} aria-label={`Edit job: ${job.title}`} style={{ background: 'transparent', color: isExpired ? '#555' : colors.gold, border: `1px solid ${isExpired ? '#444' : colors.gold}`, padding: '3px 10px', borderRadius: radii.sm, cursor: isExpired ? 'not-allowed' : 'pointer', fontSize: fontSizes.xs, fontWeight: 600, opacity: isExpired ? 0.4 : 1 }} title={isExpired ? 'Cannot edit expired jobs' : ''}>EDIT</button>}
+          <button type="button" onClick={() => onDeactivate(job)} disabled={deactivating} aria-label={`Cancel and refund job: ${job.title}`} style={{ background: colors.red, color: '#000', border: 'none', padding: '4px 10px', borderRadius: radii.sm, cursor: deactivating ? 'not-allowed' : 'pointer', fontSize: fontSizes.xs, fontWeight: 700, opacity: deactivating ? 0.5 : 1 }}>{deactivating ? 'CANCELLING...' : 'CANCEL & REFUND'}</button>
         </div>
       </div>
+
       {listOpen && claimantsList.length > 0 && !claimantsLoading && (
         <div style={{ borderTop: `1px solid ${colors.border}`, padding: '8px 16px 12px', background: colors.bgElevated }}>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
-            <button type="button" onClick={refreshClaimants} aria-label="Refresh claimants" style={{ background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.border}`, padding: '2px 8px', borderRadius: radii.sm, cursor: 'pointer', fontSize: 10 }}>↻ Refresh</button>
+            <button type="button" onClick={refreshClaimants} aria-label="Refresh claimants" style={{ background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.border}`, padding: '2px 8px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs }}>↻ Refresh</button>
           </div>
-          <CheckProofs jobId={job.id} claimants={claimantsList} claimantsRefreshKey={claimantsRefreshKey} onRelease={onRelease} job={job} loading={loading} onDispute={onDispute} />
+          <CheckProofs jobId={job.id} claimants={claimantsList} claimantsRefreshKey={claimantsRefreshKey} onRelease={handleReleaseRequest} job={job} loading={loading} onDispute={onDispute} />
         </div>
       )}
     </>
   ) : (
-    <div className="job-card" style={{ background: colors.bgCard, border: `1px solid ${isExpired ? colors.red : colors.gold}`, borderRadius: radii.xl, padding: 24, opacity: isExpired ? 0.65 : 1 }}>
+    <div className="job-card" style={{ background: colors.bgCard, border: `1px solid ${isExpired ? colors.red : colors.gold}`, borderRadius: radii.xl, padding: 24, opacity: isExpired ? 0.65 : 1, display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <div style={{ fontSize: 15, fontWeight: 700 }}>{job.title}</div>
+        <div style={{ fontSize: fontSizes.xl, fontWeight: 700 }}>{job.title}</div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          {isExpired && <span style={{ background: '#555', color: '#aaa', padding: '2px 10px', borderRadius: radii.full, fontSize: 10, fontWeight: 600 }}>EXPIRED</span>}
-          <div style={{ background: colors.borderLight, color: colors.gold, padding: '2px 10px', borderRadius: radii.full, fontSize: 10, fontWeight: 600 }}>{job.type}</div>
+          {isExpired && <span style={{ background: '#555', color: '#aaa', padding: '2px 10px', borderRadius: radii.full, fontSize: fontSizes.xs, fontWeight: 600 }}>EXPIRED</span>}
+          <div style={{ background: colors.borderLight, color: JOB_TYPE_CONFIGS[job.type]?.color || colors.gold, padding: '2px 10px', borderRadius: radii.full, fontSize: fontSizes.xs, fontWeight: 600 }}>{JOB_TYPE_CONFIGS[job.type]?.label || job.type}</div>
         </div>
       </div>
-      <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>Reward: {rewardStr} {job.tokenSymbol || 'zkLTC'} / worker</div>
-      <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 12 }}>Claimed: {job.claimedCount}/{job.maxWorkers}</div>
-      <div style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>Escrowed: {(job.reward * job.maxWorkers).toLocaleString(undefined, { minimumFractionDigits: 2 })} {job.tokenSymbol || 'zkLTC'}</div>
-      <div style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>Deadline: {formatDeadlineDate(job.createdAt, job.deadline)}</div>
+      <div style={{ fontSize: fontSizes.sm, opacity: 0.6, marginBottom: 4 }}>Reward: {rewardStr} {job.tokenSymbol || 'zkLTC'} / worker</div>
+      <div style={{ fontSize: fontSizes.sm, opacity: 0.6, marginBottom: 12 }}>Claimed: {job.claimedCount}/{job.maxWorkers}</div>
+      <div style={{ fontSize: fontSizes.sm, opacity: 0.5, marginBottom: 12 }}>Escrowed: {isNaN(job.reward) ? '—' : (job.reward * job.maxWorkers).toLocaleString(undefined, { minimumFractionDigits: 2 })} {job.tokenSymbol || 'zkLTC'}</div>
+      <div style={{ fontSize: fontSizes.sm, opacity: 0.5, marginBottom: 12 }}>Deadline: {formatDeadlineDate(job.createdAt, job.deadline)}</div>
+      <div style={{ flex: 1 }} />
       {claimantsLoading ? (
-        <div style={{ fontSize: 11, opacity: 0.5, padding: '8px 0', textAlign: 'center' }}>Loading claimants...</div>
+        <div style={{ fontSize: fontSizes.sm, opacity: 0.5, padding: '8px 0', textAlign: 'center' }}>Loading claimants...</div>
       ) : claimantsList.length > 0 ? (
         <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: 12, marginTop: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
-            <button type="button" onClick={refreshClaimants} aria-label="Refresh claimants" style={{ background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.border}`, padding: '2px 8px', borderRadius: radii.sm, cursor: 'pointer', fontSize: 10 }}>↻ Refresh</button>
+            <button type="button" onClick={refreshClaimants} aria-label="Refresh claimants" style={{ background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.border}`, padding: '2px 8px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs }}>↻ Refresh</button>
           </div>
-          <CheckProofs jobId={job.id} claimants={claimantsList} claimantsRefreshKey={claimantsRefreshKey} onRelease={onRelease} job={job} loading={loading} onDispute={onDispute} />
+          <CheckProofs jobId={job.id} claimants={claimantsList} claimantsRefreshKey={claimantsRefreshKey} onRelease={handleReleaseRequest} job={job} loading={loading} onDispute={onDispute} />
         </div>
       ) : (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, gap: 6 }}>
-          <span style={{ opacity: 0.5 }}>No workers claimed yet</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {onEdit && <button type="button" onClick={() => onEdit(job)} aria-label={`Edit job: ${job.title}`} style={{ background: 'transparent', color: colors.gold, border: `1px solid ${colors.gold}`, padding: '4px 12px', borderRadius: radii.sm, cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>EDIT</button>}
-            <button type="button" onClick={() => onDeactivate(job)} disabled={deactivating} aria-label={`Cancel and refund job: ${job.title}`} style={{ background: colors.red, color: '#000', border: 'none', padding: '6px 14px', borderRadius: radii.sm, cursor: deactivating ? 'not-allowed' : 'pointer', fontSize: 11, fontWeight: 700, opacity: deactivating ? 0.5 : 1 }}>{deactivating ? 'CANCELLING...' : 'CANCEL & REFUND'}</button>
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: fontSizes.base, gap: 6, marginBottom: 6 }}>
+            <span style={{ opacity: 0.5 }}>No workers claimed yet</span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {onEdit && <button type="button" onClick={() => onEdit(job)} disabled={isExpired} aria-label={`Edit job: ${job.title}`} style={{ background: 'transparent', color: isExpired ? '#555' : colors.gold, border: `1px solid ${isExpired ? '#444' : colors.gold}`, padding: '4px 12px', borderRadius: radii.sm, cursor: isExpired ? 'not-allowed' : 'pointer', fontSize: fontSizes.sm, fontWeight: 600, opacity: isExpired ? 0.4 : 1 }} title={isExpired ? 'Cannot edit expired jobs' : ''}>EDIT</button>}
+              <button type="button" onClick={() => onDeactivate(job)} disabled={deactivating} aria-label={`Cancel and refund job: ${job.title}`} style={{ background: colors.red, color: '#000', border: 'none', padding: '6px 14px', borderRadius: radii.sm, cursor: deactivating ? 'not-allowed' : 'pointer', fontSize: fontSizes.sm, fontWeight: 700, opacity: deactivating ? 0.5 : 1 }}>{deactivating ? 'CANCELLING...' : job.claimedCount > 0 ? `CANCEL & REFUND (${job.claimedCount})` : 'CANCEL & REFUND'}</button>
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button type="button" onClick={refreshClaimants} aria-label="Refresh claimants" style={{ background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.border}`, padding: '2px 8px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs }}>↻ Refresh</button>
           </div>
         </div>
       )}
     </div>
   )}
+{releaseConfirmWorker && (
+  <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300 }}>
+    <div style={{ background: colors.bgCard, border: `1px solid ${colors.border}`, padding: 28, borderRadius: radii.xl, maxWidth: 380, width: '90%' }}>
+      <h4 style={{ margin: '0 0 12px' }}>Release Payment?</h4>
+      <div style={{ opacity: 0.7, marginBottom: 8, fontSize: fontSizes.sm }}>
+        Release <strong>{rewardStr} {job.tokenSymbol || 'zkLTC'}</strong> to <strong>{shorten(releaseConfirmWorker)}</strong>?
+      </div>
+      <div style={{ opacity: 0.5, marginBottom: 20, fontSize: fontSizes.xs }}>This action cannot be undone.</div>
+      <div style={{ display: 'flex', gap: 12 }}>
+        <button onClick={() => { onRelease(releaseConfirmWorker, job); setReleaseConfirmWorker(null) }} disabled={loading} style={{ flex: 1, padding: 10, background: colors.green, color: '#000', fontWeight: 700, border: 'none', borderRadius: radii.md, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1 }}>{loading ? 'RELEASING...' : 'CONFIRM RELEASE'}</button>
+        <button onClick={() => setReleaseConfirmWorker(null)} style={{ flex: 1, padding: 10, border: `1px solid ${colors.border}`, background: 'transparent', color: colors.textMuted, borderRadius: radii.md, cursor: 'pointer' }}>CANCEL</button>
+      </div>
+    </div>
+  </div>
+)}
 </>
 )
 }
@@ -181,8 +215,8 @@ function CheckProofs({ jobId, claimants, claimantsRefreshKey, onRelease, job, lo
   const sectionArrow = (section: string) => openSection === section ? '−' : '+'
 
   return (
-    <div style={{ fontSize: 12 }}>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 8, fontSize: 10 }}>
+    <div style={{ fontSize: fontSizes.base }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8, fontSize: fontSizes.xs }}>
         <span style={{ color: colors.green }}>{pending.length} pending</span>
         <span style={{ opacity: 0.4 }}>|</span>
         <span style={{ color: colors.textDim }}>{claimed.length} claimed</span>
@@ -191,9 +225,9 @@ function CheckProofs({ jobId, claimants, claimantsRefreshKey, onRelease, job, lo
       </div>
       {pending.length > 0 && (
         <div style={{ marginBottom: 6, border: `1px solid ${colors.bgElevated}`, borderRadius: radii.sm, overflow: 'hidden' }}>
-          <button type="button" onClick={() => toggleSection('pending')} aria-expanded={openSection === 'pending'} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', background: 'transparent', border: 'none', color: colors.green, fontWeight: 600, fontSize: 11, padding: '6px 8px', cursor: 'pointer' }}>
+          <button type="button" onClick={() => toggleSection('pending')} aria-expanded={openSection === 'pending'} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', background: 'transparent', border: 'none', color: colors.green, fontWeight: 600, fontSize: fontSizes.sm, padding: '6px 8px', cursor: 'pointer' }}>
             <span>Proof Pending ({pending.length})</span>
-            <span style={{ fontSize: 14, lineHeight: 1 }}>{sectionArrow('pending')}</span>
+            <span style={{ fontSize: fontSizes.lg, lineHeight: 1 }}>{sectionArrow('pending')}</span>
           </button>
           <div style={{ maxHeight: openSection === 'pending' ? '600px' : '0', overflow: 'hidden', transition: 'max-height 0.3s ease' }}>
             <div style={{ padding: '4px 8px 8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
@@ -206,14 +240,21 @@ function CheckProofs({ jobId, claimants, claimantsRefreshKey, onRelease, job, lo
       )}
       {paidList.length > 0 && (
         <div style={{ marginBottom: 6, border: `1px solid ${colors.bgElevated}`, borderRadius: radii.sm, overflow: 'hidden' }}>
-          <button type="button" onClick={() => toggleSection('paid')} aria-expanded={openSection === 'paid'} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', background: 'transparent', border: 'none', color: colors.textDim, fontWeight: 600, fontSize: 11, padding: '6px 8px', cursor: 'pointer' }}>
+          <button type="button" onClick={() => toggleSection('paid')} aria-expanded={openSection === 'paid'} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', background: 'transparent', border: 'none', color: colors.textDim, fontWeight: 600, fontSize: fontSizes.sm, padding: '6px 8px', cursor: 'pointer' }}>
             <span>Paid ({paidList.length})</span>
-            <span style={{ fontSize: 14, lineHeight: 1 }}>{sectionArrow('paid')}</span>
+            <span style={{ fontSize: fontSizes.lg, lineHeight: 1 }}>{sectionArrow('paid')}</span>
           </button>
           <div style={{ maxHeight: openSection === 'paid' ? '600px' : '0', overflow: 'hidden', transition: 'max-height 0.3s ease' }}>
             <div style={{ padding: '2px 8px 8px' }}>
               {paidList.map((w, i) => (
-                <div key={i} style={{ opacity: 0.6, padding: '2px 0', fontSize: 10, fontFamily: 'monospace' }}>{shorten(w.addr)} — paid</div>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.6, padding: '2px 0', fontSize: fontSizes.xs, fontFamily: 'monospace' }}>
+                  <span>{shorten(w.addr)}</span>
+                  {job.type === 'ZK' ? (
+                    <span style={{ color: '#a78bfa', fontSize: 9, background: '#1a1a2e', padding: '1px 5px', borderRadius: 4 }}>ZK AUTO-PAY</span>
+                  ) : (
+                    <span style={{ color: colors.green, fontSize: 9 }}>paid</span>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -221,16 +262,16 @@ function CheckProofs({ jobId, claimants, claimantsRefreshKey, onRelease, job, lo
       )}
       {claimed.length > 0 && (
         <div style={{ marginBottom: 4, border: `1px solid ${colors.bgElevated}`, borderRadius: radii.sm, overflow: 'hidden' }}>
-          <button type="button" onClick={() => toggleSection('claimed')} aria-expanded={openSection === 'claimed'} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', background: 'transparent', border: 'none', color: colors.textDim, fontWeight: 600, fontSize: 11, padding: '6px 8px', cursor: 'pointer' }}>
+          <button type="button" onClick={() => toggleSection('claimed')} aria-expanded={openSection === 'claimed'} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', background: 'transparent', border: 'none', color: colors.textDim, fontWeight: 600, fontSize: fontSizes.sm, padding: '6px 8px', cursor: 'pointer' }}>
             <span>Claimed ({claimed.length})</span>
-            <span style={{ fontSize: 14, lineHeight: 1 }}>{sectionArrow('claimed')}</span>
+            <span style={{ fontSize: fontSizes.lg, lineHeight: 1 }}>{sectionArrow('claimed')}</span>
           </button>
           <div style={{ maxHeight: openSection === 'claimed' ? '600px' : '0', overflow: 'hidden', transition: 'max-height 0.3s ease' }}>
             <div style={{ padding: '4px 8px 8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
               {claimed.map((w, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 6px', background: colors.bgElevated, borderRadius: radii.sm }}>
-                  <span style={{ fontFamily: 'monospace', flex: 1, fontSize: 10, opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shorten(w.addr)}</span>
-                  <button type="button" onClick={() => onDispute(job, w.addr)} aria-label={`Dispute worker ${shorten(w.addr)}`} style={{ background: 'transparent', color: colors.orange, border: `1px solid ${colors.orange}`, padding: '1px 6px', borderRadius: radii.sm, cursor: 'pointer', fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap' }} title="File a dispute — worker has not submitted proof yet">DISPUTE</button>
+                  <span style={{ fontFamily: 'monospace', flex: 1, fontSize: fontSizes.xs, opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shorten(w.addr)}</span>
+                  <button type="button" onClick={() => onDispute(job, w.addr)} aria-label={`Dispute worker ${shorten(w.addr)}`} style={{ background: 'transparent', color: colors.orange, border: `1px solid ${colors.orange}`, padding: '1px 6px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 600, whiteSpace: 'nowrap' }} title="File a dispute — worker has not submitted proof yet">DISPUTE</button>
                 </div>
               ))}
             </div>
@@ -245,6 +286,7 @@ function PendingRow({ jobId, worker, loading, onRelease, onDispute, job }: { job
   const [exists, setExists] = useState<boolean | null>(null)
   const [fileUrl, setFileUrl] = useState('')
   const [proofHash, setProofHash] = useState('')
+  const [verifyStatus, setVerifyStatus] = useState<'idle' | 'verifying' | 'valid' | 'invalid' | 'error'>('idle')
 
   useEffect(() => {
     let cancelled = false
@@ -272,6 +314,21 @@ function PendingRow({ jobId, worker, loading, onRelease, onDispute, job }: { job
     })
     return () => { cancelled = true }
   }, [jobId, worker])
+
+  const verifyHash = async () => {
+    if (!fileUrl || !proofHash) return
+    setVerifyStatus('verifying')
+    try {
+      const res = await fetch(fileUrl)
+      if (!res.ok) { setVerifyStatus('error'); return }
+      const blob = await res.blob()
+      const buf = await blob.arrayBuffer()
+      const computedHash = keccak256(new Uint8Array(buf))
+      setVerifyStatus(computedHash === proofHash ? 'valid' : 'invalid')
+    } catch {
+      setVerifyStatus('error')
+    }
+  }
 
   const downloadProof = async () => {
     if (!fileUrl) return
@@ -326,20 +383,55 @@ function PendingRow({ jobId, worker, loading, onRelease, onDispute, job }: { job
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 6px', background: colors.bgElevated, borderRadius: radii.sm }}>
-      <span style={{ fontFamily: 'monospace', flex: 1, fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shorten(worker)}</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 6px', background: colors.bgElevated, borderRadius: radii.sm, flexWrap: 'wrap' }}>
+      <span style={{ fontFamily: 'monospace', flex: 1, fontSize: fontSizes.xs, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shorten(worker)}</span>
       {exists === true ? (
-        <button type="button" onClick={downloadProof} style={{ fontSize: 10, color: colors.blue, textDecoration: 'none', whiteSpace: 'nowrap', padding: '2px 6px', border: `1px solid ${colors.blue}`, borderRadius: radii.sm, cursor: 'pointer', background: 'transparent' }}>DOWNLOAD PROOF</button>
+        <button type="button" onClick={downloadProof} style={{ fontSize: fontSizes.xs, color: colors.blue, textDecoration: 'none', whiteSpace: 'nowrap', padding: '2px 6px', border: `1px solid ${colors.blue}`, borderRadius: radii.sm, cursor: 'pointer', background: 'transparent' }}>DOWNLOAD PROOF</button>
       ) : exists === false ? (
-        <span style={{ fontSize: 10, opacity: 0.3, whiteSpace: 'nowrap', padding: '2px 6px' }}>NO FILE</span>
+        <span style={{ fontSize: fontSizes.xs, opacity: 0.3, whiteSpace: 'nowrap', padding: '2px 6px' }}>NO FILE</span>
       ) : (
-        <span style={{ fontSize: 10, opacity: 0.3, whiteSpace: 'nowrap', padding: '2px 6px' }}>...</span>
+        <span style={{ fontSize: fontSizes.xs, opacity: 0.3, whiteSpace: 'nowrap', padding: '2px 6px' }}>...</span>
+      )}
+      {proofHash && exists === true && (
+        <button
+          type="button"
+          onClick={verifyHash}
+          disabled={verifyStatus === 'verifying'}
+          style={{
+            fontSize: fontSizes.xs,
+            whiteSpace: 'nowrap',
+            padding: '2px 6px',
+            border: `1px solid ${
+              verifyStatus === 'valid' ? colors.green :
+              verifyStatus === 'invalid' ? colors.red :
+              verifyStatus === 'error' ? colors.orange :
+              colors.border
+            }`,
+            borderRadius: radii.sm,
+            cursor: verifyStatus === 'verifying' ? 'not-allowed' : 'pointer',
+            background:
+              verifyStatus === 'valid' ? '#1a3c1a' :
+              verifyStatus === 'invalid' ? '#3c1a1a' :
+              'transparent',
+            color:
+              verifyStatus === 'valid' ? colors.green :
+              verifyStatus === 'invalid' ? colors.red :
+              verifyStatus === 'error' ? colors.orange :
+              '#888',
+          }}
+        >
+          {verifyStatus === 'verifying' ? 'HASHING...' :
+           verifyStatus === 'valid' ? 'HASH MATCH' :
+           verifyStatus === 'invalid' ? 'HASH MISMATCH' :
+           verifyStatus === 'error' ? 'VERIFY FAILED' :
+           'VERIFY HASH'}
+        </button>
       )}
       {proofHash && (
-        <span title={`Proof hash: ${proofHash}\nVerify by running: keccak256( downloaded file )`} style={{ fontSize: 9, opacity: 0.4, cursor: 'help', fontFamily: 'monospace', maxWidth: 50, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{proofHash.slice(0, 10)}...</span>
+        <span title={`Proof hash: ${proofHash}`} style={{ fontSize: 9, opacity: 0.4, cursor: 'help', fontFamily: 'monospace', maxWidth: 50, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{proofHash.slice(0, 10)}...</span>
       )}
-      <button type="button" onClick={() => onRelease(worker, job)} disabled={loading} aria-label={`Release payment to ${shorten(worker)}`} style={{ background: colors.green, color: '#000', border: 'none', padding: '2px 6px', fontWeight: 700, borderRadius: radii.sm, cursor: 'pointer', fontSize: 10, whiteSpace: 'nowrap' }}>RELEASE</button>
-      <button type="button" onClick={() => onDispute(job, worker)} aria-label={`Dispute worker ${shorten(worker)}`} style={{ background: 'transparent', color: colors.orange, border: `1px solid ${colors.orange}`, padding: '1px 6px', borderRadius: radii.sm, cursor: 'pointer', fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap' }}>DISPUTE</button>
+      <button type="button" onClick={() => onRelease(worker, job)} disabled={loading} aria-label={`Release payment to ${shorten(worker)}`} style={{ background: colors.green, color: '#000', border: 'none', padding: '2px 6px', fontWeight: 700, borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, whiteSpace: 'nowrap' }}>RELEASE</button>
+      <button type="button" onClick={() => onDispute(job, worker)} aria-label={`Dispute worker ${shorten(worker)}`} style={{ background: 'transparent', color: colors.orange, border: `1px solid ${colors.orange}`, padding: '1px 6px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 600, whiteSpace: 'nowrap' }}>DISPUTE</button>
     </div>
   )
 }

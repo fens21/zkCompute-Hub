@@ -14,9 +14,9 @@
     touch-action: manipulation;
   }
 
-  input, textarea {
+  input, textarea, select {
     touch-action: manipulation;
-    font-size: 16px; /* Cegah zoom otomatis di iOS */
+    font-size: 16px !important; /* Cegah zoom otomatis di iOS */
   }
 }
 
@@ -109,10 +109,8 @@
   }
 
   div[style*="gap: 5"] > button {
-    min-height: 7px !important;
-    width: 7px !important;
-    height: 7px !important;
-    padding: 0 !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
   }
 }
 
@@ -159,19 +157,34 @@
   div[aria-modal="true"] > div {
     width: 92% !important;
     max-width: 92% !important;
-    padding: 20px 16px !important;
+    padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)) !important;
     max-height: 85dvh !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* ── RainbowKit Connect Modal mobile fix ── */
+  [data-rk] [role="dialog"] {
+    max-height: 85dvh !important;
+    overflow-y: auto !important;
+  }
+
+  [data-rk] [role="dialog"] > div {
+    max-height: 85dvh !important;
+    overflow-y: auto !important;
+  }
+
+  [data-rk] [role="dialog"] > div > div {
+    border-radius: 16px !important;
   }
 }
 
 /* ── Toast container ── */
 @media (max-width: 768px) {
   div[role="alert"][aria-live="polite"] {
-    right: 10px !important;
-    left: 10px !important;
-    bottom: 12px !important;
+    right: max(10px, env(safe-area-inset-right)) !important;
+    left: max(10px, env(safe-area-inset-left)) !important;
+    bottom: max(12px, env(safe-area-inset-bottom)) !important;
     max-width: none !important;
     width: auto !important;
   }
@@ -190,7 +203,9 @@
   .pagination-bar {
     position: sticky;
     bottom: 0;
-    background: #0a1428;
+    background: rgba(10, 20, 40, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     padding: 12px 0;
     z-index: 10;
     border-top: 1px solid #333;
@@ -215,4 +230,10 @@
 /* ── Scroll behavior ── */
 html {
   scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
