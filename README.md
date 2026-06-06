@@ -95,8 +95,11 @@ This deploys:
 
 Then copy the printed `VITE_CONTRACT_ADDRESS=...` into your `.env` and `src/config/chain.ts` (or Vercel env vars).
 
-**Current live contract (fresh, empty):**
+**Current live contract (fresh deployment - Marketplace, Posted Jobs & My Jobs start empty):**
 `0xaaf4555aad78b7981e4e619124a28fc137faffd8`
+
+**Important for Vercel / production:**
+If you have `VITE_CONTRACT_ADDRESS` set as an Environment Variable in your Vercel project dashboard, update it to the new address above and redeploy (or the code fallback will be used after this push).
 
 After switching to a new contract:
 - Marketplace, Posted Jobs will be empty (on-chain).
