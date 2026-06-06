@@ -237,6 +237,11 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
             <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: fontSizes.sm, opacity: 0.7, marginBottom: 4 }}>Expected Output</div>
               <textarea value={editExpectedOutput} onChange={e => setEditExpectedOutput(e.target.value)} style={{ width: '100%', background: '#000', border: `1px solid ${colors.border}`, padding: 8, color: colors.textPrimary, borderRadius: radii.sm, fontSize: fontSizes.xs, minHeight: 50, boxSizing: 'border-box', resize: 'none' }} />
+              {editVerificationMethod === 'zk-proof' && (
+                <div style={{ marginTop: 6, fontSize: 10, background: 'rgba(167,139,250,0.08)', border: '1px solid #a78bfa', padding: '6px 8px', borderRadius: radii.sm, color: '#c4b5fd' }}>
+                  ZK: This should be the Poseidon target hash. Workers prove knowledge of the matching solution via ZK.
+                </div>
+              )}
             </div>
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: fontSizes.sm, opacity: 0.7, marginBottom: 4 }}>Verification Method</div>
@@ -549,6 +554,12 @@ function DynamicJobFields({ newJob, setNewJob }: {
               placeholder="Describe the expected output format and quality threshold..."
               style={{ width: '100%', background: '#000', border: `1px solid ${colors.border}`, padding: 8, color: colors.textPrimary, fontSize: fontSizes.sm, borderRadius: radii.sm, minHeight: 50, boxSizing: 'border-box', resize: 'none' }}
             />
+            {newJob.verificationMethod === 'zk-proof' && (
+              <div style={{ marginTop: 8, fontSize: 11, background: 'rgba(167,139,250,0.1)', border: '1px solid #a78bfa', padding: '8px 10px', borderRadius: radii.sm, color: '#c4b5fd' }}>
+                <strong>ZK mode:</strong> Paste the <strong>target Poseidon hash</strong> here (Poseidon(jobId, correctSolution)).
+                Workers will later enter the matching private <code>solution</code> in the ZK submit form. Only a valid ZK proof of knowledge will auto-release payment.
+              </div>
+            )}
           </div>
 
           {/* Verification Method */}

@@ -3,21 +3,45 @@ export interface ZKProofResult {
   b: [[bigint, bigint], [bigint, bigint]]
   c: [bigint, bigint]
   input: bigint[]
-  commitHash: string
+  // For the new circuit we expose the public expectedOutput (was previously called commitHash)
+  expectedOutput: string
+  // The solution the user entered (for logging / activity record, not sent on-chain)
+  solution: string
 }
 
-export async function generateZKProof(jobId: number): Promise<ZKProofResult> {
-  const preimage = generateRandomBigInt()
-  const { buildPoseidon } = await import('circomlibjs')
-  const poseidon = await buildPoseidon()
-  const hash = poseidon([BigInt(jobId), preimage])
-  const commitHash = poseidon.F.toString(hash)
+export interface GenerateZKProofParams {
+  jobId: number
+  // The solution the worker "computed" or discovered for this job (private input)
+  solution: string | bigint
+  // The target hash the poster set for this job (public input).
+  // Should be the Poseidon(jobId, correctSolution) value, usually stored in job.expectedOutput
+  expectedOutput: string | bigint
+}
+
+/**
+ * Generate a ZK proof that the caller knows `solution` such that:
+ *   Poseidon(jobId, solution) === expectedOutput
+ *
+ * This is the "verifiable compute" proof: the worker proves they found the
+ * correct solution for the job without revealing the solution on-chain.
+ */
+export async function generateZKProof(params: GenerateZKProofParams): Promise<ZKProofResult> {
+  const { jobId, solution, expectedOutput } = params
+
+  const jobIdBig = BigInt(jobId)
+  const solutionBig = typeof solution === 'bigint' ? solution : BigInt(solution)
+  const expectedBig = typeof expectedOutput === 'bigint' ? expectedOutput : BigInt(expectedOutput)
 
   const wasmPath = '/zk/job_proof.wasm'
   const zkeyPath = '/zk/job_proof_final.zkey'
   const snarkjs = await import('snarkjs')
+
   const { proof, publicSignals } = await snarkjs.groth16.fullProve(
-    { jobId: String(jobId), commitHash, preimage: preimage.toString() },
+    {
+      jobId: jobIdBig.toString(),
+      expectedOutput: expectedBig.toString(),
+      solution: solutionBig.toString(),
+    },
     wasmPath,
     zkeyPath,
   )
@@ -30,15 +54,12 @@ export async function generateZKProof(jobId: number): Promise<ZKProofResult> {
   const c: [bigint, bigint] = [BigInt(proof.pi_c[0]), BigInt(proof.pi_c[1])]
   const input: bigint[] = publicSignals.map((s: string) => BigInt(s))
 
-  return { a, b, c, input, commitHash }
-}
-
-function generateRandomBigInt(): bigint {
-  const bytes = new Uint8Array(32)
-  crypto.getRandomValues(bytes)
-  let result = 0n
-  for (let i = 0; i < 32; i++) {
-    result = (result << 8n) + BigInt(bytes[i])
+  return {
+    a,
+    b,
+    c,
+    input,
+    expectedOutput: expectedBig.toString(),
+    solution: solutionBig.toString(),
   }
-  return result
 }

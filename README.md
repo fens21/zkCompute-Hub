@@ -14,7 +14,7 @@ A decentralized verifiable compute marketplace built on the **LitForge Testnet**
 ## Features
 
 - **Job Marketplace** — Browse, search, filter by type, sort by reward/deadline with grid/list toggle and pagination
-- **Job Lifecycle** — Post, edit (title, type, description, requirements, deadline, difficulty), claim, submit proof, release payment, deactivate
+- **Job Lifecycle** — Post, edit (title, type, description, requirements, deadline, difficulty), claim, submit proof (regular hash/file or **ZK solution proof**), release payment, deactivate
 - **Job Metadata** — Title, type, description, requirements, deadlines, difficulty, token symbol persisted via Supabase
 - **Dual Token** — Pay in native zkLTC or USDC
 - **Dispute System** — Raise & resolve disputes on-chain
@@ -26,6 +26,21 @@ A decentralized verifiable compute marketplace built on the **LitForge Testnet**
 - **Live Countdowns** — Deadline timers with color-coded urgency (expired, < 1h, normal)
 - **Mobile Responsive** — Adaptive layout, hamburger menu, touch-friendly targets, and mobile-optimized cards across all pages
 - **Difficulty Levels** — Manual difficulty selector (Medium / Hard / Expert) when posting jobs
+- **Meaningful ZK Proofs** — Workers prove knowledge of the correct `solution` for a job's `expectedOutput` (Poseidon(jobId, solution) === expectedOutput) without revealing the solution. Poster sets the target hash in Expected Output when choosing ZK verification.
+
+## How ZK Verifiable Proofs Work (v2)
+
+1. **Poster** creates a job and sets **Verification Method = ZK Proof** + puts the target value in **Expected Output**.
+   - The target is typically `Poseidon(jobId, correctSolution)`.
+   - You can compute it locally using `circomlibjs` or a small helper script.
+2. **Worker** claims the job and performs the required compute / puzzle off-chain to discover the solution.
+3. In "My Jobs", for ZK-type jobs the worker clicks **SUBMIT ZK PROOF** and enters their private `solution`.
+4. The frontend uses snarkjs + the circuit to generate a Groth16 proof that they know the preimage.
+5. On-chain `submitZKProof(...)` verifies it via the `RealVerifier` and **automatically releases** the reward if valid.
+
+This replaces the previous "random secret" ZK that didn't actually prove any compute was performed.
+
+**Note:** After changing the circuit you must recompile (`circom` + `snarkjs`) the wasm/zkey and call `npm run set-vk` (or redeploy verifier) with the new `verification_key_final.json` so the on-chain verifier accepts the new public signals.
 
 ## Prerequisites
 
@@ -45,7 +60,7 @@ Copy `.env.example` to `.env` and fill in the values:
 
 ```env
 PRIVATE_KEY=your_deployer_private_key
-VITE_CONTRACT_ADDRESS=0x...
+VITE_CONTRACT_ADDRESS=0xaaf4555aad78b7981e4e619124a28fc137faffd8  # Fresh deployment (empty marketplace)
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_anon_key
 ```
@@ -65,11 +80,35 @@ npm run build
 npm run preview
 ```
 
-## Deploy Contract
+## Deploy Contract (Fresh Deployment)
+
+To get a completely clean marketplace (no old jobs):
 
 ```bash
-npm run deploy:contract
+npm run deploy:all
 ```
+
+This deploys:
+- New `JobMarketplace`
+- New `RealVerifier`
+- Sets the verifier on the marketplace
+
+Then copy the printed `VITE_CONTRACT_ADDRESS=...` into your `.env` and `src/config/chain.ts` (or Vercel env vars).
+
+**Current live contract (fresh, empty):**
+`0xaaf4555aad78b7981e4e619124a28fc137faffd8`
+
+After switching to a new contract:
+- Marketplace, Posted Jobs will be empty (on-chain).
+- For clean "My Jobs", clear browser localStorage (keys: `zkcompute_myjobs_v2`, `zkcompute_workers`, `zkcompute_synced_*`).
+```
+
+Also, because we updated the ZK circuit, after a fresh deploy you should recompile the circuit and run:
+
+```bash
+npm run set-vk
+```
+(requires updated `zk/build/verification_key_final.json` matching the current `job_proof.circom`).
 
 ## Network
 

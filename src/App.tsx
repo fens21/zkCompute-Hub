@@ -22,7 +22,7 @@ import { Stats } from './components/Stats'
 import { Leaderboard } from './components/Leaderboard'
 import { Profile } from './components/Profile'
 import { ToastContainer } from './components/ToastContainer'
-import { JobDetailModal, ProofModal, ConfirmModal, EditProfileModal, DisputeModal } from './components/Modals'
+import { JobDetailModal, ProofModal, ConfirmModal, EditProfileModal, DisputeModal, ZKSolutionModal } from './components/Modals'
 import { WorkerProfileModal } from './components/WorkerProfileModal'
 import type { Job, NewJobForm, ConfirmAction, DisputeState, Tab, PostSubTab, SortBy, LeaderboardEntry, WorkerEvent, Notification } from './types'
 import { saveProfile, loadProfiles, uploadProofFile } from './hooks/useWorkerProfiles'
@@ -80,6 +80,11 @@ function AppContent() {
   const [deactivating, setDeactivating] = useState(false)
   const [editSaving, setEditSaving] = useState(false)
   const [submittingProof, setSubmittingProof] = useState(false)
+
+  // ZK Solution input flow (replaces the old random-preimage "magic" ZK)
+  const [zkSolutionJob, setZkSolutionJob] = useState<Job | null>(null)
+  const [zkSolution, setZkSolution] = useState('')
+
   const entered = !!address
 
   const [search, setSearch] = useState('')
@@ -395,20 +400,45 @@ function AppContent() {
     setCurrentProofFile(null)
   }
 
-  const submitZKProof = async () => {
-    if (!currentProofJob || !address) {
-      showToast('Missing job or wallet', 'info')
+  // Open the solution input UI for ZK jobs (called from MyJobs "SUBMIT ZK PROOF" button)
+  const requestZKProof = (job: Job) => {
+    setZkSolutionJob(job)
+    setZkSolution('')
+  }
+
+  // The real ZK submission now requires a solution that satisfies:
+  //   Poseidon(jobId, solution) === expectedOutput (as set by the poster)
+  const submitZKProof = async (job: Job, solution: string) => {
+    if (!address) {
+      showToast('Connect wallet first', 'info')
       return
     }
-    const job = currentProofJob
+    if (!solution || solution.trim() === '') {
+      showToast('Please enter the solution / computed result for this job', 'info')
+      return
+    }
+
+    const expected = job.expectedOutput || job.parameters?.expectedOutput || ''
+    if (!expected || expected.trim() === '' || expected === '0') {
+      showToast('This job does not have a ZK target (expectedOutput) set by the poster. Cannot generate verifiable proof.', 'error')
+      return
+    }
+
     setSubmittingProof(true)
-    setShowProofModal(false)
+    setZkSolutionJob(null)
+    setZkSolution('')
 
     try {
-      showToast('Generating ZK proof...', 'info')
-      const { a, b, c, input, commitHash } = await generateZKProof(job.id)
+      showToast('Generating ZK proof that you know the solution...', 'info')
 
-      showToast(`Submitting ZK proof for verification...`, 'info')
+      const { a, b, c, input, expectedOutput, solution: usedSolution } = await generateZKProof({
+        jobId: job.id,
+        solution: solution.trim(),
+        expectedOutput: expected,
+      })
+
+      showToast(`Submitting ZK proof for on-chain verification...`, 'info')
+
       const hash = await writeContractAsync({
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi,
@@ -419,17 +449,21 @@ function AppContent() {
       setMyJobs(prev => prev.map(j =>
         j.id === job.id && j.status !== 'paid' ? { ...j, status: 'paid' } : j
       ))
-      saveWorkerEvent('paid', job, address, '', commitHash)
+      // Record the solution privately in activity (it is never revealed on-chain thanks to ZK)
+      saveWorkerEvent('paid', job, address, '', `zk-solution:${usedSolution.slice(0, 10)}... target:${expectedOutput.slice(0, 10)}...`)
       showToast(`ZK proof verified & auto-paid! Tx: ${hash.slice(0, 10)}...`, 'success')
-      addNotification(`ZK proof auto-paid: "${job.title}"`, 'payment', job.title)
+      addNotification(`ZK proof auto-paid: "${job.title}" (solution proven)`, 'payment', job.title)
       setTimeout(() => showToast('Stats updated: +1 job completed & paid', 'info'), 800)
       scheduleRefresh(() => { refetchJobs(); fetchLeaderboard(onChainJobs, true) })
     } catch (e: unknown) {
       handleTxError(e, 'Submit ZK proof', showToast)
     }
     setSubmittingProof(false)
-    setCurrentProofJob(null)
-    setCurrentProofFile(null)
+  }
+
+  const cancelZKProofInput = () => {
+    setZkSolutionJob(null)
+    setZkSolution('')
   }
 
   const releasePaymentForWorker = async (workerAddr: string, job: Job) => {
@@ -716,7 +750,7 @@ function AppContent() {
             <MyJobs
               myJobs={myJobs}
               onOpenProof={openProofModal}
-              onSubmitZKProof={submitZKProof}
+              onSubmitZKProof={requestZKProof}
               onUnclaim={unclaimJob}
               loading={loading}
               submittingProof={submittingProof}
@@ -833,6 +867,18 @@ function AppContent() {
           rank={viewedWorkerRank}
           onClose={() => { setViewedWorker(null); setViewedWorkerEntry(null); setViewedWorkerRank(0) }}
           ltcPrice={ltcPrice}
+        />
+      )}
+
+      {/* ZK Solution Input Modal - this is the key UX change for meaningful ZK proofs */}
+      {zkSolutionJob && (
+        <ZKSolutionModal
+          job={zkSolutionJob}
+          solution={zkSolution}
+          onSolutionChange={setZkSolution}
+          onSubmit={() => submitZKProof(zkSolutionJob, zkSolution)}
+          onClose={cancelZKProofInput}
+          loading={submittingProof}
         />
       )}
     </div>

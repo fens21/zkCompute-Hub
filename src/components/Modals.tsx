@@ -404,4 +404,104 @@ export function DisputeModal({ dispute, onReasonChange, onSubmit, onClose, loadi
   )
 }
 
+export function ZKSolutionModal({
+  job,
+  solution,
+  onSolutionChange,
+  onSubmit,
+  onClose,
+  loading,
+}: {
+  job: Job
+  solution: string
+  onSolutionChange: (v: string) => void
+  onSubmit: () => void
+  onClose: () => void
+  loading: boolean
+}) {
+  useEscape(onClose)
+  useAriaHidden(true)
+  const trapRef = useFocusTrap(true)
+
+  const target = job.expectedOutput || job.parameters?.expectedOutput || '— (job poster did not set a target)'
+
+  return (
+    <div ref={trapRef} style={modalOverlay} role="dialog" aria-modal="true" aria-label="Submit ZK solution proof">
+      <div style={{ background: colors.bgCard, border: `1px solid #a78bfa`, padding: 28, borderRadius: radii.lg, maxWidth: 460, width: '92%' }}>
+        <h3 style={{ marginTop: 0, marginBottom: 4, color: '#c4b5fd' }}>Submit ZK Proof (Verifiable Compute)</h3>
+        <div style={{ opacity: 0.75, fontSize: fontSizes.base, marginBottom: 16 }}>
+          {job.title} — {job.reward} {job.tokenSymbol || 'zkLTC'}
+        </div>
+
+        <div style={{ fontSize: fontSizes.sm, lineHeight: 1.5, marginBottom: 16, background: 'rgba(167,139,250,0.08)', padding: 12, borderRadius: radii.sm }}>
+          Enter the <strong>solution / computed result</strong> you found for this job.
+          The ZK proof will cryptographically prove that you know the correct value that matches the job's target — without revealing your solution on-chain.
+        </div>
+
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: fontSizes.xs, opacity: 0.5, marginBottom: 4 }}>JOB TARGET (expectedOutput)</div>
+          <div style={{ fontFamily: 'monospace', fontSize: fontSizes.sm, background: '#111', padding: '8px 10px', borderRadius: radii.sm, wordBreak: 'break-all', opacity: 0.9 }}>
+            {target}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 4 }}>
+          <div style={{ fontSize: fontSizes.sm, opacity: 0.7, marginBottom: 6 }}>Your Solution (private input)</div>
+          <input
+            placeholder="e.g. 123456 or the secret string / hash result"
+            value={solution}
+            onChange={(e) => onSolutionChange(e.target.value)}
+            aria-label="Solution for ZK proof"
+            style={{
+              width: '100%',
+              background: '#000',
+              border: `1px solid ${solution ? '#a78bfa' : colors.border}`,
+              padding: '12px 14px',
+              color: colors.textPrimary,
+              fontSize: fontSizes.md,
+              borderRadius: radii.sm,
+              fontFamily: 'monospace',
+            }}
+          />
+          <div style={{ fontSize: 10, opacity: 0.4, marginTop: 4 }}>
+            This value stays in your browser. Only the ZK proof (that you know it) goes on-chain.
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+          <button
+            onClick={onClose}
+            disabled={loading}
+            aria-label="Cancel ZK proof"
+            style={{ flex: 1, padding: 12, border: '1px solid #555', background: 'transparent', color: '#c0c0c0', borderRadius: radii.sm, cursor: loading ? 'not-allowed' : 'pointer' }}
+          >
+            CANCEL
+          </button>
+          <button
+            onClick={onSubmit}
+            disabled={loading || !solution.trim()}
+            aria-label="Generate and submit ZK proof"
+            style={{
+              flex: 1,
+              padding: 12,
+              background: !solution.trim() ? '#3a2f5a' : loading ? '#6b5fa3' : '#a78bfa',
+              color: '#000',
+              fontWeight: 700,
+              border: 'none',
+              borderRadius: radii.sm,
+              cursor: loading || !solution.trim() ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {loading ? 'GENERATING & SUBMITTING...' : 'GENERATE ZK PROOF & SUBMIT'}
+          </button>
+        </div>
+
+        <div style={{ fontSize: 10, opacity: 0.35, marginTop: 12, textAlign: 'center' }}>
+          Requires the correct solution that satisfies the job's ZK target.
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
