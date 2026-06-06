@@ -270,7 +270,7 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
   const pad = isMobile ? 10 : 24
 
   return (
-    <div className="job-card" style={{ ...card, padding: pad }}>
+    <div className="job-card" style={{ ...card, padding: pad, display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? 4 : 12 }}>
         <div style={{ background: colors.borderLight, color: JOB_TYPE_CONFIGS[job.type]?.color || colors.gold, padding: isMobile ? '1px 6px' : '4px 12px', borderRadius: radii.full, fontSize: isMobile ? fontSizes.xs : fontSizes.sm, fontWeight: 600 }}>{JOB_TYPE_CONFIGS[job.type]?.label || job.type}</div>
         <div style={{ color: colors.gold, fontWeight: 700, fontSize: isMobile ? fontSizes.xs : fontSizes.sm }}>{job.difficulty}</div>
@@ -291,7 +291,7 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
           <div style={{ width: `${Math.min(claimedRatio * 100, 100)}%`, background: claimedRatio >= 1 ? colors.green : colors.gold, height: '100%', borderRadius: 4, transition: 'width 0.3s' }} />
         </div>
       </div>
-      <div style={{ display: 'flex', gap: isMobile ? 4 : 8 }}>
+      <div style={{ display: 'flex', gap: isMobile ? 4 : 8, marginTop: 'auto', paddingTop: 12 }}>
         <button
           onClick={() => onDetail(job)}
           aria-label={`View details for ${job.title}`}
