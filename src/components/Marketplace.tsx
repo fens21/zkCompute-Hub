@@ -273,7 +273,6 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
     <div className="job-card" style={{ ...card, padding: pad, display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? 4 : 12 }}>
         <div style={{ background: colors.borderLight, color: JOB_TYPE_CONFIGS[job.type]?.color || colors.gold, padding: isMobile ? '1px 6px' : '4px 12px', borderRadius: radii.full, fontSize: isMobile ? fontSizes.xs : fontSizes.sm, fontWeight: 600 }}>{JOB_TYPE_CONFIGS[job.type]?.label || job.type}</div>
-        <div style={{ color: colors.gold, fontWeight: 700, fontSize: isMobile ? fontSizes.xs : fontSizes.sm }}>{job.difficulty}</div>
       </div>
       <div style={{ fontSize: isMobile ? fontSizes.md : fontSizes.xl, fontWeight: 700, marginBottom: isMobile ? 2 : 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.title}</div>
       {!isMobile && <div style={{ opacity: 0.7, fontSize: fontSizes.sm, marginBottom: 8 }}>{job.description}</div>}

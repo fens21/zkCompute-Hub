@@ -61,7 +61,6 @@ export function JobDetailModal({ job, onClose, onClaim, loading }: { job: Job; o
         <div style={{ opacity: 0.8, fontSize: fontSizes.md, marginBottom: 16 }}>{job.description}</div>
         <div style={{ margin: '20px 0', fontSize: fontSizes.base, lineHeight: 1.6 }}>
           <div><strong>Requirements:</strong> {job.requirements}</div>
-          <div><strong>Difficulty:</strong> {job.difficulty}</div>
           <div><strong>Reward:</strong> {job.reward} {job.tokenSymbol || 'zkLTC'}</div>
           <div><strong>Deadline:</strong> {deadlineDisplay}</div>
           <div><strong>Slots:</strong> {job.claimedCount}/{job.maxWorkers} workers</div>
