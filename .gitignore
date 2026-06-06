@@ -74,3 +74,7 @@ out.sol
 # ZK build artifacts
 zk/build/
 zk/powersOfTau28_hez_final_*.ptau
+
+# Temporary circom binary used for recompilation (do not commit)
+zk/circom.exe
+circom.exe

@@ -98,20 +98,16 @@ Then copy the printed `VITE_CONTRACT_ADDRESS=...` into your `.env` and `src/conf
 **Current live contract (fresh deployment - Marketplace, Posted Jobs & My Jobs start empty):**
 `0xaaf4555aad78b7981e4e619124a28fc137faffd8`
 
+**ZK is ready:** The circuit has been recompiled (`circom 2.1.9` + snarkjs) and the Verification Key has been set on the new `RealVerifier` for this deployment. ZK proof submission (with solution input) should work out of the box.
+
 **Important for Vercel / production:**
 If you have `VITE_CONTRACT_ADDRESS` set as an Environment Variable in your Vercel project dashboard, update it to the new address above and redeploy (or the code fallback will be used after this push).
 
 After switching to a new contract:
 - Marketplace, Posted Jobs will be empty (on-chain).
 - For clean "My Jobs", clear browser localStorage (keys: `zkcompute_myjobs_v2`, `zkcompute_workers`, `zkcompute_synced_*`).
-```
 
-Also, because we updated the ZK circuit, after a fresh deploy you should recompile the circuit and run:
-
-```bash
-npm run set-vk
-```
-(requires updated `zk/build/verification_key_final.json` matching the current `job_proof.circom`).
+The recompile + `npm run set-vk` steps have been executed for this fresh deployment.
 
 ## Network
 
