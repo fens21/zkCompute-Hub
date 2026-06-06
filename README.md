@@ -129,7 +129,7 @@ The ZK circuit is already recompiled and the VK is set for the current verifier.
 ## Links
 
 - GitHub: https://github.com/fens21/zkCompute-Hub
-- Live Frontend: (your current Vercel URL)
+- Live Frontend: https://www.zkcomputhub.io (or https://zkcompute-fspnn1icc-fens21s-projects.vercel.app)
 - Explorer: https://liteforge.explorer.caldera.xyz
 - LitVM / Caldera: https://docs.litvm.com or Caldera hub
 
