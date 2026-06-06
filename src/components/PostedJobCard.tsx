@@ -49,7 +49,7 @@ export function PostedJobCard({ job, onRelease, onDeactivate, onDispute, loading
   const isExpired = job.createdAt ? (getDeadlineMs(job.createdAt, job.deadline) ?? 0) <= Date.now() : false
   const sep = <div style={{ width: 1, height: 22, background: colors.border, flexShrink: 0 }} />
   const refreshClaimants = () => setClaimantsRefreshKey(k => k + 1)
-  const handleReleaseRequest = (workerAddr: string, j: Job) => setReleaseConfirmWorker(workerAddr)
+  const handleReleaseRequest = (workerAddr: string, _j: Job) => setReleaseConfirmWorker(workerAddr)
 
   const [listOpen, setListOpen] = useState(false)
   const [releaseConfirmWorker, setReleaseConfirmWorker] = useState<string | null>(null)

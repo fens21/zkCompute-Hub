@@ -257,6 +257,7 @@ function AppContent() {
         poster: address,
         claimedCount: 0,
         maxWorkers,
+        difficulty: newJob.difficulty || 'Medium',
         tokenSymbol: newJob.token === 'USDC' ? 'USDC' : 'zkLTC',
         parameters: newJob.parameters,
         inputData: newJob.inputData,
@@ -608,8 +609,8 @@ function AppContent() {
     if (!editingPostedJob) return
     if (!editTitle.trim() || !editDeadline?.trim()) return
     setEditSaving(true)
-    const prev = jobs.find(j => j.id === editingPostedJob.id)
-    const updated = { ...prev, title: editTitle, type: editType, description: editDesc, requirements: editReqs, deadline: editDeadline || (prev?.deadline ?? ''), parameters: editParameters, inputData: editInputData, expectedOutput: editExpectedOutput, verificationMethod: editVerificationMethod }
+    const prev = jobs.find(j => j.id === editingPostedJob.id)!
+    const updated: Job = { ...prev, title: editTitle, type: editType, description: editDesc, requirements: editReqs, deadline: editDeadline || (prev?.deadline ?? ''), parameters: editParameters, inputData: editInputData, expectedOutput: editExpectedOutput, verificationMethod: editVerificationMethod, difficulty: prev.difficulty || 'Medium' }
     setJobs(prevJobs => prevJobs.map(j => j.id === editingPostedJob.id ? updated : j))
     const ok = await saveJobMetadata({
       job_id: editingPostedJob.id,
@@ -626,7 +627,7 @@ function AppContent() {
       verification_method: editVerificationMethod,
     })
     if (!ok) {
-      setJobs(prevJobs => prevJobs.map(j => j.id === editingPostedJob.id ? prev : j))
+      setJobs(prevJobs => prevJobs.map(j => j.id === editingPostedJob.id ? prev! : j))
       showToast('Failed to save metadata — changes reverted', 'error')
       setEditSaving(false)
       return

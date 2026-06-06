@@ -109,7 +109,7 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
         <div style={{ minWidth: 0 }}>
           <h3 style={{ fontSize: fontSizes.lg, marginBottom: 12, color: colors.textPrimary }}>Top Jobs by Reward</h3>
           {rewardTotalPages > 1 && (
-            <PaginationBar page={rewardPage} totalPages={rewardTotalPages} totalItems={topRewardAll.length} onPrev={() => setRewardPage(p => Math.max(0, p - 1))} onNext={() => setRewardPage(p => Math.min(rewardTotalPages - 1, p + 1))} isFirst={rewardPage === 0} isLast={rewardPage >= rewardTotalPages - 1} />
+            <PaginationBar page={rewardPage} totalPages={rewardTotalPages} totalItems={topRewardAll.length} onPrev={() => setRewardPage(p => Math.max(0, p - 1))} onNext={() => setRewardPage(p => Math.min(rewardTotalPages - 1, p + 1))} isFirst={rewardPage === 0} isLast={rewardPage >= rewardTotalPages - 1} isMobile={isMobile} />
           )}
           {topReward.length === 0 ? (
             <div style={{ background: colors.bgCard, border: `1px solid ${colors.borderLight}`, borderRadius: radii.xl, padding: 24, textAlign: 'center', opacity: 0.5, fontSize: fontSizes.md }}>
@@ -138,7 +138,7 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
         <div style={{ minWidth: 0 }}>
           <h3 style={{ fontSize: fontSizes.lg, marginBottom: 12, color: colors.textPrimary }}>Most Claimed Jobs</h3>
           {claimedTotalPages > 1 && (
-            <PaginationBar page={claimedPage} totalPages={claimedTotalPages} totalItems={topClaimedAll.length} onPrev={() => setClaimedPage(p => Math.max(0, p - 1))} onNext={() => setClaimedPage(p => Math.min(claimedTotalPages - 1, p + 1))} isFirst={claimedPage === 0} isLast={claimedPage >= claimedTotalPages - 1} />
+            <PaginationBar page={claimedPage} totalPages={claimedTotalPages} totalItems={topClaimedAll.length} onPrev={() => setClaimedPage(p => Math.max(0, p - 1))} onNext={() => setClaimedPage(p => Math.min(claimedTotalPages - 1, p + 1))} isFirst={claimedPage === 0} isLast={claimedPage >= claimedTotalPages - 1} isMobile={isMobile} />
           )}
           {topClaimed.length === 0 ? (
             <div style={{ background: colors.bgCard, border: `1px solid ${colors.borderLight}`, borderRadius: radii.xl, padding: 24, textAlign: 'center', opacity: 0.5, fontSize: fontSizes.md }}>
@@ -170,8 +170,8 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
   )
 }
 
-function PaginationBar({ page, totalPages, totalItems, onPrev, onNext, isFirst, isLast }: {
-  page: number; totalPages: number; totalItems?: number; onPrev: () => void; onNext: () => void; isFirst: boolean; isLast: boolean
+function PaginationBar({ page, totalPages, totalItems, onPrev, onNext, isFirst, isLast, isMobile }: {
+  page: number; totalPages: number; totalItems?: number; onPrev: () => void; onNext: () => void; isFirst: boolean; isLast: boolean; isMobile?: boolean
 }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, padding: '6px 12px', marginBottom: 10, border: `1px solid ${colors.borderLight}`, borderRadius: radii.md, background: colors.bgElevated }}>
