@@ -44,7 +44,7 @@ export function formatDeadlineDate(createdAt: number | undefined, deadline: stri
   return `${month} ${day}, ${year} ${hour}:${min}`
 }
 
-export const COUNTDOWN_REFRESH = 30_000
+export const COUNTDOWN_REFRESH = 60_000 // less frequent per-card updates for lighter feel
 
 export function formatUsd(usd: number | null): string {
   if (usd === null) return '\u2014'

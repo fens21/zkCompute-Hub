@@ -146,6 +146,6 @@ export interface Groth16Proof {
   input: bigint[]
 }
 
-export type Tab = 'market' | 'post' | 'my' | 'stats' | 'leaderboard' | 'profile'
+export type Tab = 'dashboard' | 'market' | 'post' | 'my' | 'stats' | 'leaderboard' | 'profile'
 export type PostSubTab = 'new' | 'manage'
 export type SortBy = 'reward' | 'deadline'

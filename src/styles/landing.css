@@ -12,9 +12,9 @@
   padding: 80px 24px;
 }
 .lp-section-alt {
-  background: rgba(0,150,255,0.015);
-  border-top: 1px solid rgba(0,200,255,0.04);
-  border-bottom: 1px solid rgba(0,200,255,0.04);
+  background: rgba(26, 41, 48, 0.6);
+  border-top: 1px solid rgba(34, 53, 61, 0.5);
+  border-bottom: 1px solid rgba(34, 53, 61, 0.5);
 }
 
 /* ── Hero ── */
@@ -22,7 +22,7 @@
   min-height: 100vh;
   display: flex; align-items: center; justify-content: center;
   flex-direction: column; position: relative; overflow: hidden;
-  background: #0a1428;
+  background: #0A1612;
 }
 .lp-hero-content {
   position: relative; z-index: 1; text-align: center; max-width: 900px; padding: 0 24px;
@@ -31,7 +31,7 @@
 
 .lp-feature-card {
   position: relative;
-  background: rgba(17,17,17,0.8);
+  background: rgba(26, 41, 48, 0.75);
   border: 1px solid var(--lp-border-light);
   border-radius: var(--lp-radius-xl);
   padding: 24px 20px;
@@ -43,7 +43,7 @@
 }
 .lp-feature-card::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent 0%, #f5c842 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, #F7CE3E 50%, transparent 100%);
   pointer-events: none;
 }
 .lp-feature-card:hover {
@@ -66,45 +66,85 @@
 .lp-grid {
   position: absolute; inset: 0; pointer-events: none;
   background-image:
-    linear-gradient(rgba(0, 200, 255, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 200, 255, 0.07) 1px, transparent 1px);
+    linear-gradient(rgba(197, 193, 192, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(197, 193, 192, 0.035) 1px, transparent 1px);
   background-size: 60px 60px;
-  animation: gridDrift 20s linear infinite;
+  /* Animation removed for lighter initial load */
   mask-image: radial-gradient(ellipse at 50% 40%, black 30%, transparent 70%);
   -webkit-mask-image: radial-gradient(ellipse at 50% 40%, black 30%, transparent 70%);
 }
+
+/* Yellow/gold stars for landing page hero background */
+.lp-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lp-stars::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  box-shadow:
+    80px 120px #F7CE3E,
+    180px 80px 1px 0.5px rgba(247, 206, 62, 0.9),
+    320px 200px #F7CE3E,
+    450px 50px 0 1px rgba(247, 206, 62, 0.7),
+    600px 300px #F7CE3E,
+    150px 350px 0 0.8px rgba(247, 206, 62, 0.8),
+    750px 180px #F7CE3E,
+    900px 420px 1px 0.6px rgba(247, 206, 62, 0.9),
+    250px 500px #F7CE3E,
+    550px 550px 0 1px rgba(247, 206, 62, 0.6),
+    100px 650px #F7CE3E,
+    400px 700px 0.5px 0.5px rgba(247, 206, 62, 0.85),
+    820px 620px #F7CE3E,
+    50px 200px 0 0.7px rgba(247, 206, 62, 0.75),
+    680px 120px #F7CE3E;
+}
+
+.lp-stars::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  box-shadow:
+    280px 420px #F7CE3E,
+    720px 350px 0 1px rgba(247, 206, 62, 0.7),
+    480px 180px #F7CE3E;
+  animation: twinkle 3s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
 .lp-aurora, .lp-aurora2 {
   position: absolute; inset: 0; pointer-events: none;
 }
-.lp-aurora { animation: auroraDrift 12s ease-in-out infinite alternate; }
-.lp-aurora2 { animation: auroraDrift2 16s ease-in-out infinite alternate; }
+/* Heavy aurora/ring/hero animations removed or heavily reduced */
 .lp-aurora::before, .lp-aurora2::before {
-  content: ''; position: absolute; inset: -100px; filter: blur(60px);
+  content: ''; position: absolute; inset: -100px; filter: blur(50px);
 }
 .lp-aurora::before {
   background:
-    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(0,150,255,0.08) 0%, transparent 50%),
-    radial-gradient(ellipse 60% 40% at 80% 60%, rgba(0,200,255,0.06) 0%, transparent 50%);
+    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(247, 206, 62, 0.035) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 82% 60%, rgba(34, 53, 61, 0.08) 0%, transparent 50%);
 }
 .lp-aurora2::before {
-  filter: blur(80px);
+  filter: blur(70px);
   background:
-    radial-gradient(ellipse 70% 60% at 70% 30%, rgba(0,180,255,0.05) 0%, transparent 50%),
-    radial-gradient(ellipse 50% 50% at 30% 70%, rgba(0,100,255,0.04) 0%, transparent 50%);
+    radial-gradient(ellipse 70% 60% at 70% 30%, rgba(247, 206, 62, 0.025) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 50% at 30% 70%, rgba(26, 41, 48, 0.06) 0%, transparent 50%);
 }
 .lp-glow {
   position: absolute; inset: 0; pointer-events: none;
   background:
-    radial-gradient(ellipse at 50% 50%, rgba(0,200,255,0.04) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 30%, rgba(0,150,255,0.03) 0%, transparent 40%),
-    radial-gradient(ellipse at 30% 70%, rgba(0,100,255,0.02) 0%, transparent 40%);
-  animation: breathe 6s ease-in-out infinite;
-}
-.lp-hero-bg {
-  position: absolute; inset: 0; pointer-events: none;
-  background: var(--lp-hero-img) center center / min(520px, 80vw) auto no-repeat;
-  animation: heroFloat 8s ease-in-out infinite;
-  filter: drop-shadow(0 0 60px var(--lp-hero-shadow1)) drop-shadow(0 0 120px var(--lp-hero-shadow2));
+    radial-gradient(ellipse at 50% 50%, rgba(247, 206, 62, 0.022) 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 30%, rgba(34, 53, 61, 0.05) 0%, transparent 45%);
 }
 .lp-ring {
   position: absolute; top: 50%; left: 50%;
@@ -114,28 +154,25 @@
 .lp-ring-outer {
   width: 380px; height: 380px;
   border: 1px solid var(--lp-ring-outer-border);
-  animation: ringSpin 20s linear infinite;
 }
 .lp-ring-inner {
   width: 260px; height: 260px;
   border: 1px dashed var(--lp-ring-inner-border);
-  animation: ringSpinReverse 25s linear infinite;
 }
 .lp-dot {
   position: absolute; width: 3px; height: 3px;
   background: var(--lp-dot-bg);
   border-radius: 50%; pointer-events: none;
-  animation: dotFloat 6s ease-in-out infinite;
 }
 
-@keyframes gridDrift { 0% { background-position: 0 0; } 100% { background-position: 60px 60px; } }
+/* Keyframes — kept minimal for performance. */
+@keyframes gridDrift { 0% { background-position: 0 0; } 100% { background-position: 60px 60px; } } /* still referenced in reduced places */
 @keyframes breathe { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
-@keyframes heroFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-16px); } }
-@keyframes ringSpin { to { transform: translate(-50%, -50%) rotate(360deg); } }
-@keyframes ringSpinReverse { to { transform: translate(-50%, -50%) rotate(-360deg); } }
-@keyframes dotFloat { 0%, 100% { transform: translateY(0); opacity: 0.2; } 50% { transform: translateY(-20px); opacity: 0.6; } }
-@keyframes auroraDrift { 0% { transform: translate(0, 0); } 100% { transform: translate(30px, -20px); } }
-@keyframes auroraDrift2 { 0% { transform: translate(0, 0); } 100% { transform: translate(-20px, 30px); } }
+@keyframes ctaPulse {
+  0% { box-shadow: 0 0 0 0 rgba(255,215,0,0.6); }
+  50% { box-shadow: 0 0 0 12px rgba(255,215,0,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,215,0,0); }
+}
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeSlideIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
@@ -158,17 +195,7 @@
   transform: scale(0.97);
 }
 
-/* ── Secondary CTA ── */
-.lp-secondary-cta {
-  font-size: 13px;
-  font-weight: 600;
-  color: #8ab0d0;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-.lp-secondary-cta:hover {
-  color: var(--lp-gold);
-}
+/* Secondary CTA styles removed (links deleted as requested) */
 
 /* ── Scroll Indicator ── */
 .lp-scroll-indicator {
@@ -192,7 +219,7 @@
 }
 .lp-step-card {
   position: relative;
-  background: rgba(17,17,17,0.7);
+  background: rgba(26, 41, 48, 0.7);
   border: 1px solid var(--lp-border-light);
   border-radius: var(--lp-radius-xl);
   padding: 28px 20px;
@@ -201,7 +228,7 @@
 }
 .lp-step-card::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent 0%, #f5c842 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, #F7CE3E 50%, transparent 100%);
   pointer-events: none;
 }
 .lp-step-card:hover {
@@ -225,7 +252,7 @@
   max-width: 600px;
   margin: 0 auto 32px;
   display: grid; gap: 1px;
-  background: rgba(255,215,0,0.04);
+  background: rgba(247, 206, 62, 0.06);
   border: 1px solid var(--lp-border-light);
   border-radius: var(--lp-radius-xl);
   overflow: hidden;
@@ -233,11 +260,11 @@
 .lp-net-item {
   display: flex; justify-content: space-between; align-items: center;
   padding: 14px 20px;
-  background: rgba(0,0,0,0.4);
+  background: rgba(10, 22, 18, 0.65);
   font-size: 13px;
 }
-.lp-net-label { color: rgba(255,215,0,0.5); font-weight: 600; }
-.lp-net-value { color: #8ab0d0; text-align: right; display: flex; align-items: center; gap: 8px; justify-content: flex-end; word-break: break-all; }
+.lp-net-label { color: rgba(247, 206, 62, 0.55); font-weight: 600; }
+.lp-net-value { color: #C5C1C0; text-align: right; display: flex; align-items: center; gap: 8px; justify-content: flex-end; word-break: break-all; }
 .lp-copy-btn {
   background: none; border: none; cursor: pointer; padding: 2px; display: inline-flex; align-items: center;
   color: rgba(255,215,0,0.3); transition: color 0.2s; flex-shrink: 0;
@@ -248,10 +275,10 @@
 }
 .lp-ql-link {
   padding: 10px 24px;
-  border: 1px solid rgba(255,215,0,0.15);
+  border: 1px solid rgba(247, 206, 62, 0.2);
   border-radius: 20px;
   font-size: 12px; font-weight: 600;
-  color: var(--lp-gold);
+  color: #F7CE3E;
   text-decoration: none;
   transition: border-color 0.3s, background 0.3s;
 }
@@ -275,17 +302,17 @@
 }
 .lp-faq-item::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent 0%, #f5c842 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, #F7CE3E 50%, transparent 100%);
   pointer-events: none; z-index: 1;
 }
 .lp-faq-item.open { border-color: rgba(0,200,255,0.2); }
 .lp-faq-q {
   width: 100%; display: flex; justify-content: space-between; align-items: center;
   padding: 16px 20px;
-  background: rgba(17,17,17,0.7);
+  background: rgba(26, 41, 48, 0.7);
   border: none; cursor: pointer;
   font-size: 13px; font-weight: 600;
-  color: #8ab0d0; text-align: left;
+  color: #C5C1C0; text-align: left;
   transition: background 0.2s;
 }
 .lp-faq-q:hover { background: rgba(255,215,0,0.03); }
@@ -299,14 +326,15 @@
   transition: max-height 0.35s ease;
   padding: 0 20px;
   font-size: 12px; line-height: 1.7;
-  color: var(--lp-text-dim);
+  color: #A8B0B8;
 }
 .lp-faq-item.open .lp-faq-a { padding-bottom: 16px; }
 
 /* ── Footer ── */
 .lp-footer {
-  border-top: 1px solid rgba(0,200,255,0.06);
-  background: rgba(5,10,25,0.8);
+  border-top: 1px solid #24353D;
+  background: #0D1C17;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.35);
   padding: 40px 24px 0;
 }
 .lp-footer-inner {
@@ -338,9 +366,9 @@
   margin: 0 auto;
   padding: 20px 0;
   margin-top: 24px;
-  border-top: 1px solid rgba(0,200,255,0.04);
+  border-top: 1px solid #24353D;
   text-align: center;
-  font-size: 11px; color: rgba(255,255,255,0.45);
+  font-size: 11px; color: rgba(197, 193, 192, 0.8);
   letter-spacing: 0.3px;
 }
 
@@ -354,7 +382,6 @@
   .lp-features { margin-top: 48px !important; }
   .lp-ring-outer { width: 260px !important; height: 260px !important; }
   .lp-ring-inner { width: 180px !important; height: 180px !important; }
-  .lp-hero-bg { background-size: min(360px, 65vw) auto !important; }
   .lp-section { padding: 56px 20px; }
   .lp-steps-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
   .lp-step-card { padding: 22px 16px; }
@@ -380,7 +407,6 @@
 .lp-faq-q:focus-visible,
 .lp-copy-btn:focus-visible,
 .lp-ql-link:focus-visible,
-.lp-secondary-cta:focus-visible,
 .lp-footer-social a:focus-visible,
 .lp-footer-links a:focus-visible,
 .lp-back-top:focus-visible {
@@ -421,11 +447,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lp-aurora, .lp-aurora2, .lp-hero-bg, .lp-ring-outer, .lp-ring-inner,
+  .lp-aurora, .lp-aurora2, .lp-ring-outer, .lp-ring-inner,
   .lp-dot, .lp-glow, .lp-grid, .lp-feature-card, .lp-scroll-indicator,
   .lp-step-card, .lp-ql-link, .lp-footer-social a, .lp-faq-a,
   .lp-faq-item, .lp-faq-q, .lp-grid, .lp-copy-btn,
-  .lp-cta-highlight, .lp-back-top {
+  .lp-cta-highlight, .lp-back-top,
+  .lp-stars::after {
     animation: none !important;
     transition: none !important;
   }

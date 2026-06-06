@@ -1,11 +1,11 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, memo } from 'react'
 import { useAccount, useDisconnect, useBalance } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import type { Tab, Notification } from '../types'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { colors, radii, fontSizes } from '../styles/tokens'
 
-export function Navbar({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, notifications, setNotifications, showNotifications, setShowNotifications }: {
+function NavbarImpl({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, notifications, setNotifications, showNotifications, setShowNotifications }: {
   tab: Tab
   setTab: (t: Tab) => void
   entered: boolean
@@ -66,6 +66,7 @@ export function Navbar({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, 
   }
 
   const tabs: { key: Tab; label: string }[] = [
+    { key: 'dashboard', label: 'Dashboard' },
     { key: 'market', label: 'Marketplace' },
     { key: 'post', label: 'Post Job' },
     { key: 'my', label: 'My Jobs' },
@@ -76,8 +77,9 @@ export function Navbar({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, 
   return (
     <>
       <nav style={{
-        background: 'radial-gradient(ellipse at 30% 50%, #1a0033 0%, transparent 60%), radial-gradient(ellipse at 70% 50%, #001a11 0%, transparent 60%), #000000',
-        borderBottom: '1px solid #222',
+        background: '#0F1F1A',
+        borderBottom: `1px solid ${colors.borderLight}`,
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.4)',
         padding: isMobile ? '10px 16px' : '12px 24px',
         display: 'flex',
         alignItems: 'center',
@@ -86,7 +88,7 @@ export function Navbar({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, 
       }}>
 
         {/* Logo */}
-        <div onClick={() => setTab('market')} role="button" aria-label="Go to marketplace" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, cursor: 'pointer', padding: isMobile ? '4px 0' : 0 }}>
+        <div onClick={() => setTab('dashboard')} role="button" aria-label="Go to dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, cursor: 'pointer', padding: isMobile ? '4px 0' : 0 }}>
           {!isMobile && (
             <div>
               <div style={{ fontSize: 17, fontWeight: 700, color: colors.gold, letterSpacing: -0.5 }}>zkCompute Hub</div>
@@ -123,7 +125,7 @@ export function Navbar({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, 
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
-                style={{ background: '#151515', border: `1px solid ${colors.borderLight}`, padding: '7px 10px', borderRadius: radii.md, cursor: 'pointer', position: 'relative', fontSize: 16, lineHeight: 1 }}>
+                style={{ background: '#1A2930', border: `1px solid ${colors.borderLight}`, padding: '7px 10px', borderRadius: radii.md, cursor: 'pointer', position: 'relative', fontSize: 16, lineHeight: 1 }}>
                 🔔
                 {unreadCount > 0 && (
                   <span style={{ position: 'absolute', top: -4, right: -6, background: colors.red, color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -132,7 +134,7 @@ export function Navbar({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, 
                 )}
               </button>
               {showNotifications && (
-                <div role="dialog" aria-label="Notifications" style={{ position: 'absolute', right: 0, top: '100%', marginTop: 6, background: colors.bgCard, border: `1px solid ${colors.borderLight}`, borderRadius: radii.lg, width: isMobile ? '90vw' : 320, maxWidth: 360, maxHeight: 360, overflow: 'auto', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}>
+                <div role="dialog" aria-label="Notifications" style={{ position: 'absolute', right: 0, top: '100%', marginTop: 6, background: colors.bgCard, border: `1px solid ${colors.borderLight}`, borderRadius: radii.lg, width: isMobile ? '90vw' : 320, maxWidth: 360, maxHeight: 360, overflow: 'auto', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.65)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid #222', position: 'sticky', top: 0, background: colors.bgCard }}>
                     <span style={{ fontSize: fontSizes.base, fontWeight: 600, color: '#e0e0e0' }}>Notifications{unreadCount > 0 ? ` (${unreadCount})` : ''}</span>
                     <div style={{ display: 'flex', gap: 8 }}>
@@ -180,7 +182,7 @@ export function Navbar({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, 
                           aria-label="Wallet menu"
                           aria-expanded={showWalletMenu}
                           title={`${address.slice(0, 6)}...${address.slice(-4)}`}
-                          style={{ background: '#151515', color: colors.textPrimary, border: `1px solid ${colors.borderLight}`, padding: '8px 20px', borderRadius: radii.md, cursor: 'pointer', fontSize: isMobile ? 11 : 12, fontFamily: "'Space Mono', monospace" }}>
+                          style={{ background: '#1A2930', color: colors.textPrimary, border: `1px solid ${colors.borderLight}`, padding: '8px 20px', borderRadius: radii.md, cursor: 'pointer', fontSize: isMobile ? 11 : 12, fontFamily: "'Space Mono', monospace" }}>
                           {address.slice(0, 6)}...{address.slice(-4)}
                         </button>
                         {showWalletMenu && (
@@ -191,7 +193,7 @@ export function Navbar({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, 
                             <a
                               href={`https://liteforge.explorer.caldera.xyz/address/${address}`}
                               target="_blank" rel="noopener noreferrer"
-                              style={{ display: 'block', padding: '8px 20px', borderTop: '1px solid #222', borderBottom: '1px solid #222', color: colors.gold, fontSize: fontSizes.base, fontFamily: "'Space Mono', monospace", textAlign: 'left', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                              style={{ display: 'block', padding: '8px 20px', borderTop: `1px solid ${colors.borderLight}`, borderBottom: `1px solid ${colors.borderLight}`, color: colors.gold, fontSize: fontSizes.base, fontFamily: "'Space Mono', monospace", textAlign: 'left', textDecoration: 'none', whiteSpace: 'nowrap' }}>
                               {balance && Number(balance.value) > 0 ? `${(Number(balance.value) / 1e18).toFixed(4)} ${balance.symbol}` : '— zkLTC'}
                             </a>
                             {isWrongNetwork && (
@@ -217,7 +219,7 @@ export function Navbar({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
-              style={{ background: '#151515', border: `1px solid ${colors.borderLight}`, padding: '8px 10px', borderRadius: radii.md, cursor: 'pointer', fontSize: 16, lineHeight: 1, color: colors.textPrimary }}>
+              style={{ background: '#1A2930', border: `1px solid ${colors.borderLight}`, padding: '8px 10px', borderRadius: radii.md, cursor: 'pointer', fontSize: 16, lineHeight: 1, color: colors.textPrimary }}>
               {mobileMenuOpen ? 'X' : '='}
             </button>
           )}
@@ -227,7 +229,7 @@ export function Navbar({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, 
       {/* Mobile menu drawer */}
       {isMobile && (
         <div ref={menuRef} style={{
-          background: '#0a0a0a', borderBottom: '1px solid #222', padding: mobileMenuOpen ? '8px 16px 16px' : '0 16px',
+          background: '#0F1F1A', borderBottom: `1px solid ${colors.borderLight}`, padding: mobileMenuOpen ? '8px 16px 16px' : '0 16px',
           zIndex: 90, overflow: 'hidden',
           maxHeight: mobileMenuOpen ? 500 : 0,
           transition: 'max-height 0.25s ease, padding 0.25s ease',
@@ -246,7 +248,7 @@ export function Navbar({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, 
                 onClick={() => setTab(t.key)}
                 style={{
                   background: tab === t.key ? colors.bgElevated : 'transparent',
-                  border: tab === t.key ? '1px solid #444' : '1px solid transparent',
+                  border: tab === t.key ? '1px solid #F7CE3E' : '1px solid transparent',
                   padding: '12px 16px',
                   color: tab === t.key ? '#e0e0e0' : '#888',
                   cursor: 'pointer',
@@ -280,7 +282,7 @@ function TabButton({ active, onClick, label }: { active: boolean; onClick: () =>
   return (
     <button onClick={onClick} aria-label={`${label} tab`} aria-current={active ? 'page' : undefined} style={{
       background: active ? colors.bgElevated : 'transparent',
-      border: active ? '1px solid #444' : '1px solid transparent',
+      border: active ? '1px solid #F7CE3E' : '1px solid transparent',
       padding: '7px 14px',
       color: active ? '#e0e0e0' : '#888',
       cursor: 'pointer',
@@ -294,3 +296,6 @@ function TabButton({ active, onClick, label }: { active: boolean; onClick: () =>
     </button>
   )
 }
+
+// Memoized Navbar (prevents unnecessary re-renders from heavy parent state updates during tab switches)
+export const Navbar = memo(NavbarImpl)

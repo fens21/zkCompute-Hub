@@ -199,7 +199,125 @@ export const JOB_TYPE_CONFIGS: Record<string, JobTypeConfig> = {
   },
 }
 
+// Additional suggested job types that fit the verifiable compute model.
+// These can be added to expand beyond pure "computation".
+// Each should support one of the existing verificationOptions (hash-check, manual-review, zk-proof).
+
+export const SUGGESTED_ADDITIONAL_TYPES = {
+  'Audio Processing': {
+    label: 'Audio / Speech Processing',
+    color: '#f43f5e',
+    fields: [
+      { key: 'task', label: 'Task', type: 'select', options: [
+        { value: 'stt', label: 'Speech-to-Text' }, 
+        { value: 'tts', label: 'Text-to-Speech' }, 
+        { value: 'enhancement', label: 'Audio Enhancement' },
+        { value: 'diarization', label: 'Speaker Diarization' }
+      ], required: true },
+      { key: 'model', label: 'Model / Engine', type: 'text', placeholder: 'whisper-large, coqui-tts' },
+      { key: 'sampleRate', label: 'Sample Rate', type: 'number', placeholder: '16000' },
+      { key: 'language', label: 'Language', type: 'text', placeholder: 'en, id, multi' },
+    ],
+    inputHint: 'Audio file URL (wav/mp3) or transcript',
+    inputPlaceholder: 'https://... or ipfs://...',
+    outputHint: 'Transcript JSON, audio file hash, WER/CER threshold',
+    verificationOptions: [
+      { value: 'hash-check', label: 'Output Hash + WER Check' },
+      { value: 'manual-review', label: 'Manual Transcript Review' },
+      { value: 'zk-proof', label: 'ZK Proof of Correct Transcription (advanced)' },
+    ],
+  },
+
+  'Image Generation': {
+    label: 'Image / Vision Generation',
+    color: '#a78bfa',
+    fields: [
+      { key: 'model', label: 'Model', type: 'text', placeholder: 'stable-diffusion-xl, flux', required: true },
+      { key: 'resolution', label: 'Resolution', type: 'select', options: [{ value: '512x512', label: '512x512' }, { value: '1024x1024', label: '1024x1024' }, { value: '1024x576', label: '16:9' }], required: true },
+      { key: 'steps', label: 'Inference Steps', type: 'number', placeholder: '30' },
+      { key: 'guidanceScale', label: 'Guidance Scale', type: 'text', placeholder: '7.5' },
+      { key: 'seed', label: 'Seed (optional for reproducibility)', type: 'text' },
+    ],
+    inputHint: 'Text prompt + optional reference image / mask',
+    inputPlaceholder: 'A cyberpunk city at night...',
+    outputHint: 'Generated image hash, CLIP score, or perceptual similarity threshold',
+    verificationOptions: [
+      { value: 'hash-check', label: 'Image Hash + Perceptual Hash' },
+      { value: 'manual-review', label: 'Manual Quality Review' },
+    ],
+  },
+
+  'Smart Contract Audit': {
+    label: 'Smart Contract Audit & Formal Verification',
+    color: '#f97316',
+    fields: [
+      { key: 'language', label: 'Language', type: 'select', options: [{ value: 'solidity', label: 'Solidity' }, { value: 'vyper', label: 'Vyper' }, { value: 'move', label: 'Move' }], required: true },
+      { key: 'toolchain', label: 'Tools Used', type: 'text', placeholder: 'Slither, Mythril, Certora, Foundry' },
+      { key: 'contractSize', label: 'Contract Size (LOC or bytecode)', type: 'text' },
+      { key: 'focusAreas', label: 'Focus Areas', type: 'text', placeholder: 'Reentrancy, access control, math' },
+    ],
+    inputHint: 'Source code (Solidity) + test suite or deployment address',
+    inputPlaceholder: 'Paste contract code or GitHub link',
+    outputHint: 'Audit report hash, vulnerability count, formal proof artifacts',
+    verificationOptions: [
+      { value: 'manual-review', label: 'Auditor Report Review' },
+      { value: 'hash-check', label: 'Report + Bytecode Hash' },
+    ],
+  },
+
+  'Data Anonymization': {
+    label: 'Data Anonymization & Privacy',
+    color: '#14b8a6',
+    fields: [
+      { key: 'technique', label: 'Technique', type: 'select', options: [
+        { value: 'k-anonymity', label: 'k-Anonymity' },
+        { value: 'differential-privacy', label: 'Differential Privacy' },
+        { value: 'synthetic', label: 'Synthetic Data Generation' },
+        { value: 'federated', label: 'Federated Anonymization' }
+      ], required: true },
+      { key: 'epsilon', label: 'Privacy Budget (ε)', type: 'text', placeholder: '1.0' },
+      { key: 'kValue', label: 'k Value (for k-anonymity)', type: 'number', placeholder: '5' },
+    ],
+    inputHint: 'Raw dataset (CSV/Parquet) + schema',
+    inputPlaceholder: 'Upload or link to dataset',
+    outputHint: 'Anonymized dataset hash, privacy metrics (epsilon, k, utility loss)',
+    verificationOptions: [
+      { value: 'hash-check', label: 'Dataset Hash + Privacy Metrics' },
+      { value: 'manual-review', label: 'Sample Review + Metric Validation' },
+    ],
+  },
+
+  'LLM Evaluation': {
+    label: 'LLM Evaluation & Benchmarking',
+    color: '#eab308',
+    fields: [
+      { key: 'benchmark', label: 'Benchmark Suite', type: 'select', options: [
+        { value: 'mmlu', label: 'MMLU' }, 
+        { value: 'humaneval', label: 'HumanEval' }, 
+        { value: 'gsm8k', label: 'GSM8K' },
+        { value: 'custom', label: 'Custom Eval Set' }
+      ], required: true },
+      { key: 'modelVersion', label: 'Model Version', type: 'text', placeholder: 'gpt-4o, llama-3-70b' },
+      { key: 'numSamples', label: 'Number of Samples', type: 'number', placeholder: '1000' },
+      { key: 'metrics', label: 'Metrics', type: 'text', placeholder: 'accuracy, pass@k, bleu' },
+    ],
+    inputHint: 'Evaluation dataset + model endpoint or weights',
+    inputPlaceholder: 'Dataset URL or HuggingFace dataset',
+    outputHint: 'Score report, benchmark hash, statistical significance',
+    verificationOptions: [
+      { value: 'hash-check', label: 'Eval Set Hash + Score Verification' },
+      { value: 'manual-review', label: 'Human Evaluation Sampling' },
+    ],
+  },
+}
+
 export const JOB_TYPE_OPTIONS = Object.entries(JOB_TYPE_CONFIGS).map(([value, config]) => ({
   value,
   label: config.label,
 }))
+
+// Helper to get all available types (core + suggested)
+export const ALL_JOB_TYPES = {
+  ...JOB_TYPE_CONFIGS,
+  ...SUGGESTED_ADDITIONAL_TYPES,
+}

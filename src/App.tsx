@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
@@ -15,12 +15,16 @@ import { useLeaderboard } from './hooks/useLeaderboard'
 import { usePrices } from './hooks/usePrices'
 import { LandingPage } from './components/LandingPage'
 import { Navbar } from './components/Navbar'
-import { Marketplace } from './components/Marketplace'
-import { PostJob } from './components/PostJob'
-import { MyJobs } from './components/MyJobs'
-import { Stats } from './components/Stats'
-import { Leaderboard } from './components/Leaderboard'
-import { Profile } from './components/Profile'
+
+// Lazy load heavy route components to improve tab switch performance
+// Using .then() because components use named exports (not default)
+const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })))
+const Marketplace = lazy(() => import('./components/Marketplace').then(m => ({ default: m.Marketplace })))
+const PostJob = lazy(() => import('./components/PostJob').then(m => ({ default: m.PostJob })))
+const MyJobs = lazy(() => import('./components/MyJobs').then(m => ({ default: m.MyJobs })))
+const Stats = lazy(() => import('./components/Stats').then(m => ({ default: m.Stats })))
+const Leaderboard = lazy(() => import('./components/Leaderboard').then(m => ({ default: m.Leaderboard })))
+const Profile = lazy(() => import('./components/Profile').then(m => ({ default: m.Profile })))
 import { ToastContainer } from './components/ToastContainer'
 import { JobDetailModal, ProofModal, ConfirmModal, EditProfileModal, DisputeModal, ZKSolutionModal } from './components/Modals'
 import { WorkerProfileModal } from './components/WorkerProfileModal'
@@ -35,6 +39,25 @@ const USDC_DECIMALS = 6
 const ERC20_ABI = [
   { type: 'function', name: 'approve', stateMutability: 'nonpayable', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] },
 ] as const
+
+// Lightweight skeleton shown during lazy chunk load or initial data — much better than plain "Loading..."
+function PageSkeleton({ isMobile }: { isMobile: boolean }) {
+  return (
+    <div style={{ padding: isMobile ? 8 : 20, opacity: 0.7 }}>
+      <div style={{ height: 28, background: '#1A2930', borderRadius: 6, width: 220, margin: '0 auto 24px' }} />
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))', gap: isMobile ? 10 : 16 }}>
+        {Array.from({ length: isMobile ? 3 : 6 }).map((_, i) => (
+          <div key={i} style={{ background: '#1A2930', border: '1px solid #24353D', borderRadius: 12, padding: isMobile ? 12 : 18, height: isMobile ? 140 : 200 }}>
+            <div className="skeleton" style={{ height: 18, width: '35%', marginBottom: 12 }} />
+            <div className="skeleton" style={{ height: 14, width: '80%', marginBottom: 6 }} />
+            <div className="skeleton" style={{ height: 14, width: '60%', marginBottom: 16 }} />
+            <div className="skeleton" style={{ height: 22, width: '40%' }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 const queryClient = new QueryClient()
 let notifIdCounter = 0
@@ -57,22 +80,26 @@ function AppContent() {
   const { ltcPrice } = usePrices()
   const isMobile = useIsMobile()
 
-  // Periodic auto-refresh every 30s
+  const navigate = useNavigate()
+  const location = useLocation()
+  const TAB_PATHS: Record<string, Tab> = { '': 'market', dashboard: 'dashboard', post: 'post', 'my-jobs': 'my', stats: 'stats', leaderboard: 'leaderboard', profile: 'profile' }
+  const tab = TAB_PATHS[location.pathname.replace('/', '')] || 'dashboard'
+  const setTab = (t: Tab) => navigate(t === 'dashboard' ? '/dashboard' : t === 'market' ? '/' : '/' + (t === 'my' ? 'my-jobs' : t))
+
+  const needsLeaderboard = tab === 'stats' || tab === 'leaderboard' || tab === 'profile'
+
+  // Periodic auto-refresh — lighter and smarter to reduce jank during navigation
   const onChainJobsRef = useRef(onChainJobs)
   onChainJobsRef.current = onChainJobs
   useEffect(() => {
     const interval = setInterval(() => {
-      refetchJobs(true)
-      fetchLeaderboard(onChainJobsRef.current, false)
-    }, 30000)
+      refetchJobs(true) // silent jobs refresh (cheaper)
+      if (needsLeaderboard) {
+        fetchLeaderboard(onChainJobsRef.current, false)
+      }
+    }, 60000) // 60s instead of 30s
     return () => clearInterval(interval)
-  }, [refetchJobs, fetchLeaderboard])
-
-  const navigate = useNavigate()
-  const location = useLocation()
-  const TAB_PATHS: Record<string, Tab> = { '': 'market', post: 'post', 'my-jobs': 'my', stats: 'stats', leaderboard: 'leaderboard', profile: 'profile' }
-  const tab = TAB_PATHS[location.pathname.replace('/', '')] || 'market'
-  const setTab = (t: Tab) => navigate(t === 'market' ? '/' : '/' + (t === 'my' ? 'my-jobs' : t))
+  }, [refetchJobs, fetchLeaderboard, needsLeaderboard, tab])
 
   const [loading, setLoading] = useState(false)
   const [releaseRefreshKey, setReleaseRefreshKey] = useState(0)
@@ -177,13 +204,19 @@ function AppContent() {
     })
   }, [address])
 
+  // Only fetch leaderboard when actually visiting those tabs (and avoid spamming on every render)
   useEffect(() => {
-    if ((tab === 'stats' || tab === 'leaderboard' || tab === 'profile') && entered) fetchLeaderboard(onChainJobs, false)
-  }, [tab, entered, fetchLeaderboard, onChainJobs])
+    if (needsLeaderboard && entered) {
+      fetchLeaderboard(onChainJobs, false)
+    }
+  }, [tab, entered, fetchLeaderboard, onChainJobs, needsLeaderboard])
 
-  // Always land on marketplace on entry (first load or reconnect)
+  // On first connect (or reconnect), if user is at root, send them to Dashboard.
+  // We keep '/' as the Marketplace route so the tab still works.
   useEffect(() => {
-    if (entered && location.pathname !== '/') navigate('/')
+    if (entered && location.pathname === '/') {
+      navigate('/dashboard')
+    }
   }, [entered])
 
   // Debounced profile save moved above
@@ -597,30 +630,36 @@ function AppContent() {
     setConfirmAction(null)
   }
 
-  const filteredJobs = [...jobs]
-    .filter(j => j.claimedCount < j.maxWorkers)
-    .filter(j => !search || j.title.toLowerCase().includes(search.toLowerCase()) || j.type.toLowerCase().includes(search.toLowerCase()))
-    .filter(j => !typeFilter || j.type === typeFilter)
-    .filter(j => {
-      const endMs = getDeadlineMs(j.createdAt, j.deadline)
-      return endMs === null || endMs > Date.now()
-    })
-    .sort((a, b) => {
-      if (sortBy === 'reward') {
-        const price = ltcPrice ?? parseFloat(localStorage.getItem('zkcompute_ltc_price') || '51')
-        const priceA = a.tokenSymbol === 'zkLTC' ? price * a.reward : a.reward
-        const priceB = b.tokenSymbol === 'zkLTC' ? price * b.reward : b.reward
-        return priceB - priceA || b.id - a.id
-      }
-      if (sortBy === 'deadline') {
-        const aMs = getDeadlineMs(a.createdAt, a.deadline) ?? 0
-        const bMs = getDeadlineMs(b.createdAt, b.deadline) ?? 0
-        return aMs - bMs || b.id - a.id
-      }
-      return b.id - a.id
-    })
+  // Memoize expensive derived lists so they don't recompute on every parent re-render (helps tab switches)
+  const filteredJobs = useMemo(() => {
+    return [...jobs]
+      .filter(j => j.claimedCount < j.maxWorkers)
+      .filter(j => !search || j.title.toLowerCase().includes(search.toLowerCase()) || j.type.toLowerCase().includes(search.toLowerCase()))
+      .filter(j => !typeFilter || j.type === typeFilter)
+      .filter(j => {
+        const endMs = getDeadlineMs(j.createdAt, j.deadline)
+        return endMs === null || endMs > Date.now()
+      })
+      .sort((a, b) => {
+        if (sortBy === 'reward') {
+          const price = ltcPrice ?? parseFloat(localStorage.getItem('zkcompute_ltc_price') || '51')
+          const priceA = a.tokenSymbol === 'zkLTC' ? price * a.reward : a.reward
+          const priceB = b.tokenSymbol === 'zkLTC' ? price * b.reward : b.reward
+          return priceB - priceA || b.id - a.id
+        }
+        if (sortBy === 'deadline') {
+          const aMs = getDeadlineMs(a.createdAt, a.deadline) ?? 0
+          const bMs = getDeadlineMs(b.createdAt, b.deadline) ?? 0
+          return aMs - bMs || b.id - a.id
+        }
+        return b.id - a.id
+      })
+  }, [jobs, search, typeFilter, sortBy, ltcPrice])
 
-  const postedJobs = jobs.filter(j => address && j.poster.toLowerCase() === address.toLowerCase())
+  const postedJobs = useMemo(() =>
+    jobs.filter(j => address && j.poster.toLowerCase() === address.toLowerCase()),
+    [jobs, address]
+  )
 
   const confirmDeactivate = (job: Job) => {
     setConfirmAction({ type: 'deactivate', job, claimantCount: job.claimedCount })
@@ -685,6 +724,41 @@ function AppContent() {
     setEditVerificationMethod('')
   }
 
+  const boostJob = async (jobId: number, boostAmount: number) => {
+    if (!address) {
+      showToast('Connect wallet first', 'info')
+      return
+    }
+    setLoading(true)
+    try {
+      const totalWei = parseUnits(String(boostAmount), 18)
+      // Real platform fee payment: send native zkLTC to the contract as booster fee to the developer/platform.
+      // This does NOT increase the worker reward — it's purely a visibility fee.
+      // In full production: add `function boostJob(uint256 jobId) external payable` in the contract
+      // that only the poster can call, records the boost (e.g. boostedUntil), and the value stays with the contract owner.
+      const hash = await writeContractAsync({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi: [{ type: 'receive', stateMutability: 'payable' } as const],
+        functionName: 'receive' as any,
+        value: totalWei,
+      })
+
+      // Persist boost status in off-chain metadata (used for UI badge, sorting priority in Marketplace, and recommendations)
+      await saveJobMetadata({
+        job_id: jobId,
+        poster: address.toLowerCase(),
+        boost_amount: boostAmount,
+        boosted_until: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+      } as any)
+
+      showToast(`Job #${jobId} boosted! Paid ${boostAmount} zkLTC platform fee. Tx: ${hash.slice(0, 10)}...`, 'success')
+      scheduleRefresh(refetchJobs)
+    } catch (e: unknown) {
+      handleTxError(e, 'Boost job', showToast)
+    }
+    setLoading(false)
+  }
+
   const handleViewWorker = (workerAddr: string, entry: LeaderboardEntry, rank: number) => {
     setViewedWorker(workerAddr)
     setViewedWorkerEntry(entry)
@@ -697,6 +771,9 @@ function AppContent() {
 
   return (
     <div className="app-container">
+      {/* Lightweight static background (heavy animations removed for snappier navigation) */}
+      <div className="app-bg" />
+
       <Navbar
         tab={tab} setTab={setTab}
         entered={entered}
@@ -708,8 +785,20 @@ function AppContent() {
         setShowNotifications={setShowNotifications}
       />
 
-      <div key={tab} style={{ padding: isMobile ? '14px 14px' : '20px 24px', animation: 'fadeIn 0.2s ease-out' }}>
+      <div style={{ padding: isMobile ? '14px 14px' : '20px 24px' }}>
+        <Suspense fallback={<PageSkeleton isMobile={isMobile} />}>
         <Routes>
+          <Route path="/dashboard" element={
+            <Dashboard
+              myJobs={myJobs}
+              onChainJobs={onChainJobs}
+              leaderboard={leaderboard}
+              ltcPrice={ltcPrice}
+              address={address || ''}
+              onNavigate={setTab}
+              onBoostJob={boostJob}
+            />
+          } />
           <Route path="/" element={
             <Marketplace
               jobs={filteredJobs}
@@ -794,10 +883,11 @@ function AppContent() {
           } />
           <Route path="*" element={
             <div style={{ textAlign: 'center', padding: 60, opacity: 0.5 }}>
-              Page not found. <a onClick={() => navigate('/')} style={{ color: '#ffd700', cursor: 'pointer', textDecoration: 'underline' }}>Go to Marketplace</a>
+              Page not found. <a onClick={() => navigate('/')} style={{ color: '#F7CE3E', cursor: 'pointer', textDecoration: 'underline' }}>Go to Marketplace</a>
             </div>
           } />
         </Routes>
+        </Suspense>
       </div>
 
       <ToastContainer toasts={toasts} />
@@ -889,7 +979,7 @@ export default function App() {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={darkTheme({ accentColor: '#ffd700', accentColorForeground: '#000', borderRadius: 'small', fontStack: 'system' })}>
+        <RainbowKitProvider theme={darkTheme({ accentColor: '#F7CE3E', accentColorForeground: '#0A1612', borderRadius: 'small', fontStack: 'system' })}>
           <BrowserRouter>
             <AppContent />
           </BrowserRouter>

@@ -1,6 +1,5 @@
 import { useState, type CSSProperties } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import heroImg from '../assets/image.png'
 import { colors, radii, fontSizes } from '../styles/tokens'
 import '../styles/landing.css'
 
@@ -12,11 +11,8 @@ const cssVars: Record<string, string> = {
   '--lp-bg-input': colors.bgInput,
   '--lp-text-dim': colors.textDim,
   '--lp-radius-xl': `${radii.xl}px`,
-  '--lp-hero-img': `url(${heroImg})`,
   '--lp-glow-gold1': gold(0.03),
   '--lp-glow-gold2': gold(0.015),
-  '--lp-hero-shadow1': gold(0.06),
-  '--lp-hero-shadow2': gold(0.04),
   '--lp-ring-outer-border': gold(0.06),
   '--lp-ring-inner-border': gold(0.03),
   '--lp-dot-bg': gold(0.3),
@@ -49,6 +45,27 @@ const FAQ_DATA = [
   { q: 'What kind of jobs can I post?', a: 'ML training & inference, ZK proof generation (Groth16, PLONK), 3D rendering, generic compute tasks, and more. Any computational workload that can produce a verifiable proof.' },
   { q: 'How are disputes handled?', a: 'Disputes are resolved via LitVM\'s on-chain verification. If a proof fails verification, the escrow is returned to the job poster and the worker\'s bond is slashed.' },
   { q: 'Is this mainnet?', a: 'Currently on LitVM\'s LiteForge testnet (chain ID 4441). No real funds are used. Mainnet launch will be announced by the LitVM team.' },
+  { q: 'How much does it cost to post a job?', a: 'You only pay the job reward + network gas fees. There are no platform fees. The full amount is escrowed on-chain until the job is completed and verified.' },
+  { q: 'Can I run jobs on my own hardware?', a: 'Yes. Workers can use any machine they control. The only requirement is that they can generate a valid zero-knowledge proof for the job\'s expected output.' },
+]
+
+const ADVANTAGES = [
+  {
+    title: 'Zero Trust, Full Proof',
+    desc: 'Every computation is cryptographically proven. Posters never have to trust workers — the math guarantees the result.',
+  },
+  {
+    title: 'Automatic & Instant Payouts',
+    desc: 'Escrowed funds are released the moment a valid proof is verified on-chain. No delays, no disputes over delivery.',
+  },
+  {
+    title: 'Any Workload Welcome',
+    desc: 'ML inference, ZK proving, 3D rendering, data labeling, scientific simulations — if it can be proven, it can be posted.',
+  },
+  {
+    title: 'Real Bitcoin Security',
+    desc: 'Powered by LitVM on Litecoin. Low fees, strong security, and settlement backed by actual Bitcoin money.',
+  },
 ]
 
 const sectionHdr: CSSProperties = {
@@ -104,20 +121,20 @@ export function LandingPage() {
       <section className="lp-hero-section" aria-label="Hero" id="hero">
         <div className="lp-aurora" />
         <div className="lp-aurora2" />
-        <div className="lp-hero-bg" />
         <div className="lp-ring lp-ring-outer" />
         <div className="lp-ring lp-ring-inner" />
         <div className="lp-dot" style={{ top: '38%', left: '38%', animationDelay: '0s' }} />
         <div className="lp-dot" style={{ top: '62%', left: '62%', animationDelay: '2s' }} />
         <div className="lp-glow" />
         <div className="lp-grid" />
+        <div className="lp-stars" />
 
         <div className="lp-hero-content">
           <div style={{ animation: 'fadeIn 0.8s ease-out 0s both' }}>
             <h1 className="lp-title" style={titleStyle}>zkCompute Hub</h1>
-            <p style={{ fontSize: 16, color: colors.textSecondary, maxWidth: 540, margin: '0 auto' }}>
-              Decentralized verifiable compute marketplace on LitVM — Litecoin's Virtual Machine.
-              Hard Money Web3, powered by BitcoinOS.
+            <p style={{ fontSize: 16, color: colors.textSecondary, maxWidth: 580, margin: '0 auto', lineHeight: 1.5 }}>
+              The decentralized marketplace for verifiable compute. Post AI, ML, ZK, and rendering jobs with escrowed payments. 
+              Workers prove results using zero-knowledge proofs — no trust required. Automatic on-chain settlement powered by LitVM.
             </p>
           </div>
 
@@ -145,9 +162,7 @@ export function LandingPage() {
             ))}
           </div>
 
-          <div style={{ animation: 'fadeIn 0.8s ease-out 0.6s both', textAlign: 'center', marginTop: 8 }}>
-            <a href="#how-it-works" className="lp-secondary-cta">Learn More →</a>
-          </div>
+
         </div>
 
       </section>
@@ -156,7 +171,7 @@ export function LandingPage() {
       <section className="lp-section" aria-label="How It Works" id="how-it-works">
         <div style={sectionHdr}>
           <h2 style={sectionTitle}>How It Works</h2>
-          <p style={{ color: colors.textDim, fontSize: fontSizes.lg }}>From job creation to verified result — four simple steps</p>
+          <p style={{ color: colors.textDim, fontSize: fontSizes.lg }}>Post a job with escrowed payment. Workers compete and prove their results. Everything settles automatically on-chain.</p>
         </div>
         <div className="lp-steps-grid">
           {STEPS.map((s, i) => (
@@ -167,8 +182,23 @@ export function LandingPage() {
             </div>
           ))}
         </div>
-        <div style={{ textAlign: 'center', marginTop: 32 }}>
-          <a href="#network" className="lp-secondary-cta">Next: Network Info →</a>
+      </section>
+
+      {/* ── Why zkCompute Hub ── */}
+      <section className="lp-section" aria-label="Why zkCompute Hub">
+        <div style={sectionHdr}>
+          <h2 style={sectionTitle}>Why zkCompute Hub?</h2>
+          <p style={{ color: colors.textDim, fontSize: fontSizes.lg, maxWidth: 520, margin: '0 auto' }}>
+            Built for developers, researchers, and teams who need real compute — without the trust issues.
+          </p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20, maxWidth: 1000, margin: '0 auto' }}>
+          {ADVANTAGES.map((adv, i) => (
+            <div key={i} className="lp-feature-card" style={{ minHeight: 'auto', padding: '24px 20px', textAlign: 'left' }}>
+              <div style={{ fontSize: fontSizes.md, fontWeight: 700, color: colors.gold, marginBottom: 10 }}>{adv.title}</div>
+              <p style={{ fontSize: fontSizes.base, color: colors.textDim, lineHeight: 1.55, margin: 0 }}>{adv.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -211,9 +241,6 @@ export function LandingPage() {
           <a href="https://docs.litvm.com" target="_blank" rel="noopener noreferrer" className="lp-ql-link">Docs</a>
           <a href="https://litvm.com" target="_blank" rel="noopener noreferrer" className="lp-ql-link">LitVM</a>
         </div>
-        <div style={{ textAlign: 'center', marginTop: 32 }}>
-          <a href="#faq" className="lp-secondary-cta">Next: FAQ →</a>
-        </div>
       </section>
 
       {/* ── FAQ ── */}
@@ -247,7 +274,7 @@ export function LandingPage() {
       <footer className="lp-footer">
         <div className="lp-footer-inner">
           <div style={{ fontSize: fontSizes.lg, fontWeight: 700, color: colors.gold }}>zkCompute Hub</div>
-          <div style={{ fontSize: fontSizes.sm, color: colors.textDim, marginTop: -4 }}>Decentralized verifiable compute on LitVM</div>
+          <div style={{ fontSize: fontSizes.sm, color: 'rgba(197, 193, 192, 0.85)', marginTop: -4 }}>Decentralized verifiable compute on LitVM</div>
           <div className="lp-footer-social">
             <a href="https://x.com/fens21_" target="_blank" rel="noopener noreferrer" aria-label="Follow on X">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -263,6 +290,9 @@ export function LandingPage() {
         </div>
         <div className="lp-footer-bottom">
           LitVM &bull; Litecoin's Virtual Machine &bull; Hard Money Web3
+          <div style={{ marginTop: 8, fontSize: 10, color: 'rgba(197, 193, 192, 0.8)' }}>
+            © {new Date().getFullYear()} zkCompute Hub. All rights reserved. • Testnet only • Not financial advice
+          </div>
         </div>
       </footer>
     </div>

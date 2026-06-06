@@ -198,7 +198,7 @@ function JobCarousel({ jobs, onDetail, onClose }: { jobs: Job[]; onDetail: (job:
       onMouseLeave={() => setPaused(false)}
       style={{ background: `linear-gradient(90deg, ${colors.bgElevated}, ${colors.bgCard})`, padding: '12px 20px', borderRadius: radii.xl, marginBottom: 24, border: `1px solid ${colors.borderLight}`, display: 'flex', alignItems: 'center', gap: 12 }}
     >
-      <div style={{ background: colors.gold, color: '#000', fontSize: fontSizes.sm, fontWeight: 800, padding: '2px 8px', borderRadius: 4, flexShrink: 0, whiteSpace: 'nowrap', letterSpacing: 0.3 }}>NEW</div>
+      <div style={{ background: colors.gold, color: '#0A1612', fontSize: fontSizes.sm, fontWeight: 800, padding: '2px 8px', borderRadius: 4, flexShrink: 0, whiteSpace: 'nowrap', letterSpacing: 0.3 }}>NEW</div>
       <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
         <div key={idx} style={{ animation: 'fadeSlideIn 0.4s ease-out' }}>
           <span onClick={() => onDetail(job)} role="button" tabIndex={0} style={{ fontSize: fontSizes.lg, fontWeight: 600, color: colors.textPrimary, cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', textAlign: 'center' }}>

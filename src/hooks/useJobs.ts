@@ -82,7 +82,7 @@ export function useJobs(autoFetch: boolean) {
 
   const fetchOnChainJobs = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
-    setError(null)
+    if (!silent) setError(null)
     try {
       const count = await readContract(config, {
         address: CONTRACT_ADDRESS as `0x${string}`,
