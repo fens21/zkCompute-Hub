@@ -298,13 +298,13 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
         <div style={{ background: `${JOB_TYPE_CONFIGS[job.type]?.color || colors.gold}18`, color: JOB_TYPE_CONFIGS[job.type]?.color || colors.gold, padding: isMobile ? '1px 6px' : '4px 12px', borderRadius: radii.full, fontSize: isMobile ? fontSizes.xs : fontSizes.sm, fontWeight: 600 }}>{JOB_TYPE_CONFIGS[job.type]?.label || job.type}</div>
       </div>
       <div style={{ fontSize: isMobile ? fontSizes.md : fontSizes.xl, fontWeight: 700, marginBottom: isMobile ? 2 : 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.title}</div>
-      <div style={{ opacity: 0.7, fontSize: isMobile ? fontSizes.xs : fontSizes.sm, marginBottom: 8, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>{job.description}</div>
+      <div style={{ opacity: 0.7, fontSize: isMobile ? fontSizes.xs : fontSizes.sm, marginBottom: 8, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' as const }}>{job.description}</div>
       <div style={{ fontSize: isMobile ? fontSizes.xs : fontSizes.sm, marginBottom: isMobile ? 4 : 12 }}>
         <DeadlineValue createdAt={job.createdAt} deadline={job.deadline} />
       </div>
-      <div style={{ margin: isMobile ? '4px 0' : '16px 0', fontSize: isMobile ? 14 : 20, color: colors.gold, fontWeight: 700 }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
+      <div style={{ margin: isMobile ? '4px 0' : '8px 0', fontSize: isMobile ? 14 : 20, color: colors.gold, fontWeight: 700 }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
       <div style={{ fontSize: isMobile ? fontSizes.xs : fontSizes.xs, opacity: 0.7, marginBottom: 8 }}>Posted by {shorten(job.poster)}</div>
-      <div style={{ marginBottom: isMobile ? 6 : 16 }}>
+      <div style={{ marginBottom: isMobile ? 6 : 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isMobile ? 9 : fontSizes.xs, opacity: 0.7, marginBottom: 2 }}>
           <span>{job.claimedCount}/{job.maxWorkers}</span>
           <span>{Math.round(claimedRatio * 100)}%</span>
