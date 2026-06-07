@@ -311,7 +311,7 @@ function AppContent() {
         verificationMethod: newJob.verificationMethod,
       }
       setJobs(prev => [...prev, job])
-      saveJobMetadata({
+      const metaSaved = await saveJobMetadata({
         job_id: onChainId,
         poster: address.toLowerCase(),
         title: job.title,
@@ -325,6 +325,9 @@ function AppContent() {
         expected_output: newJob.expectedOutput,
         verification_method: newJob.verificationMethod,
       })
+      if (!metaSaved) {
+        console.warn('Job metadata might not be persisted — refetch may show generic details')
+      }
       const tokenLabel = newJob.token === 'USDC' ? 'USDC' : 'zkLTC'
       setNewJob({ title: '', type: 'ML', reward: 50, deadline: '', description: '', requirements: '', maxWorkers: 3, token: 'zkLTC', customToken: '', difficulty: 'Medium', parameters: {}, inputData: '', expectedOutput: '', verificationMethod: 'hash-check' })
       showToast(`Job posted! ${rewardPerWorker * maxWorkers} ${tokenLabel} escrowed | Tx: ${hash.slice(0, 10)}...`, 'success')
