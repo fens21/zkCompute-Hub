@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
 import { useAccount, useWriteContract, useSwitchChain, useChainId } from 'wagmi'
 import { RainbowKitProvider, lightTheme } from '@rainbow-me/rainbowkit'
-import { readContract } from '@wagmi/core'
+import { readContract, waitForTransactionReceipt } from '@wagmi/core'
 import { parseUnits } from 'viem'
 import abi from './abi/JobMarketplace.json'
 import { config, CONTRACT_ADDRESS, USDC_ADDRESS } from './config/chain'
@@ -246,7 +246,7 @@ function AppContent() {
 
     setLoading(true)
     try {
-      let hash: string
+      let hash: `0x${string}`
 
       if (newJob.token === 'USDC') {
         const rewardBase = parseUnits(String(rewardPerWorker), USDC_DECIMALS)
@@ -276,6 +276,13 @@ function AppContent() {
           args: [newJob.title || 'Custom Compute Job', newJob.type, BigInt(maxWorkers), BigInt(Math.floor(deadlineTs / 1000))],
           value: totalWei,
         })
+      }
+
+      const receipt = await waitForTransactionReceipt(config, { hash })
+      if (receipt.status !== 'success') {
+        showToast('Transaction failed on-chain', 'error')
+        setLoading(false)
+        return
       }
 
       const onChainId = Number(await readContract(config, {
