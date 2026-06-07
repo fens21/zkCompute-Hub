@@ -296,13 +296,16 @@ function AppContent() {
         functionName: 'jobCount',
       }))
       const now = Date.now()
+      const normalizedDeadline = newJob.deadline ?? ''
+        ? new Date(newJob.deadline).toISOString()
+        : ''
       const job: Job = {
         id: onChainId,
         createdAt: now,
         title: newJob.title || 'Custom Compute Job',
         type: newJob.type,
         reward: rewardPerWorker,
-        deadline: newJob.deadline || '4h',
+        deadline: normalizedDeadline,
         description: newJob.description || 'No description',
         requirements: newJob.requirements || 'No requirements',
         poster: address,
@@ -687,7 +690,20 @@ function AppContent() {
     setEditType(job.type)
     setEditDesc(job.description)
     setEditReqs(job.requirements)
-    setEditDeadline(job.deadline && job.deadline !== 'N/A' ? job.deadline : '')
+    setEditDeadline(job.deadline && job.deadline !== 'N/A'
+      ? (() => {
+          const parsed = Date.parse(job.deadline)
+          if (!isNaN(parsed)) {
+            const d = new Date(parsed)
+            return d.getFullYear() + '-' +
+              String(d.getMonth() + 1).padStart(2, '0') + '-' +
+              String(d.getDate()).padStart(2, '0') + 'T' +
+              String(d.getHours()).padStart(2, '0') + ':' +
+              String(d.getMinutes()).padStart(2, '0')
+          }
+          return job.deadline
+        })()
+      : '')
     setEditParameters(job.parameters || {})
     setEditInputData(job.inputData || '')
     setEditExpectedOutput(job.expectedOutput || '')
@@ -699,7 +715,8 @@ function AppContent() {
     if (!editTitle.trim() || !editDeadline?.trim()) return
     setEditSaving(true)
     const prev = jobs.find(j => j.id === editingPostedJob.id)!
-    const updated: Job = { ...prev, title: editTitle, type: editType, description: editDesc, requirements: editReqs, deadline: editDeadline || (prev?.deadline ?? ''), parameters: editParameters, inputData: editInputData, expectedOutput: editExpectedOutput, verificationMethod: editVerificationMethod, difficulty: prev.difficulty || 'Medium' }
+    const normalizedEditDeadline = editDeadline ?? (prev?.deadline ?? '')
+    const updated: Job = { ...prev, title: editTitle, type: editType, description: editDesc, requirements: editReqs, deadline: normalizedEditDeadline, parameters: editParameters, inputData: editInputData, expectedOutput: editExpectedOutput, verificationMethod: editVerificationMethod, difficulty: prev.difficulty || 'Medium' }
     setJobs(prevJobs => prevJobs.map(j => j.id === editingPostedJob.id ? updated : j))
     const ok = await saveJobMetadata({
       job_id: editingPostedJob.id,
@@ -708,7 +725,7 @@ function AppContent() {
       type: editType,
       description: editDesc,
       requirements: editReqs,
-      deadline: editDeadline || editingPostedJob.deadline,
+      deadline: normalizedEditDeadline,
       token_symbol: editingPostedJob.tokenSymbol || 'zkLTC',
       parameters: editParameters,
       input_data: editInputData,

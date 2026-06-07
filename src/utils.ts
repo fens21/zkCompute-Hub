@@ -11,10 +11,13 @@ export function handleTxError(error: unknown, action: string, showToast: (messag
 }
 
 export function getDeadlineMs(createdAt: number | undefined, deadline: string): number | null {
-  // New format: ISO date string or timestamp string
+  // Try parsing as ISO date string or numeric timestamp string
   const ts = Date.parse(deadline)
   if (!isNaN(ts)) return ts
-  // Old format: "4h" (relative hours) — requires createdAt
+  // If deadline is a numeric string (timestamp), parse it directly
+  const num = Number(deadline)
+  if (!isNaN(num) && num > 0) return num
+  // "4h" (relative hours) — requires createdAt
   if (deadline.includes('h') && createdAt) {
     const hours = parseInt(deadline)
     if (!isNaN(hours) && hours > 0) return createdAt + hours * 3600000
