@@ -278,8 +278,13 @@ function AppContent() {
         })
       }
 
-      const receipt = await waitForTransactionReceipt(config, { hash })
-      if (receipt.status !== 'success') {
+      let receipt: { status: string } | undefined
+      try {
+        receipt = await waitForTransactionReceipt(config, { hash })
+      } catch (e) {
+        console.warn('waitForTransactionReceipt failed, proceeding with direct read:', e)
+      }
+      if (receipt && receipt.status !== 'success') {
         showToast('Transaction failed on-chain', 'error')
         setLoading(false)
         return
