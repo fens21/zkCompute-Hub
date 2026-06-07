@@ -56,14 +56,18 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
   const [pendingTypeChange, setPendingTypeChange] = useState<string | null>(null)
   const [postSearch, setPostSearch] = useState('')
   const [postSort, setPostSort] = useState<'reward-desc' | 'reward-asc' | 'deadline' | 'type'>('reward-desc')
-  useEffect(() => {
-    if (pendingTypeChange) return
+  const prevEditTypeRef = useRef('')
+ useEffect(() => {
+  if (pendingTypeChange) return
+  if (prevEditTypeRef.current && prevEditTypeRef.current !== editType) {
     setEditParameters({})
     const cfg = JOB_TYPE_CONFIGS[editType]
     if (cfg?.verificationOptions?.length) {
       setEditVerificationMethod(cfg.verificationOptions[0].value)
     }
-  }, [editType, pendingTypeChange])
+  }
+  prevEditTypeRef.current = editType
+}, [editType, pendingTypeChange])
 
   const editDeadlineMs = editDeadline ? new Date(editDeadline).getTime() : NaN
   const editDeadlineInvalid = editDeadline ? isNaN(editDeadlineMs) : false
