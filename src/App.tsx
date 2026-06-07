@@ -684,6 +684,7 @@ function AppContent() {
   }
 
   const editPostedJob = (job: Job) => {
+    console.log('job.parameters:', job.parameters)  // tambah ini
     setEditingPostedJob(job)
     setEditTitle(job.title)
     setEditType(job.type)
