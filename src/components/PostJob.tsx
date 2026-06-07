@@ -284,7 +284,7 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
                 type="datetime-local"
                 value={editDeadline && editDeadline.length >= 16 ? editDeadline.slice(0, 16) : editDeadline || ''}
                 onChange={e => setEditDeadline(e.target.value)}
-                style={{ width: '100%', background: '#000', border: `1px solid ${editDeadlinePast ? colors.red : editDeadlineInvalid ? colors.orange : colors.border}`, padding: 10, color: colors.textPrimary, borderRadius: radii.sm, fontSize: fontSizes.base, boxSizing: 'border-box' }}
+                style={{ width: '100%', background: '#000', border: `1px solid ${editDeadlinePast ? colors.red : editDeadlineInvalid ? colors.orange : colors.border}`, padding: 10, color: colors.textPrimary, borderRadius: radii.sm, fontSize: fontSizes.base, boxSizing: 'border-box', colorScheme: 'dark' }}
               />
               {editDeadlinePast ? (
                 <div style={{ fontSize: 9, color: colors.red, marginTop: 2 }}>Deadline must be in the future</div>
@@ -723,7 +723,7 @@ function NewJobForm({ newJob, setNewJob, onPost, loading, isMobile }: {
               type="datetime-local"
               value={newJob.deadline ? newJob.deadline.slice(0, 16) : ''}
               onChange={e => update({ deadline: e.target.value })}
-              style={{ width: '100%', background: '#000', border: `1px solid ${deadlinePast ? colors.red : deadlineInvalid ? colors.orange : colors.border}`, padding: 10, color: colors.textPrimary, fontSize: fontSizes.base, boxSizing: 'border-box' }}
+              style={{ width: '100%', background: '#000', border: `1px solid ${deadlinePast ? colors.red : deadlineInvalid ? colors.orange : colors.border}`, padding: 10, color: colors.textPrimary, fontSize: fontSizes.base, boxSizing: 'border-box', colorScheme: 'dark' }}
             />
             {deadlinePast ? (
               <div style={{ fontSize: 9, color: colors.red, marginTop: 2 }}>Deadline must be in the future</div>

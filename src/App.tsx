@@ -130,7 +130,7 @@ function AppContent() {
 
   const [postSubTab, setPostSubTab] = useState<PostSubTab>('new')
   const [newJob, setNewJob] = useState<NewJobForm>({
-    title: '', type: 'ML', reward: 50, deadline: '', description: '', requirements: '', maxWorkers: 3, token: 'zkLTC', customToken: '', difficulty: 'Medium',
+    title: '', type: 'ML', reward: NaN, deadline: '', description: '', requirements: '', maxWorkers: NaN, token: 'zkLTC', customToken: '', difficulty: 'Medium',
     parameters: {}, inputData: '', expectedOutput: '', verificationMethod: 'hash-check',
   })
 
@@ -336,7 +336,7 @@ function AppContent() {
         console.warn('Job metadata might not be persisted — refetch may show generic details')
       }
       const tokenLabel = newJob.token === 'USDC' ? 'USDC' : 'zkLTC'
-      setNewJob({ title: '', type: 'ML', reward: 50, deadline: '', description: '', requirements: '', maxWorkers: 3, token: 'zkLTC', customToken: '', difficulty: 'Medium', parameters: {}, inputData: '', expectedOutput: '', verificationMethod: 'hash-check' })
+      setNewJob({ title: '', type: 'ML', reward: NaN, deadline: '', description: '', requirements: '', maxWorkers: NaN, token: 'zkLTC', customToken: '', difficulty: 'Medium', parameters: {}, inputData: '', expectedOutput: '', verificationMethod: 'hash-check' })
       showToast(`Job posted! ${rewardPerWorker * maxWorkers} ${tokenLabel} escrowed | Tx: ${hash.slice(0, 10)}...`, 'success')
       addNotification(`Job posted: "${job.title}" — ${rewardPerWorker * maxWorkers} ${tokenLabel} escrowed`, 'post', job.title)
       scheduleRefresh(refetchJobs)
@@ -684,7 +684,6 @@ function AppContent() {
   }
 
   const editPostedJob = (job: Job) => {
-    console.log('job.parameters:', job.parameters)  // tambah ini
     setEditingPostedJob(job)
     setEditTitle(job.title)
     setEditType(job.type)

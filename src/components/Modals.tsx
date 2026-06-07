@@ -99,6 +99,8 @@ export function JobDetailModal({
           borderRadius: radii.lg,
           maxWidth: 520,
           width: "90%",
+          maxHeight: "85vh",
+          overflowY: "auto",
         }}
       >
         <h3 style={{ marginTop: 0 }}>{job.title}</h3>
