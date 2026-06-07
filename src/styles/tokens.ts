@@ -1,19 +1,24 @@
 export const colors = {
   gold: '#F7CE3E',
-  goldLight: '#F7CE3E',
+  goldLight: '#C2D099',
+  goldDark: '#5B7E3C',
+  goldBg: '#EEFABD',
+  accent: '#F7CE3E',
+  accentLight: '#EEFABD',
+  bgPage: '#0A1612',
   bgCard: '#1A2930',
-  bgElevated: '#22353D',
-  bgInput: '#0F1F1A',
-  border: '#2F3F48',
-  borderLight: '#24353D',
+  bgElevated: '#1A2930',
+  bgInput: '#1A2930',
+  border: 'rgba(197,193,192,0.12)',
+  borderLight: 'rgba(197,193,192,0.06)',
   textPrimary: '#C5C1C0',
-  textSecondary: '#A8B0B8',
-  textMuted: '#7A8A92',
-  textDim: '#8A949C',
-  green: '#4ade80',
-  red: '#ff6b6b',
-  orange: '#f97316',
-  blue: '#2775ca',
+  textSecondary: '#C2D099',
+  textMuted: '#C2D099',
+  textDim: '#A8B0B8',
+  green: '#22C55E',
+  red: '#DC2626',
+  orange: '#D97706',
+  blue: '#2563EB',
 } as const
 
 export const radii = {
@@ -35,7 +40,7 @@ export const fontSizes = {
 } as const
 
 export const card = {
-  background: colors.bgCard,
+  background: colors.bgElevated,
   border: `1px solid ${colors.borderLight}`,
   borderRadius: radii.xl,
   padding: 24,
@@ -53,7 +58,7 @@ export const input = {
 export const modalOverlay = {
   position: 'fixed' as const,
   inset: 0,
-  background: 'rgba(0,0,0,0.85)',
+  background: 'rgba(0,0,0,0.5)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -61,7 +66,7 @@ export const modalOverlay = {
 }
 
 export const modalContent = {
-  background: colors.bgCard,
+  background: colors.bgElevated,
   border: `1px solid ${colors.border}`,
   padding: 32,
   borderRadius: radii.lg,
@@ -81,7 +86,7 @@ export const buttonPrimary = {
 
 export const buttonGhost = {
   background: 'transparent',
-  border: `1px solid ${colors.textDim}`,
+  border: `1px solid ${colors.border}`,
   padding: '9px 14px',
   color: colors.textSecondary,
   borderRadius: radii.sm,

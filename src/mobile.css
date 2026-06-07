@@ -7,7 +7,7 @@
 /* ── Base mobile: tap highlight, touch-action, overscroll ── */
 @media (max-width: 768px) {
   * {
-    -webkit-tap-highlight-color: rgba(255, 215, 0, 0.2);
+    -webkit-tap-highlight-color: rgba(247, 206, 62, 0.2);
   }
 
   button, a, [role="button"], select, summary {
@@ -203,12 +203,12 @@
   .pagination-bar {
     position: sticky;
     bottom: 0;
-    background: rgba(10, 20, 40, 0.92);
+    background: rgba(10, 22, 18, 0.92);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     padding: 12px 0;
     z-index: 10;
-    border-top: 1px solid #333;
+    border-top: 1px solid #1A2930;
     margin-top: 16px;
   }
 }

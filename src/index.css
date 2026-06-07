@@ -2,14 +2,15 @@
   --text: #C5C1C0;
   --text-h: #F7CE3E;
   --bg: #0A1612;
-  --border: #2F3F48;
+  --border: #1A2930;
   --code-bg: #1A2930;
   --accent: #F7CE3E;
-  --accent-bg: rgba(247, 206, 62, 0.12);
-  --accent-border: rgba(247, 206, 62, 0.45);
+  --accent-bg: rgba(247, 206, 62, 0.1);
+  --accent-border: rgba(247, 206, 62, 0.35);
   --social-bg: rgba(26, 41, 48, 0.6);
   --shadow:
-    rgba(0, 0, 0, 0.45) 0 10px 15px -3px, rgba(0, 0, 0, 0.3) 0 4px 6px -2px;
+    rgba(0, 0, 0, 0.3) 0 2px 8px,
+    rgba(0, 0, 0, 0.2) 0 1px 2px;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -17,7 +18,7 @@
 
   font: 14px/145% var(--sans);
   letter-spacing: 0.18px;
-  color-scheme: dark;
+  color-scheme: light;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -46,12 +47,11 @@ body::before {
   pointer-events: none;
   z-index: 0;
   background-image:
-    linear-gradient(rgba(197, 193, 192, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(197, 193, 192, 0.035) 1px, transparent 1px);
+    linear-gradient(rgba(247, 206, 62, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(247, 206, 62, 0.03) 1px, transparent 1px);
   background-size: 60px 60px;
   mask-image: linear-gradient(to bottom, transparent 5%, black 30%, black 70%, transparent 95%);
   -webkit-mask-image: linear-gradient(to bottom, transparent 5%, black 30%, black 70%, transparent 95%);
-  /* Removed heavy infinite animation for lighter page transitions */
 }
 
 @keyframes gridDrift {
@@ -74,7 +74,7 @@ body::before {
 h1,
 h2 {
   font-family: var(--heading);
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-h);
 }
 
@@ -140,8 +140,8 @@ code {
 }
 
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.15); }
-  50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.3); }
+  0%, 100% { box-shadow: 0 0 20px rgba(247, 206, 62, 0.15); }
+  50% { box-shadow: 0 0 40px rgba(247, 206, 62, 0.3); }
 }
 
 @keyframes pulse {
@@ -179,13 +179,13 @@ a:focus-visible,
 }
 
 .skeleton {
-  background: linear-gradient(90deg, #1A2930 25%, #22353D 50%, #1A2930 75%);
+  background: linear-gradient(90deg, #1A2930 25%, #2A3940 50%, #1A2930 75%);
   background-size: 200px 100%;
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: 8px;
 }
 
-/* App Container - New dark palette */
+/* App Container */
 .app-container {
   background: #0A1612;
   color: #C5C1C0;
@@ -195,10 +195,13 @@ a:focus-visible,
   overflow: hidden;
 }
 
-/* Job card — no entrance animation (was causing jank on list renders / page switches) */
+/* Job card */
 .job-card {
   position: relative;
   overflow: hidden;
+  background: #1A2930;
+  border: 1px solid #1A2930;
+  border-radius: 12px;
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -219,11 +222,11 @@ a:focus-visible,
 }
 .job-card:hover {
   border-color: #F7CE3E !important;
-  box-shadow: 0 0 20px rgba(247, 206, 62, 0.14), 0 0 40px rgba(247, 206, 62, 0.07);
+  box-shadow: 0 4px 20px rgba(247, 206, 62, 0.12), 0 0 40px rgba(247, 206, 62, 0.05);
   transform: translateY(-2px);
 }
 .job-card-list-row:hover {
-  background: rgba(247, 206, 62, 0.025);
+  background: rgba(247, 206, 62, 0.06);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -235,7 +238,7 @@ a:focus-visible,
   }
 }
 
-/* Fix RainbowKit modal di mobile */
+/* RainbowKit modal */
 [data-rk] {
   --rk-radii-modal: 16px;
   --rk-radii-menuButton: 8px;
@@ -243,7 +246,7 @@ a:focus-visible,
 }
 
 /* ============================================
-   Lightweight static background using new palette
+   Background
    ============================================ */
 .app-bg {
   position: absolute;
@@ -251,33 +254,64 @@ a:focus-visible,
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(
-      ellipse 90% 75% at 20% 18%,
-      rgba(26, 41, 48, 0.65) 0%,
-      transparent 65%
-    ),
-    radial-gradient(
-      ellipse 80% 70% at 82% 78%,
-      rgba(34, 53, 61, 0.55) 0%,
-      transparent 68%
-    ),
-    /* Very subtle static grid */
-    linear-gradient(rgba(197, 193, 192, 0.022) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(197, 193, 192, 0.022) 1px, transparent 1px);
-  background-size:
-    100% 100%,
-    100% 100%,
-    64px 64px,
-    64px 64px;
+    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+  background-size: 64px 64px, 64px 64px;
 }
 
-/* No extra drifting layer */
 .app-bg::before {
-  content: none;
+  content: '';
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+
+.app-bg--dashboard::before {
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(247, 206, 62, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 80%, rgba(91, 126, 60, 0.03) 0%, transparent 55%);
+}
+
+.app-bg--market::before {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 80%, rgba(194, 208, 153, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 70% 15%, rgba(247, 206, 62, 0.03) 0%, transparent 55%);
+}
+
+.app-bg--post::before {
+  background:
+    radial-gradient(ellipse 75% 55% at 50% 30%, rgba(238, 250, 189, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 65% 50% at 30% 70%, rgba(247, 206, 62, 0.02) 0%, transparent 55%);
+}
+
+.app-bg--my::before {
+  background:
+    radial-gradient(ellipse 70% 60% at 75% 25%, rgba(91, 126, 60, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 25% 75%, rgba(194, 208, 153, 0.03) 0%, transparent 55%);
+}
+
+.app-bg--stats::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 30% 30%, rgba(197, 193, 192, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 55% at 70% 70%, rgba(247, 206, 62, 0.02) 0%, transparent 55%);
+}
+
+.app-bg--leaderboard::before {
+  background:
+    radial-gradient(ellipse 75% 55% at 50% 20%, rgba(247, 206, 62, 0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 50% 80%, rgba(91, 126, 60, 0.03) 0%, transparent 55%);
+}
+
+.app-bg--profile::before {
+  background:
+    radial-gradient(ellipse 70% 50% at 25% 40%, rgba(238, 250, 189, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 65% 55% at 75% 60%, rgba(197, 193, 192, 0.03) 0%, transparent 55%);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .app-bg {
     background: #0A1612;
+  }
+  .app-bg::before {
+    display: none;
   }
 }

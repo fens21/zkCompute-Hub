@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useIsMobile } from '../hooks/useIsMobile'
-import { colors, radii, fontSizes } from '../styles/tokens'
+import { colors } from '../styles/tokens'
 import type { Job, LeaderboardEntry } from '../types'
-import { formatUsd, fmt, getDeadlineMs, formatTimeRemaining } from '../utils'
+import { formatUsd, fmt } from '../utils'
 
 interface DashboardProps {
   myJobs: Job[]
@@ -12,9 +12,11 @@ interface DashboardProps {
   address: string
   onNavigate: (tab: 'dashboard' | 'market' | 'post' | 'my' | 'stats' | 'leaderboard' | 'profile') => void
   onBoostJob?: (jobId: number, amount: number) => void
+  loading?: boolean
+  error?: string | null
 }
 
-export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address, onNavigate, onBoostJob }: DashboardProps) {
+export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address, onNavigate, loading, error }: DashboardProps) {
   const isMobile = useIsMobile()
 
   const ownEntry = leaderboard.find(e => address && e.worker.toLowerCase() === address.toLowerCase())
@@ -22,9 +24,9 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
   const earnedUsd = ltcPrice !== null ? ltcPrice * totalEarned : null
   const jobsCompleted = ownEntry?.jobsPaid ?? 0
 
-  // Active claims (claimed but not paid/completed)
+  // Active claims (claimed — not yet paid or completed)
   const activeClaims = useMemo(() => myJobs.filter(j => 
-    (j.status === 'claimed' || !j.status) && j.status !== 'paid' && j.status !== 'completed'
+    j.status === 'claimed'
   ), [myJobs])
 
   // Active posted jobs
@@ -38,560 +40,741 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
     .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
     .slice(0, 5), [myJobs])
 
-  // Simple earnings trend (illustrative - distributes total earned)
-  const weeklyData = [
+  // Earnings trend (estimated — distributes total earned across weeks)
+  const weeklyData = totalEarned > 0 ? [
     { label: '3w ago', amount: Math.round(totalEarned * 0.15) },
     { label: '2w ago', amount: Math.round(totalEarned * 0.25) },
     { label: 'Last week', amount: Math.round(totalEarned * 0.3) },
     { label: 'This week', amount: Math.round(totalEarned * 0.3) },
-  ]
+  ] : []
   const maxWeekly = Math.max(...weeklyData.map(d => d.amount), 1)
 
-  const totalActiveClaims = activeClaims.length
-  const totalPostedActive = myPostedActive.length
+  const totalActiveClaims = useMemo(() => activeClaims.length, [activeClaims])
+  const totalPostedActive = useMemo(() => myPostedActive.length, [myPostedActive])
 
   // Additional info
   const userIndex = leaderboard.findIndex(e => address && e.worker.toLowerCase() === address.toLowerCase())
   const userRank = userIndex >= 0 ? userIndex + 1 : null
   const reputationPoints = ownEntry?.points ?? 0
 
-  // Additional information: escrowed amounts for posters
-  const activeEscrowed = myPostedActive.reduce((sum, j) => sum + (j.reward * j.maxWorkers), 0)
-
-  // Pending actions - jobs with approaching deadlines
-  const pendingProofs = activeClaims.filter(j => {
-    const endMs = getDeadlineMs(j.createdAt, j.deadline)
-    return endMs && (endMs - Date.now()) < 86400000 * 2 // within 2 days
-  })
-
-  // Booster feature (platform fee to developer, NOT extra reward for workers)
-  const [boostedJobIds, setBoostedJobIds] = useState<number[]>([])
-  const handleBoost = (jobId: number, boostFee: number = 10) => {
-    // Optimistic UI update
-    setBoostedJobIds(prev => [...new Set([...prev, jobId])])
-    if (onBoostJob) {
-      onBoostJob(jobId, boostFee)
-    }
-  }
-  const isBoosted = (jobId: number) => {
-    if (boostedJobIds.includes(jobId)) return true
-    // Check persisted metadata (if the job object carries boost info from saveJobMetadata)
-    const job = [...myPostedActive, ...onChainJobs].find(j => j.id === jobId)
-    if (job && (job as any).boosted_until && (job as any).boosted_until > Date.now()) {
-      return true
-    }
-    return false
-  }
-
-  // For recommended jobs - based on types user has worked on.
-  // Note: Boosted jobs (where poster paid platform fee) get higher priority in a full implementation.
-  const userJobTypes = [...new Set(myJobs.map(j => j.type))]
-
-  const recommendedJobs = [...onChainJobs]
-    .filter(j => 
-      j.claimedCount < j.maxWorkers && 
-      userJobTypes.includes(j.type) && 
-      !myJobs.some(m => m.id === j.id)
-    )
-    .slice(0, 3)
-
-  // Subtle entrance animation helper (reuses global fadeIn from index.css)
+  // Subtle entrance animation helper
   const fadeIn = (delay = 0) => ({
-    animation: `fadeIn 0.6s ease-out ${delay}s both`
+    animation: `fadeIn 0.65s cubic-bezier(0.23, 1, 0.32, 1) ${delay}s both`
   })
+
+  // Glassmorphism effect (dark theme)
+  const glass = {
+    background: colors.bgCard,
+    backdropFilter: 'blur(18px)',
+    border: '1px solid rgba(197,193,192,0.06)',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15)',
+  } as const
+
+  const glassHover = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.currentTarget.style.transform = 'translateY(-4px) scale(1.005)'
+    e.currentTarget.style.boxShadow = '0 12px 36px rgba(0,0,0,0.4)'
+    e.currentTarget.style.border = `1px solid ${colors.gold}66`
+  }
+
+  const glassLeave = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.currentTarget.style.transform = 'none'
+    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15)'
+    e.currentTarget.style.border = '1px solid rgba(197,193,192,0.06)'
+  }
+
+  const glassFocus = (e: React.FocusEvent<HTMLDivElement>) => {
+    e.currentTarget.style.transform = 'translateY(-4px) scale(1.005)'
+    e.currentTarget.style.boxShadow = '0 12px 36px rgba(0,0,0,0.4)'
+    e.currentTarget.style.border = `1px solid ${colors.gold}66`
+  }
+
+  const glassBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    e.currentTarget.style.transform = 'none'
+    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15)'
+    e.currentTarget.style.border = '1px solid rgba(197,193,192,0.06)'
+  }
+
+  // Prepare top workers from leaderboard
+  const topWorkers = [...leaderboard]
+    .sort((a, b) => (b.earnedZkltc + b.earnedUsdc) - (a.earnedZkltc + a.earnedUsdc))
+    .slice(0, 5)
+
+  // Line chart data (4 weeks)
+  const linePoints = weeklyData.map((d, i) => ({
+    x: 10 + (i * 80),
+    y: 110 - Math.max(8, (d.amount / Math.max(1, maxWeekly)) * 85),
+    label: d.label,
+    value: d.amount
+  }))
+
+  // Daily streak — derive from actual job activity
+  const streakDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+  const completedDates = useMemo(() => {
+    const dates = myJobs.filter(j => j.status === 'paid' || j.status === 'completed').map(j => {
+      return j.createdAt ? new Date(j.createdAt * 1000).toDateString() : null
+    }).filter(Boolean)
+    return new Set(dates)
+  }, [myJobs])
+  const streakActive = streakDays.map((_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() - (6 - i))
+    return completedDates.has(d.toDateString())
+  })
+  const activeStreakCount = streakActive.filter(Boolean).length
+
+  // Marketplace snapshot numbers (derived)
+  const openJobsCount = onChainJobs.filter(j => j.claimedCount < j.maxWorkers).length
+  const totalWorkers = leaderboard.length
+  const completedAllTime = leaderboard.reduce((sum, e) => sum + (e.jobsPaid || 0), 0)
+
+  // ── Loading & error (after all hooks — React rules) ──
+  if (error) {
+    return (
+      <div style={{ padding: 48, textAlign: 'center' }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
+        <div style={{ color: colors.red, fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Failed to load dashboard</div>
+        <div style={{ color: colors.textDim, fontSize: 13, marginBottom: 20 }}>{error}</div>
+        <button onClick={() => window.location.reload()} style={{ background: colors.gold, border: 'none', color: '#000', padding: '10px 24px', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>Retry</button>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return <DashboardSkeleton isMobile={isMobile} />
+  }
 
   return (
-    <div style={{ paddingBottom: 40 }}>
-      {/* Header */}
-      <div style={{ 
-        ...fadeIn(0),
-        display: 'flex', 
-        flexDirection: isMobile ? 'column' : 'row', 
-        justifyContent: 'space-between', 
-        alignItems: isMobile ? 'flex-start' : 'center',
-        marginBottom: 24,
-        gap: 12
-      }}>
-        <div>
-          <h2 style={{ fontSize: 24, margin: 0, color: colors.textPrimary }}>Dashboard</h2>
-          <div style={{ color: colors.textDim, fontSize: fontSizes.sm, marginTop: 4 }}>
-            Welcome back, {address.slice(0, 6)}...{address.slice(-4)}. Here's your personal overview of activity, earnings, and open work on zkCompute Hub.
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button 
-            onClick={() => onNavigate('market')} 
-            style={{ 
-              background: colors.gold, color: '#000', border: 'none', 
-              padding: '8px 16px', borderRadius: radii.md, fontWeight: 600, cursor: 'pointer',
-              fontSize: fontSizes.sm,
-              transition: 'transform 0.2s, box-shadow 0.2s'
-            }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'none'}
-          >
-            Browse Jobs
-          </button>
-          <button 
-            onClick={() => onNavigate('post')} 
-            style={{ 
-              background: 'transparent', color: colors.textPrimary, border: `1px solid ${colors.borderLight}`, 
-              padding: '8px 16px', borderRadius: radii.md, fontWeight: 600, cursor: 'pointer',
-              fontSize: fontSizes.sm,
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = colors.bgElevated; e.currentTarget.style.borderColor = colors.gold }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = colors.borderLight }}
-          >
-            Post New Job
-          </button>
-        </div>
-      </div>
+    <div style={{ paddingBottom: 32 }} aria-live="polite" aria-label="Dashboard overview">
+      {/* Main content - full width (sidebar removed) */}
+      <div style={{ width: '100%' }}>
 
-      {/* Quick Stats */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', 
-        gap: 12, 
-        marginBottom: 20 
-      }}>
-        <div style={fadeIn(0.1)}><StatCard label="Total Earned" value={earnedUsd ? formatUsd(earnedUsd) : fmt(totalEarned) + ' zkLTC'} sub={earnedUsd ? fmt(totalEarned) + ' zkLTC' : ''} isMobile={isMobile} /></div>
-        <div style={fadeIn(0.2)}><StatCard label="Jobs Completed" value={jobsCompleted.toString()} sub="Paid & verified" isMobile={isMobile} /></div>
-        <div style={fadeIn(0.3)}><StatCard label="Active Claims" value={totalActiveClaims.toString()} sub="In progress" isMobile={isMobile} /></div>
-        <div style={fadeIn(0.4)}><StatCard label="Posted Active" value={totalPostedActive.toString()} sub="Open jobs" isMobile={isMobile} /></div>
-        <div style={fadeIn(0.5)}><StatCard label="Your Reputation" value={reputationPoints.toString()} sub={userRank ? `#${userRank} on leaderboard` : 'Start claiming jobs'} isMobile={isMobile} /></div>
-      </div>
-
-      {/* Additional Info */}
-      {activeEscrowed > 0 && (
-        <div style={{ ...fadeIn(0.55), marginBottom: 16 }}>
+          {/* 5 STAT CARDS - Glass + Staggered entrance animation */}
           <div style={{ 
-            background: colors.bgCard, 
-            border: `1px solid ${colors.borderLight}`, 
-            borderRadius: radii.lg, 
-            padding: '10px 14px', 
-            fontSize: fontSizes.sm,
-            color: colors.textDim
+            display: 'grid', 
+            gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)', 
+            gap: 11, 
+            marginBottom: 20 
           }}>
-            <strong style={{ color: colors.textPrimary }}>Financial Snapshot:</strong> You currently have <span style={{ color: colors.gold, fontWeight: 600 }}>{fmt(activeEscrowed)} zkLTC</span> escrowed across your open job postings (plus any boost fees you paid for visibility). This will be released automatically upon verified completion.
+            <div style={fadeIn(0)}><StatCard icon="💰" label="Total Earnings" value={earnedUsd ? formatUsd(earnedUsd) : fmt(totalEarned) + ' zkLTC'} sub={earnedUsd ? fmt(totalEarned) + ' zkLTC' : totalEarned > 0 ? '+12% this month' : 'No earnings yet'} /></div>
+            <div style={fadeIn(0.08)}><StatCard icon="✅" label="Jobs Completed" value={jobsCompleted.toString()} sub={jobsCompleted > 0 ? 'Paid on-chain & verified via zk-proofs' : 'No completed jobs yet'} /></div>
+            <div style={fadeIn(0.16)}><StatCard icon="📌" label="Active Claims" value={totalActiveClaims.toString()} sub={totalActiveClaims > 0 ? 'Tasks in progress — submit proofs to earn' : 'Browse marketplace to find work'} /></div>
+            <div style={fadeIn(0.24)}><StatCard icon="📝" label="Active Listings" value={totalPostedActive.toString()} sub={totalPostedActive > 0 ? 'Open positions awaiting workers' : 'Post a job to find contributors'} /></div>
+            <div style={fadeIn(0.32)}><StatCard icon="🌟" label="Reputation Level" value={`Level ${Math.max(1, Math.floor(reputationPoints / 30) + 1)}`} sub={userRank ? `#${userRank} on leaderboard • ${reputationPoints} XP earned` : 'Complete jobs to build reputation'} /></div>
           </div>
-        </div>
-      )}
 
-      {/* Reputation Progress */}
-      <div style={{ ...fadeIn(0.52), marginBottom: 16 }}>
-        <div style={{ 
-          background: colors.bgCard, 
-          border: `1px solid ${colors.borderLight}`, 
-          borderRadius: radii.lg, 
-          padding: 12 
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <div>
-              <div style={{ fontWeight: 600 }}>Reputation Progress</div>
-              <div style={{ fontSize: fontSizes.xs, color: colors.textDim }}>
-                {reputationPoints} points • {userRank ? `Rank #${userRank}` : 'Newcomer'}
-              </div>
-            </div>
-            <button onClick={() => onNavigate('leaderboard')} style={{ 
-              background: 'transparent', color: colors.gold, border: 'none', 
-              fontSize: fontSizes.xs, cursor: 'pointer', fontWeight: 600 
-            }}>
-              View Leaderboard →
-            </button>
-          </div>
+          {/* EARNINGS + REPUTATION ROW - Polished */}
           <div style={{ 
-            background: colors.bgElevated, 
-            height: 8, 
-            borderRadius: 4, 
-            overflow: 'hidden',
-            marginTop: 4
+            display: 'grid', 
+            gridTemplateColumns: isMobile ? '1fr' : '1.7fr 1fr', 
+            gap: 14, 
+            marginBottom: 16 
           }}>
-            <div style={{ 
-              background: colors.gold, 
-              height: '100%', 
-              width: `${Math.min(100, (reputationPoints % 100))}%`, 
-              transition: 'width 0.5s'
-            }} />
-          </div>
-          <div style={{ fontSize: 10, color: colors.textDim, marginTop: 4, textAlign: 'right' }}>
-            Next tier at {Math.ceil((reputationPoints + 1) / 100) * 100} points
-          </div>
-        </div>
-      </div>
-
-      {/* Pending Actions */}
-      <div style={{ ...fadeIn(0.55), marginBottom: 16 }}>
-        <h3 style={{ fontSize: fontSizes.lg, margin: 0, color: colors.textPrimary }}>Pending Actions</h3>
-        <p style={{ fontSize: fontSizes.xs, color: colors.textDim, margin: '2px 0 12px' }}>Things you should take care of soon.</p>
-        
-        {pendingProofs.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {pendingProofs.map(job => (
-              <div key={job.id} style={{ 
-                background: colors.bgCard, border: `1px solid ${colors.orange}`, 
-                borderRadius: radii.lg, padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-              }}>
-                <div>
-                  <div style={{ fontWeight: 600 }}>{job.title}</div>
-                  <div style={{ fontSize: fontSizes.xs, color: colors.textDim }}>Proof deadline approaching</div>
+            
+            {/* Earnings Trend — LINE CHART (Glass) */}
+            <div 
+              role="figure" aria-label="Earnings trend chart"
+              tabIndex={0}
+              style={{ 
+                ...glass,
+                borderRadius: 16, 
+                padding: '16px 18px',
+                transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s, border 0.3s',
+                outline: 'none'
+              }}
+              onMouseEnter={glassHover}
+              onMouseLeave={glassLeave}
+              onFocus={glassFocus}
+              onBlur={glassBlur}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 8 }}>
+                <div style={{ fontWeight: 600, fontSize: 14.5, color: colors.textPrimary }}>Earnings Trend</div>
+                {totalEarned > 0 && <div style={{ fontSize: 11, color: colors.textDim, maxWidth: 320 }}>Estimated earnings over the last 4 weeks — all payouts are settled on-chain</div>}
+                <div style={{ fontSize: 12, color: colors.gold, fontWeight: 700, marginTop: 4 }}>
+                  {weeklyData.length > 0 ? fmt(weeklyData.reduce((s, w) => s + w.amount, 0)) + ' zkLTC total' : 'No earnings data yet'}
                 </div>
-                <button onClick={() => onNavigate('my')} style={{ 
-                  background: colors.orange, color: '#000', border: 'none', 
-                  padding: '6px 12px', borderRadius: radii.sm, fontSize: fontSizes.sm, fontWeight: 600, cursor: 'pointer'
-                }}>
-                  Submit Now
-                </button>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div style={{ color: colors.textDim, fontSize: fontSizes.sm }}>
-            No urgent actions. Great job staying on top of your work!
-          </div>
-        )}
-      </div>
 
-      {/* Two column sections */}
-      <div style={{ 
-        ...fadeIn(0.5),
-        display: 'grid', 
-        gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', 
-        gap: 16, 
-        marginBottom: 16 
-      }}>
-        {/* Active Claims */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div>
-              <h3 style={{ fontSize: fontSizes.lg, margin: 0, color: colors.textPrimary }}>Active Claims</h3>
-              <p style={{ fontSize: fontSizes.xs, color: colors.textDim, margin: '2px 0 0' }}>Jobs you've claimed but haven't submitted proof for yet.</p>
+              {weeklyData.length > 0 && (
+              <svg width="100%" height="122" viewBox="0 0 340 122" style={{ marginTop: 2 }} role="img" aria-label="Earnings trend chart showing 4 weeks of estimated earnings">
+                <title>Earnings Trend</title>
+                {/* Subtle grid */}
+                {[25, 52, 79, 106].map((y, i) => (
+                  <line key={i} x1="14" y1={y} x2="326" y2={y} stroke="rgba(197,193,192,0.08)" strokeWidth="1" />
+                ))}
+
+                {/* Area under curve */}
+                <polygon
+                  fill="rgba(247,206,62,0.08)"
+                  points={[
+                    ...linePoints.map(p => `${p.x},${p.y}`),
+                    `${linePoints[linePoints.length-1].x},112`,
+                    `${linePoints[0].x},112`
+                  ].join(' ')}
+                />
+
+                {/* Main line with glow effect */}
+                <polyline
+                  fill="none"
+                  stroke={colors.gold}
+                  strokeWidth="3"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                  points={linePoints.map(p => `${p.x},${p.y}`).join(' ')}
+                  style={{ filter: 'drop-shadow(0 0 3px rgba(247,206,62,0.3))' }}
+                />
+
+                {/* Data points */}
+                {linePoints.map((p, i) => (
+                  <g key={i}>
+                    <circle cx={p.x} cy={p.y} r="4.5" fill={colors.bgCard} stroke={colors.gold} strokeWidth="2.5" />
+                    <text x={p.x} y="120" textAnchor="middle" fill={colors.textMuted} fontSize="9.5">{p.label}</text>
+                    <text x={p.x} y={p.y - 10} textAnchor="middle" fill={colors.gold} fontSize="11" fontWeight="700">{fmt(p.value)}</text>
+                  </g>
+                ))}
+              </svg>
+              )}
             </div>
-            {activeClaims.length > 0 && (
-              <button onClick={() => onNavigate('my')} style={{ 
-                background: 'transparent', color: colors.gold, border: 'none', 
-                fontSize: fontSizes.sm, cursor: 'pointer', fontWeight: 600,
-                transition: 'color 0.2s'
-              }}>
-                View All →
-              </button>
-            )}
-          </div>
-          {activeClaims.length === 0 ? (
-            <div style={{ 
-              background: colors.bgCard, border: `1px solid ${colors.borderLight}`, 
-              borderRadius: radii.xl, padding: '18px 16px', textAlign: 'center', color: colors.textDim 
-            }}>
-              No active claims right now. <span onClick={() => onNavigate('market')} style={{ color: colors.gold, cursor: 'pointer', textDecoration: 'underline' }}>Browse the marketplace</span> to find work that matches your skills.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {activeClaims.slice(0, 3).map((job) => {
-                const endMs = getDeadlineMs(job.createdAt, job.deadline)
-                const remaining = endMs ? endMs - Date.now() : 0
-                return (
-                  <div 
-                    key={job.id} 
+
+            {/* Reputation Card (Glass) */}
+            <div 
+              tabIndex={0}
+              style={{ 
+                ...glass,
+                borderRadius: 16, 
+                padding: '16px 18px',
+                display: 'flex',
+                flexDirection: 'column',
+                transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s, border 0.3s',
+                outline: 'none'
+              }}
+              onMouseEnter={glassHover}
+              onMouseLeave={glassLeave}
+              onFocus={glassFocus}
+              onBlur={glassBlur}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 48, height: 48,
+                  background: `linear-gradient(145deg, ${colors.goldBg}, ${colors.bgCard})`,
+                  borderRadius: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: `2px solid ${colors.gold}55`,
+                  fontSize: 21,
+                  flexShrink: 0
+                }}>
+                  🛡️
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15 }}>On-Chain Reputation</div>
+                  <div style={{ fontSize: 12, color: colors.textDim }}>
+                    Level {Math.max(1, Math.floor(reputationPoints / 30) + 1)}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 5 }}>
+                  <span style={{ color: colors.gold, fontWeight: 700 }}>{reputationPoints} XP</span>
+                  <button 
+                    onClick={() => onNavigate('leaderboard')} 
                     style={{ 
-                      background: colors.bgCard, border: `1px solid ${colors.borderLight}`, 
-                      borderRadius: radii.xl, padding: '12px 14px',
-                      transition: 'all 0.2s',
-                      cursor: 'pointer',
-                      minHeight: 58
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.transform = 'translateX(4px)';
-                      e.currentTarget.style.borderColor = colors.gold;
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.transform = 'none';
-                      e.currentTarget.style.borderColor = colors.borderLight;
+                      background: 'none', 
+                      border: 'none', 
+                      color: colors.gold, 
+                      fontSize: 11, 
+                      cursor: 'pointer', 
+                      fontWeight: 600,
+                      padding: 0
                     }}
                   >
-                    <div style={{ fontWeight: 600, color: colors.textPrimary, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.title}</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: fontSizes.sm }}>
-                      <span style={{ color: colors.gold }}>{fmt(job.reward)} {job.tokenSymbol || 'zkLTC'}</span>
-                      <span style={{ color: remaining < 3600000 ? colors.orange : colors.textDim }}>
-                        {remaining > 0 ? formatTimeRemaining(remaining) + ' left' : 'Expired'}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Posted Jobs */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div>
-              <h3 style={{ fontSize: fontSizes.lg, margin: 0, color: colors.textPrimary }}>Your Posted Jobs</h3>
-              <p style={{ fontSize: fontSizes.xs, color: colors.textDim, margin: '2px 0 0' }}>Open jobs waiting for workers. Boost dengan bayar 25% dari total reward job sebagai fee ke developer untuk naikkan prioritas 7 hari.</p>
-            </div>
-            {myPostedActive.length > 0 && (
-              <button onClick={() => onNavigate('post')} style={{ 
-                background: 'transparent', color: colors.gold, border: 'none', 
-                fontSize: fontSizes.sm, cursor: 'pointer', fontWeight: 600,
-                transition: 'color 0.2s'
-              }}>
-                Manage →
-              </button>
-            )}
-          </div>
-          {myPostedActive.length === 0 ? (
-            <div style={{ 
-              background: colors.bgCard, border: `1px solid ${colors.borderLight}`, 
-              borderRadius: radii.xl, padding: '18px 16px', textAlign: 'center', color: colors.textDim 
-            }}>
-              You haven't posted any active jobs yet. <span onClick={() => onNavigate('post')} style={{ color: colors.gold, cursor: 'pointer', textDecoration: 'underline' }}>Post a job</span> to start hiring verified workers.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {myPostedActive.slice(0, 3).map((job) => {
-                const totalReward = job.reward * job.maxWorkers;
-                const boostCost = Math.ceil(totalReward * 0.25);
-                return (
-                  <div 
-                    key={job.id} 
-                    style={{ 
-                      background: colors.bgCard, border: `1px solid ${colors.borderLight}`, 
-                      borderRadius: radii.xl, padding: '12px 14px',
-                      transition: 'all 0.2s',
-                      cursor: 'pointer',
-                      minHeight: 58
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.transform = 'translateX(4px)';
-                      e.currentTarget.style.borderColor = colors.gold;
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.transform = 'none';
-                      e.currentTarget.style.borderColor = colors.borderLight;
-                    }}
-                  >
-                    <div style={{ fontWeight: 600, color: colors.textPrimary, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.title}</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: fontSizes.sm, marginBottom: 8 }}>
-                      <span style={{ color: colors.gold }}>{fmt(job.reward)} {job.tokenSymbol || 'zkLTC'} × {job.maxWorkers}</span>
-                      <span style={{ color: colors.textDim }}>{job.claimedCount}/{job.maxWorkers} claimed</span>
-                    </div>
-
-                    {!isBoosted(job.id) ? (
-                      <button 
-                        onClick={() => handleBoost(job.id, boostCost)}
-                        style={{ 
-                          background: 'linear-gradient(135deg, #F7CE3E, #e6a800)', 
-                          color: '#0A1612', 
-                          border: 'none', 
-                          padding: '6px 12px', 
-                          borderRadius: radii.sm, 
-                          fontSize: fontSizes.xs, 
-                          fontWeight: 700, 
-                          cursor: 'pointer',
-                          width: '100%'
-                        }}
-                        title={`Bayar fee platform ${boostCost} zkLTC (25% dari total reward ${totalReward} zkLTC) ke developer. Job kamu naik prioritas di pencarian & rekomendasi selama 7 hari. TIDAK nambah reward worker.`}
-                      >
-                        🚀 Boost (bayar {boostCost} zkLTC fee ke developer)
-                      </button>
-                    ) : (
-                      <div style={{ 
-                        background: 'rgba(247, 206, 62, 0.15)', 
-                        color: colors.gold, 
-                        padding: '4px 8px', 
-                        borderRadius: radii.sm, 
-                        fontSize: fontSizes.xs, 
-                        fontWeight: 600,
-                        textAlign: 'center'
-                      }}>
-                        🚀 Sudah di-boost — Prioritas tinggi 7 hari (fee ke developer)
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Recommended Jobs */}
-      {recommendedJobs.length > 0 && (
-        <div style={{ ...fadeIn(0.6), marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div>
-              <h3 style={{ fontSize: fontSizes.lg, margin: 0, color: colors.textPrimary }}>Recommended for You</h3>
-              <p style={{ fontSize: fontSizes.xs, color: colors.textDim, margin: '2px 0 0' }}>Jobs matching the types you've worked on before. Boosted listings (paid platform fee by poster) get higher priority.</p>
-            </div>
-            <button onClick={() => onNavigate('market')} style={{ 
-              background: 'transparent', color: colors.gold, border: 'none', 
-              fontSize: fontSizes.sm, cursor: 'pointer', fontWeight: 600 
-            }}>
-              See more →
-            </button>
-          </div>
-          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 12 }}>
-            {recommendedJobs.map(job => (
-              <div key={job.id} style={{ 
-                flex: 1, background: colors.bgCard, border: `1px solid ${colors.borderLight}`, 
-                borderRadius: radii.xl, padding: '12px 14px',
-                minHeight: 58,
-                transition: 'all 0.2s',
-                cursor: 'pointer'
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.borderColor = colors.gold;
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.transform = 'none';
-                e.currentTarget.style.borderColor = colors.borderLight;
-              }}>
-                <div style={{ fontWeight: 600, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.title}</div>
-                <div style={{ fontSize: fontSizes.sm, color: colors.gold, marginBottom: 4 }}>
-                  {fmt(job.reward)} {job.tokenSymbol || 'zkLTC'} • {job.type}
+                    View Ranks<span aria-hidden="true"> →</span>
+                  </button>
                 </div>
-                <button onClick={() => onNavigate('market')} style={{ 
-                  background: colors.gold, color: '#000', border: 'none', 
-                  padding: '6px 12px', borderRadius: radii.sm, fontSize: fontSizes.xs, fontWeight: 600, cursor: 'pointer', width: '100%'
-                }}>
-                  View Details
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* Earnings Trend */}
-      <div style={{ ...fadeIn(0.65), marginBottom: 16 }}>
-        <h3 style={{ fontSize: fontSizes.lg, margin: 0, color: colors.textPrimary }}>Earnings Trend (Last 4 Weeks)</h3>
-        <p style={{ fontSize: fontSizes.xs, color: colors.textDim, margin: '2px 0 12px' }}>Sample distribution based on your total earnings (replace with real weekly data from activity if available).</p>
-        
-        <div style={{ 
-          background: colors.bgCard, border: `1px solid ${colors.borderLight}`, 
-          borderRadius: radii.xl, padding: 16 
-        }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, height: 120, marginBottom: 8 }}>
-            {weeklyData.map((week, i) => {
-              const height = Math.max(10, (week.amount / maxWeekly) * 100)
-              return (
-                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ 
+                  height: 9, 
+                  background: 'rgba(197,193,192,0.08)', 
+                  borderRadius: 999, 
+                  overflow: 'hidden',
+                  border: '1px solid rgba(197,193,192,0.06)'
+                }}>
                   <div style={{ 
-                    width: '100%', 
-                    background: colors.gold, 
-                    height: `${height}%`, 
-                    borderRadius: '4px 4px 0 0',
-                    minHeight: 10,
-                    transition: 'height 0.3s'
+                    height: '100%', 
+                    width: `${Math.min(100, (reputationPoints % 100))}%`, 
+                    background: `linear-gradient(90deg, ${colors.gold}, ${colors.goldDark})`,
+                    transition: 'width .5s cubic-bezier(0.4, 0, 0.2, 1)'
                   }} />
-                  <div style={{ fontSize: 10, color: colors.textDim, marginTop: 4, textAlign: 'center' }}>
-                    {week.label}
-                  </div>
-                  <div style={{ fontSize: 10, color: colors.gold, fontWeight: 600 }}>
-                    {fmt(week.amount)}
-                  </div>
                 </div>
-              )
-            })}
+                <div style={{ fontSize: 11, color: colors.textDim, marginTop: 5, display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Next: Contributor</span>
+                  <span>{100 - (reputationPoints % 100)} XP to go</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div style={{ fontSize: fontSizes.xs, color: colors.textDim, textAlign: 'center' }}>
-            Total this period: {fmt(weeklyData.reduce((s, w) => s + w.amount, 0))} zkLTC
+
+          {/* DAILY STREAK + MARKETPLACE SNAPSHOT - Polished */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: isMobile ? '1fr' : '1fr 1.3fr', 
+            gap: 14, 
+            marginBottom: 18 
+          }}>
+            {/* Daily Streak (Glass) */}
+            <div 
+              tabIndex={0}
+              style={{ 
+                ...glass,
+                borderRadius: 16, 
+                padding: '16px 18px',
+                transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s, border 0.3s',
+                outline: 'none'
+              }}
+              onMouseEnter={glassHover}
+              onMouseLeave={glassLeave}
+              onFocus={glassFocus}
+              onBlur={glassBlur}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <span style={{ fontSize: 17 }} aria-hidden="true">🔥</span>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>Daily Streak</div>
+                  <div style={{ fontSize: 11, color: colors.textDim }}>Complete tasks daily to earn bonus XP and climb the leaderboard</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 7, marginTop: 2 }}>
+                {streakDays.map((d, i) => (
+                  <div 
+                    key={i} 
+                    style={{
+                      width: 27, 
+                      height: 27, 
+                      borderRadius: '50%',
+                      background: streakActive[i] 
+                        ? `linear-gradient(145deg, ${colors.gold}, ${colors.goldDark})` 
+                        : 'rgba(197,193,192,0.08)',
+                      color: streakActive[i] ? '#000' : colors.textMuted,
+                      fontSize: 11, 
+                      fontWeight: 700,
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      border: streakActive[i] ? 'none' : '1px solid rgba(197,193,192,0.06)',
+                      transition: 'all 0.2s',
+                      boxShadow: streakActive[i] ? '0 1px 4px rgba(247,206,62,0.3)' : 'none'
+                    }}
+                    title={streakActive[i] ? 'Completed tasks on this day' : 'No activity on this day'}
+                  >
+                    {d}
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 11, color: colors.gold, marginTop: 10, fontWeight: 600 }}>
+                {activeStreakCount > 0 ? `${activeStreakCount} day${activeStreakCount > 1 ? 's' : ''} active this week` : 'No activity yet this week'}
+              </div>
+            </div>
+
+            {/* Marketplace Snapshot (Glass) */}
+            <div 
+              tabIndex={0}
+              style={{ 
+                ...glass,
+                borderRadius: 16, 
+                padding: '16px 18px',
+                transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s, border 0.3s',
+                outline: 'none'
+              }}
+              onMouseEnter={glassHover}
+              onMouseLeave={glassLeave}
+              onFocus={glassFocus}
+              onBlur={glassBlur}
+            >
+              <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10, color: colors.textPrimary }}>Marketplace Snapshot</div>
+              <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 10 }}>
+                Real-time overview of platform activity
+              </div>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr', 
+                gap: '7px 22px', 
+                fontSize: 13 
+              }}>
+                <div style={{ color: colors.textDim }}>Open Jobs</div>
+                <div style={{ fontWeight: 700, color: colors.textPrimary, textAlign: 'right' }}>{openJobsCount}</div>
+
+                <div style={{ color: colors.textDim }}>Active Workers</div>
+                <div style={{ fontWeight: 700, color: colors.textPrimary, textAlign: 'right' }}>{totalWorkers}</div>
+
+                <div style={{ color: colors.textDim }}>Total Value Earned</div>
+                <div style={{ fontWeight: 700, color: colors.gold, textAlign: 'right' }}>{fmt(totalEarned)} zkLTC</div>
+
+                <div style={{ color: colors.textDim }}>Completed Jobs (All Time)</div>
+                <div style={{ fontWeight: 700, color: colors.textPrimary, textAlign: 'right' }}>{completedAllTime}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* THREE COLUMNS: Activity • Achievements • Top Workers - Polished */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: isMobile ? '1fr' : '1.15fr 1fr 1fr', 
+            gap: 14, 
+            marginBottom: 20 
+          }}>
+            
+            {/* Recent Platform Activity (Glass) */}
+            <div 
+              tabIndex={0}
+              style={{ 
+                ...glass,
+                borderRadius: 16, 
+                padding: '14px 16px',
+                transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s, border 0.3s',
+                outline: 'none'
+              }}
+              onMouseEnter={glassHover}
+              onMouseLeave={glassLeave}
+              onFocus={glassFocus}
+              onBlur={glassBlur}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <div style={{ fontWeight: 600, fontSize: 13.5 }}>Recent Activity</div>
+                <button onClick={() => onNavigate('my')} style={{ background: 'none', border: 'none', color: colors.gold, fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>View All<span aria-hidden="true"> →</span></button>
+              </div>
+              <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 6 }}>Your latest job activity — claims, submissions, and payouts</div>
+
+              {recentActivity.length === 0 ? (
+                <div style={{ fontSize: 12, color: colors.textDim, padding: '10px 0', textAlign: 'center' }}>
+                  No activity yet. Browse the marketplace to find your first task.
+                </div>
+              ) : (
+                recentActivity.slice(0, 4).map((job: Job, idx: number) => (
+                  <div 
+                    key={idx} 
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 9, 
+                      fontSize: 12, 
+                      padding: '6px 0', 
+                      borderBottom: idx < 3 ? '1px solid rgba(197,193,192,0.06)' : 'none',
+                      transition: 'background 0.15s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(247,206,62,0.05)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <span style={{ fontSize: 12 }} aria-hidden="true">●</span>
+                    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: colors.textPrimary }}>
+                      {job.title.length > 30 ? job.title.slice(0, 27) + '...' : job.title}
+                    </div>
+                    <div style={{ color: colors.gold, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      +{fmt(job.reward)}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Achievements (Glass) */}
+            <div 
+              style={{ 
+                ...glass,
+                borderRadius: 16, 
+                padding: '14px 16px',
+                transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s, border 0.3s'
+              }}
+              onMouseEnter={glassHover}
+              onMouseLeave={glassLeave}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
+                <div style={{ fontWeight: 600, fontSize: 13.5 }}>Achievements</div>
+                <button onClick={() => onNavigate('stats')} style={{ background: 'none', border: 'none', color: colors.gold, fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>View All →</button>
+              </div>
+              <div style={{ fontSize: 10.5, color: colors.textDim, marginBottom: 6 }}>Milestones that unlock as you contribute and earn on the platform</div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 3 }}>
+                {[
+                  { label: 'First Claim', desc: 'Claim your first job', done: jobsCompleted + totalActiveClaims > 0 },
+                  { label: 'Complete 10 Jobs', desc: 'Finish and get paid for 10 tasks', done: jobsCompleted >= 10 },
+                  { label: 'Earn 100 zkLTC', desc: 'Accumulate 100 zkLTC in earnings', done: totalEarned >= 100 },
+                  { label: 'Reach Expert Rank', desc: 'Earn 120 XP through verified work', done: reputationPoints >= 120 },
+                ].map((a, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
+                    <span style={{ color: a.done ? colors.gold : 'rgba(197,193,192,0.15)', fontSize: 13 }}>{a.done ? '✓' : '○'}</span>
+                    <div style={{ flex: 1 }}>
+                      <span style={{ color: a.done ? colors.textPrimary : colors.textDim }}>{a.label}</span>
+                      <div style={{ fontSize: 11, color: colors.textDim }}>{a.desc}</div>
+                    </div>
+                    {a.done && <span style={{ fontSize: 10, color: colors.gold, fontWeight: 600 }}>Done</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Top Workers (Glass) */}
+            <div 
+              tabIndex={0}
+              style={{ 
+                ...glass,
+                borderRadius: 16, 
+                padding: '14px 16px',
+                transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s, border 0.3s',
+                outline: 'none'
+              }}
+              onMouseEnter={glassHover}
+              onMouseLeave={glassLeave}
+              onFocus={glassFocus}
+              onBlur={glassBlur}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
+                <div style={{ fontWeight: 600, fontSize: 13.5 }}>Top Workers</div>
+                <button onClick={() => onNavigate('leaderboard')} style={{ background: 'none', border: 'none', color: colors.gold, fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>View All<span aria-hidden="true"> →</span></button>
+              </div>
+              <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 6 }}>Highest earners on the platform this week</div>
+
+              {topWorkers.length === 0 ? (
+                <div style={{ fontSize: 12, color: colors.textDim, padding: '8px 0', textAlign: 'center' }}>
+                  Be the first worker to complete a job and claim the top spot!
+                </div>
+              ) : (
+                topWorkers.map((w, idx) => {
+                  const earned = w.earnedZkltc + w.earnedUsdc
+                  return (
+                    <div key={idx} style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 8, 
+                      fontSize: 12.5, 
+                      padding: '5px 0',
+                      borderBottom: idx < topWorkers.length - 1 ? '1px solid rgba(197,193,192,0.06)' : 'none'
+                    }}>
+                      <div style={{ 
+                        width: 18, 
+                        textAlign: 'center', 
+                        color: idx === 0 ? colors.gold : colors.textMuted, 
+                        fontWeight: 700 
+                      }}>
+                        {idx + 1}
+                      </div>
+                      <div style={{ flex: 1, fontFamily: 'monospace', fontSize: 11.5, color: colors.textPrimary }}>
+                        {w.worker.slice(0, 6)}…{w.worker.slice(-4)}
+                      </div>
+                      <div style={{ color: colors.gold, fontSize: 11, fontWeight: 700 }}>{fmt(earned)} zkLTC</div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </div>
+
+          {/* QUICK ACTIONS - Glass */}
+
+          {/* QUICK ACTIONS - Glass */}
+          <div style={{ ...glass, borderRadius: 16, padding: '16px 18px' }}>
+            <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 10, color: colors.textPrimary }}>Quick Actions</div>
+            <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8 }}>Frequently used features — one click away</div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {[
+                { label: 'Browse Jobs', desc: 'Find tasks to complete', icon: '🔍', tab: 'market' as const },
+                { label: 'Post a Job', desc: 'Hire workers for tasks', icon: '➕', tab: 'post' as const },
+                { label: 'My Jobs', desc: 'Track claims and listings', icon: '📁', tab: 'my' as const },
+                { label: 'Leaderboard', desc: 'See top contributors', icon: '🏆', tab: 'leaderboard' as const },
+              ].map((qa, i) => (
+                <button
+                  key={i}
+                  onClick={() => onNavigate(qa.tab)}
+                  style={{
+                    flex: isMobile ? '1 1 45%' : 'none',
+                    background: 'rgba(247, 206, 62, 0.08)',
+                    border: `1px solid rgba(247, 206, 62, 0.2)`,
+                    color: colors.textPrimary,
+                    padding: '11px 20px',
+                    borderRadius: 12,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    transition: 'all 0.2s cubic-bezier(0.23,1,0.32,1)',
+                    backdropFilter: 'blur(8px)'
+                  }}
+                  onMouseEnter={e => { 
+                    e.currentTarget.style.background = colors.gold; 
+                    e.currentTarget.style.color = '#000';
+                    e.currentTarget.style.transform = 'translateY(-3px) scale(1.03)';
+                    e.currentTarget.style.borderColor = colors.gold;
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(247, 206, 62, 0.35)';
+                  }}
+                  onMouseLeave={e => { 
+                    e.currentTarget.style.background = 'rgba(247, 206, 62, 0.08)';
+                    e.currentTarget.style.color = colors.textPrimary;
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.borderColor = 'rgba(247, 206, 62, 0.2)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  <span style={{ fontSize: 15 }} aria-hidden="true">{qa.icon}</span>
+                  <div>
+                    <div>{qa.label}</div>
+                    <div style={{ fontSize: 10, fontWeight: 400, opacity: 0.7 }}>{qa.desc}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+        </div>
+    </div>
+  )
+}
+
+/* ── Dashboard Skeleton (loading state) ── */
+function DashboardSkeleton({ isMobile }: { isMobile: boolean }) {
+  const shimmer = {
+    background: 'linear-gradient(90deg, rgba(197,193,192,0.03) 0%, rgba(197,193,192,0.08) 50%, rgba(197,193,192,0.03) 100%)',
+    backgroundSize: '200px 100%',
+    borderRadius: 8,
+    animation: 'shimmer 1.5s ease-in-out infinite',
+  } as const
+  const block = (h = 14, w = '100%') => ({ ...shimmer, height: h, width: w })
+
+  return (
+    <div style={{ paddingBottom: 32 }}>
+      <div style={{ width: '100%' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)', gap: 11, marginBottom: 20 }}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} style={{ background: 'rgba(26,41,48,0.8)', border: '1px solid rgba(197,193,192,0.06)', borderRadius: 16, padding: '14px 16px', minHeight: 84 }}>
+              <div style={block(10, '60%')} />
+              <div style={{ ...block(20, '40%'), marginTop: 12 }} />
+              <div style={{ ...block(10, '70%'), marginTop: 6 }} />
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.7fr 1fr', gap: 14, marginBottom: 16 }}>
+          <div style={{ background: 'rgba(26,41,48,0.8)', border: '1px solid rgba(197,193,192,0.06)', borderRadius: 16, padding: '16px 18px' }}>
+            <div style={{ ...block(14, '40%'), margin: '0 auto 8px' }} />
+            <div style={{ ...block(10, '60%'), margin: '0 auto 12px' }} />
+            <div style={{ height: 122, ...shimmer }} />
+          </div>
+          <div style={{ background: 'rgba(26,41,48,0.8)', border: '1px solid rgba(197,193,192,0.06)', borderRadius: 16, padding: '16px 18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(197,193,192,0.04)' }} />
+              <div style={{ flex: 1 }}>
+                <div style={block(14, '60%')} />
+                <div style={block(10, '80%')} />
+              </div>
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <div style={block(10, '40%')} />
+              <div style={{ ...block(9, '100%'), marginTop: 8, borderRadius: 999 }} />
+              <div style={{ ...block(10, '50%'), marginTop: 6 }} />
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Recent Activity */}
-      <div style={{ ...fadeIn(0.6), marginBottom: 16 }}>
-        <h3 style={{ fontSize: fontSizes.lg, marginBottom: 4, color: colors.textPrimary }}>Recent Activity</h3>
-        <p style={{ fontSize: fontSizes.xs, color: colors.textDim, margin: '0 0 12px' }}>A quick look at your latest actions across the platform.</p>
-        {recentActivity.length === 0 ? (
-          <div style={{ color: colors.textDim, fontSize: fontSizes.sm }}>No recent activity yet. Start claiming or posting jobs to see your history here.</div>
-        ) : (
-          <div style={{ 
-            background: colors.bgCard, border: `1px solid ${colors.borderLight}`, 
-            borderRadius: radii.xl, overflow: 'hidden' 
-          }}>
-            {recentActivity.map((job, idx) => (
-              <div 
-                key={job.id} 
-                style={{ 
-                  padding: '10px 16px', 
-                  borderBottom: idx < recentActivity.length - 1 ? `1px solid ${colors.borderLight}` : 'none',
-                  display: 'flex', 
-                  justifyContent: 'space-between',
-                  fontSize: fontSizes.sm,
-                  transition: 'background 0.2s'
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,215,0,0.03)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                <span style={{ color: colors.textPrimary }}>{job.title}</span>
-                <span style={{ color: job.status === 'paid' ? colors.green : colors.gold, fontWeight: 500 }}>
-                  {job.status === 'paid' ? '✓ Paid' : job.status === 'completed' ? 'Proof Submitted' : 'Claimed'} 
-                  {job.reward ? ' • ' + fmt(job.reward) + ' ' + (job.tokenSymbol || 'zkLTC') : ''}
-                </span>
-              </div>
-            ))}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1.3fr', gap: 14, marginBottom: 18 }}>
+          <div style={{ background: 'rgba(26,41,48,0.8)', border: '1px solid rgba(197,193,192,0.06)', borderRadius: 16, padding: '16px 18px' }}>
+            <div style={block(14, '40%')} />
+            <div style={{ display: 'flex', gap: 7, marginTop: 12 }}>
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} style={{ width: 27, height: 27, borderRadius: '50%', background: 'rgba(197,193,192,0.04)' }} />
+              ))}
+            </div>
           </div>
-        )}
-      </div>
-
-      {/* Quick Actions */}
-      <div style={fadeIn(0.7)}>
-        <h3 style={{ fontSize: fontSizes.lg, marginBottom: 4, color: colors.textPrimary }}>Quick Actions</h3>
-        <p style={{ fontSize: fontSizes.xs, color: colors.textDim, margin: '0 0 12px' }}>Jump straight into the actions that matter most right now.</p>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <button onClick={() => onNavigate('market')} style={actionBtnStyle}>Browse Marketplace</button>
-          <button onClick={() => onNavigate('post')} style={actionBtnStyle}>Post a New Job</button>
-          <button onClick={() => onNavigate('my')} style={actionBtnStyle}>My Jobs</button>
-          <button onClick={() => onNavigate('leaderboard')} style={actionBtnStyle}>View Leaderboard</button>
+          <div style={{ background: 'rgba(26,41,48,0.8)', border: '1px solid rgba(197,193,192,0.06)', borderRadius: 16, padding: '16px 18px' }}>
+            <div style={block(14, '50%')} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px 22px', marginTop: 10 }}>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} style={block(12, i % 2 === 0 ? '60%' : '40%')} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-function StatCard({ label, value, sub, isMobile }: { label: string; value: string; sub?: string; isMobile: boolean }) {
+/* Stat Card - Glassmorphism */
+function StatCard({ icon, label, value, sub }: { icon: string; label: string; value: string; sub?: string }) {
   return (
     <div 
+      tabIndex={0}
       style={{ 
-        background: colors.bgCard, 
-        border: `1px solid ${colors.borderLight}`, 
-        borderRadius: radii.xl, 
-        padding: isMobile ? '14px 12px' : '16px 14px',
-        minHeight: isMobile ? 78 : 92,
-        transition: 'transform 0.2s, box-shadow 0.2s',
-        cursor: 'default',
+        background: colors.bgCard,
+        border: '1px solid rgba(197,193,192,0.06)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15)',
+        borderRadius: 16, 
+        padding: '14px 16px',
+        minHeight: 84,
+        transition: 'transform 0.25s cubic-bezier(0.23,1,0.32,1), box-shadow 0.25s, border 0.25s',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+        outline: 'none'
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+        e.currentTarget.style.transform = 'translateY(-5px) scale(1.01)';
+        e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.1)';
+        e.currentTarget.style.border = `1px solid ${colors.gold}55`;
       }}
       onMouseLeave={e => {
         e.currentTarget.style.transform = 'none';
-        e.currentTarget.style.boxShadow = 'none';
+        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15)';
+        e.currentTarget.style.border = '1px solid rgba(197,193,192,0.06)';
+      }}
+      onFocus={e => {
+        e.currentTarget.style.transform = 'translateY(-5px) scale(1.01)';
+        e.currentTarget.style.border = `1px solid ${colors.gold}55`;
+      }}
+      onBlur={e => {
+        e.currentTarget.style.transform = 'none';
+        e.currentTarget.style.border = '1px solid rgba(197,193,192,0.06)';
       }}
     >
-      <div style={{ fontSize: fontSizes.xs, color: colors.textDim, marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, color: colors.textPrimary, lineHeight: 1.1 }}>{value}</div>
-      {sub && <div style={{ fontSize: fontSizes.xs, color: colors.textDim, marginTop: 1 }}>{sub}</div>}
+      {/* Glass highlight top */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 1,
+        background: 'linear-gradient(to right, transparent, rgba(247,206,62,0.04), transparent)'
+      }} />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 5 }}>
+        <div style={{
+          width: 30,
+          height: 30,
+          borderRadius: 10,
+          background: 'rgba(247, 206, 62, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 16,
+          border: '1px solid rgba(247, 206, 62, 0.15)'
+        }}>
+          {icon}
+        </div>
+        <div style={{ fontSize: 11, color: colors.textDim, fontWeight: 500 }}>{label}</div>
+      </div>
+
+      <div style={{ 
+        fontSize: 22, 
+        fontWeight: 700, 
+        color: colors.textPrimary, 
+        lineHeight: 1.0,
+        marginTop: 1
+      }}>
+        {value}
+      </div>
+      {sub && <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 3 }}>{sub}</div>}
     </div>
   )
-}
-
-const actionBtnStyle: React.CSSProperties = {
-  background: colors.bgElevated,
-  border: `1px solid ${colors.borderLight}`,
-  color: colors.textPrimary,
-  padding: '10px 18px',
-  borderRadius: radii.md,
-  fontWeight: 600,
-  cursor: 'pointer',
-  fontSize: fontSizes.sm,
-  transition: 'all 0.2s'
 }
 

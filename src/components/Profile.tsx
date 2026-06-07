@@ -140,7 +140,7 @@ export function Profile({ account, myJobs, bio, skills, avatarUrl, setEditBio, s
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 16 }}>
               <MiniStat label="Rank"         value={rank > 0 ? `#${rank}` : '—'} color={rankColor} />
-              <MiniStat label="Points"       value={`${points} pts`}              color="#ffd700" />
+              <MiniStat label="Points"       value={`${points} pts`}              color="#F7CE3E" />
               <MiniStat label="Success Rate" value={`${successRate}%`}
                 color={successRate >= 80 ? colors.green : successRate >= 50 ? colors.gold : jobsClaimed === 0 ? colors.textMuted : colors.red} />
               <div style={{ background: colors.bgCard, padding: 12, borderRadius: radii.md, textAlign: 'center' }}>

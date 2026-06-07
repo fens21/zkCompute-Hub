@@ -63,7 +63,7 @@ export function fmt(n: number): string {
 
 export function generateIdenticon(address: string): string {
   const clean = address.toLowerCase().replace('0x', '')
-  const colors = ['#ffd700', '#4ade80', '#f97316', '#a78bfa', '#38bdf8', '#fb7185', '#34d399']
+  const colors = ['#F7CE3E', '#5B7E3C', '#C2D099', '#C5C1C0', '#1A2930', '#EEFABD', '#F7CE3E']
   const bg = colors[parseInt(clean.slice(0, 2), 16) % colors.length]
   const cells: boolean[] = []
   for (let i = 0; i < 15; i++) {

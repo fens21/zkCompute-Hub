@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-ro
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
 import { useAccount, useWriteContract, useSwitchChain, useChainId } from 'wagmi'
-import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit'
+import { RainbowKitProvider, lightTheme } from '@rainbow-me/rainbowkit'
 import { readContract } from '@wagmi/core'
 import { parseUnits } from 'viem'
 import abi from './abi/JobMarketplace.json'
@@ -25,6 +25,7 @@ const MyJobs = lazy(() => import('./components/MyJobs').then(m => ({ default: m.
 const Stats = lazy(() => import('./components/Stats').then(m => ({ default: m.Stats })))
 const Leaderboard = lazy(() => import('./components/Leaderboard').then(m => ({ default: m.Leaderboard })))
 const Profile = lazy(() => import('./components/Profile').then(m => ({ default: m.Profile })))
+import { colors } from './styles/tokens'
 import { ToastContainer } from './components/ToastContainer'
 import { JobDetailModal, ProofModal, ConfirmModal, EditProfileModal, DisputeModal, ZKSolutionModal } from './components/Modals'
 import { WorkerProfileModal } from './components/WorkerProfileModal'
@@ -47,7 +48,7 @@ function PageSkeleton({ isMobile }: { isMobile: boolean }) {
       <div style={{ height: 28, background: '#1A2930', borderRadius: 6, width: 220, margin: '0 auto 24px' }} />
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))', gap: isMobile ? 10 : 16 }}>
         {Array.from({ length: isMobile ? 3 : 6 }).map((_, i) => (
-          <div key={i} style={{ background: '#1A2930', border: '1px solid #24353D', borderRadius: 12, padding: isMobile ? 12 : 18, height: isMobile ? 140 : 200 }}>
+          <div key={i} style={{ background: '#1A2930', border: '1px solid #1A2930', borderRadius: 12, padding: isMobile ? 12 : 18, height: isMobile ? 140 : 200 }}>
             <div className="skeleton" style={{ height: 18, width: '35%', marginBottom: 12 }} />
             <div className="skeleton" style={{ height: 14, width: '80%', marginBottom: 6 }} />
             <div className="skeleton" style={{ height: 14, width: '60%', marginBottom: 16 }} />
@@ -772,7 +773,7 @@ function AppContent() {
   return (
     <div className="app-container">
       {/* Lightweight static background (heavy animations removed for snappier navigation) */}
-      <div className="app-bg" />
+      <div className={`app-bg app-bg--${tab}`} />
 
       <Navbar
         tab={tab} setTab={setTab}
@@ -797,6 +798,8 @@ function AppContent() {
               address={address || ''}
               onNavigate={setTab}
               onBoostJob={boostJob}
+              loading={jobsLoading || leaderboardLoading}
+              error={jobsError}
             />
           } />
           <Route path="/" element={
@@ -883,7 +886,7 @@ function AppContent() {
           } />
           <Route path="*" element={
             <div style={{ textAlign: 'center', padding: 60, opacity: 0.5 }}>
-              Page not found. <a onClick={() => navigate('/')} style={{ color: '#F7CE3E', cursor: 'pointer', textDecoration: 'underline' }}>Go to Marketplace</a>
+              Page not found. <a onClick={() => navigate('/')} style={{ color: colors.gold, cursor: 'pointer', textDecoration: 'underline' }}>Go to Marketplace</a>
             </div>
           } />
         </Routes>
@@ -979,7 +982,7 @@ export default function App() {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={darkTheme({ accentColor: '#F7CE3E', accentColorForeground: '#0A1612', borderRadius: 'small', fontStack: 'system' })}>
+        <RainbowKitProvider theme={lightTheme({ accentColor: '#F7CE3E', accentColorForeground: '#0A1612', borderRadius: 'small', fontStack: 'system' })}>
           <BrowserRouter>
             <AppContent />
           </BrowserRouter>

@@ -3,7 +3,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { colors, radii, fontSizes } from '../styles/tokens'
 import '../styles/landing.css'
 
-const gold = (a: number) => `rgba(255,215,0,${a})`
+const gold = (a: number) => `rgba(247,206,62,${a})`
 
 const cssVars: Record<string, string> = {
   '--lp-gold': colors.gold,
@@ -20,7 +20,7 @@ const cssVars: Record<string, string> = {
 
 const titleStyle: CSSProperties = {
   fontSize: 48, fontWeight: 700, letterSpacing: '-2px', lineHeight: 1.2,
-  background: `linear-gradient(135deg, ${colors.gold} 0%, #ffb700 50%, ${colors.gold} 100%)`,
+  background: `linear-gradient(135deg, ${colors.gold} 0%, #D4A52E 50%, ${colors.gold} 100%)`,
   backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
   marginBottom: 12,
 }
@@ -65,6 +65,18 @@ const ADVANTAGES = [
   {
     title: 'Real Bitcoin Security',
     desc: 'Powered by LitVM on Litecoin. Low fees, strong security, and settlement backed by actual Bitcoin money.',
+  },
+  {
+    title: 'Permissionless & Open',
+    desc: 'No gatekeepers. Any wallet can post a job or start working. The marketplace is fully open — participate without asking for permission.',
+  },
+  {
+    title: 'Auditable Chain of Proof',
+    desc: 'Every job, proof, and payment is recorded on LitVM. Full transparency from submission to settlement — no blind spots.',
+  },
+  {
+    title: 'Global Worker Network',
+    desc: 'Tap into a worldwide pool of talent. Workers compete on skill and speed, giving posters better results at lower costs.',
   },
 ]
 
@@ -132,9 +144,8 @@ export function LandingPage() {
         <div className="lp-hero-content">
           <div style={{ animation: 'fadeIn 0.8s ease-out 0s both' }}>
             <h1 className="lp-title" style={titleStyle}>zkCompute Hub</h1>
-            <p style={{ fontSize: 16, color: colors.textSecondary, maxWidth: 580, margin: '0 auto', lineHeight: 1.5 }}>
-              The decentralized marketplace for verifiable compute. Post AI, ML, ZK, and rendering jobs with escrowed payments. 
-              Workers prove results using zero-knowledge proofs — no trust required. Automatic on-chain settlement powered by LitVM.
+            <p style={{ fontSize: 15, color: colors.textSecondary, maxWidth: 620, margin: '20px auto 0', lineHeight: 1.6 }}>
+              The infrastructure layer where compute becomes a global, verifiable, and trustless resource — powered by zero-knowledge proofs and decentralized execution.
             </p>
           </div>
 

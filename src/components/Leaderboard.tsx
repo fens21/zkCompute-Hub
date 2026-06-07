@@ -144,7 +144,7 @@ function PodiumCard({ rank, entry, onView, ltcPrice, isMobile }: {
   const medal = rank === 1 ? '\u{1F947}' : rank === 2 ? '\u{1F948}' : '\u{1F949}'
   const border = rank === 1 ? colors.gold : rank === 2 ? '#c0c0c0' : '#cd7f32'
   const bg = rank === 1 ? '#1a1a0a' : rank === 2 ? colors.bgElevated : '#1a0a0a'
-  const glow = rank === 1 ? '0 0 14px rgba(255, 215, 0, 0.12)' : rank === 2 ? '0 0 8px rgba(192, 192, 192, 0.08)' : '0 0 8px rgba(205, 127, 50, 0.08)'
+  const glow = rank === 1 ? '0 0 14px rgba(247, 206, 62, 0.12)' : rank === 2 ? '0 0 8px rgba(192, 192, 192, 0.08)' : '0 0 8px rgba(205, 127, 50, 0.08)'
   return (
     <div style={{ background: bg, border: `2px solid ${border}`, borderRadius: radii.lg, padding: isMobile ? '8px 12px' : '10px 20px', textAlign: 'center', minWidth: isMobile ? 140 : 220, opacity: entry ? 1 : 0.3, boxShadow: glow }}>
       {entry && <div style={{ fontSize: fontSizes.heading, marginBottom: 2 }}>{medal}</div>}
