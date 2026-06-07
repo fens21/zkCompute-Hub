@@ -297,8 +297,7 @@ function AppContent() {
       }))
       const now = Date.now()
       const normalizedDeadline = newJob.deadline ?? ''
-        ? new Date(newJob.deadline).toISOString()
-        : ''
+        
       const job: Job = {
         id: onChainId,
         createdAt: now,
