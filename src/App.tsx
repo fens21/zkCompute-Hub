@@ -212,7 +212,8 @@ function AppContent() {
   // Only fetch leaderboard when actually visiting those tabs (and avoid spamming on every render)
   useEffect(() => {
     if (needsLeaderboard && entered) {
-      fetchLeaderboard(onChainJobs, false)
+      const force = tab === 'stats' || tab === 'dashboard'
+      fetchLeaderboard(onChainJobs, force)
     }
   }, [tab, entered, fetchLeaderboard, onChainJobs, needsLeaderboard])
 
