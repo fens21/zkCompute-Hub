@@ -4,6 +4,7 @@ import { shorten, getDeadlineMs, formatTimeRemaining, formatDeadlineDate, COUNTD
 import { colors, radii, fontSizes, card, input } from '../styles/tokens'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { JOB_TYPE_CONFIGS } from '../constants/jobTypes'
+import { SearchableSelect } from './SearchableSelect'
 
 const PER_PAGE = 12
 type ViewMode = 'grid' | 'list'
@@ -34,7 +35,7 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
 
   useEffect(() => {
     setPage(1)
-  }, [search, typeFilter, sortBy, jobs.length])
+  }, [typeFilter, sortBy, jobs.length])
 
   // Grid columns: 2 kolom di mobile (1 kolom di HP kecil), auto-fill di desktop
   const [windowWidth, setWindowWidth] = useState(window.innerWidth)
@@ -88,33 +89,17 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
             onFocus={e => { if (viewMode !== 'list') { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.color = colors.textPrimary; e.currentTarget.style.borderColor = 'rgba(247,206,62,0.2)' } }}
             onBlur={e => { if (viewMode !== 'list') { e.currentTarget.style.background = 'rgba(197,193,192,0.04)'; e.currentTarget.style.color = colors.textDim; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.08)' } }} title="List view">☰</button>
         </div>
-        {/* Di mobile: search full width di baris sendiri */}
-        <input
-          placeholder="Search..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          aria-label="Search jobs"
-          style={{ ...input, width: isMobile ? '100%' : 200, flexBasis: isMobile ? '100%' : 'auto', order: isMobile ? 3 : 0, boxSizing: 'border-box' as const }}
-        />
-        <select
-          value={typeFilter}
-          onChange={e => setTypeFilter(e.target.value)}
-          aria-label="Filter by job type"
-          style={{ ...input, flex: isMobile ? '1' : 'none', minWidth: isMobile ? 80 : 0, boxSizing: 'border-box' as const }}
-        >
-          <option value="">All Types</option>
-          <option value="ML">ML</option>
-          <option value="ZK">ZK Proof</option>
-          <option value="Render">Render</option>
-          <option value="AI Inference">AI Inference</option>
-          <option value="AI Training">AI Training</option>
-          <option value="Scientific">Scientific</option>
-          <option value="Data Labeling">Data Labeling</option>
-          <option value="Video Transcoding">Transcoding</option>
-          <option value="RAG Pipeline">RAG Pipeline</option>
-          <option value="FHE">FHE</option>
-          <option value="Custom">Custom</option>
-        </select>
+        <div style={{ flex: isMobile ? '1' : 'none', minWidth: isMobile ? 100 : 160, maxWidth: isMobile ? '' : 200 }}>
+          <SearchableSelect
+            value={typeFilter}
+            onChange={setTypeFilter}
+            options={[
+              { value: '', label: 'All Types' },
+              ...Object.entries(JOB_TYPE_CONFIGS).map(([key, cfg]) => ({ value: key, label: cfg.label })),
+            ]}
+            placeholder="Filter by type..."
+          />
+        </div>
         <select
           value={sortBy}
           onChange={e => setSortBy(e.target.value as SortBy)}
@@ -142,10 +127,10 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
       ) : jobs.length === 0 ? (
         <div style={{ textAlign: 'center', opacity: 0.7, padding: 60, fontSize: fontSizes.md }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>
-            {search || typeFilter ? '🔍 Search' : 'No Jobs'}
+            {typeFilter ? '🔍 No Match' : 'No Jobs'}
           </div>
-          {search || typeFilter
-            ? 'No jobs match your search criteria — try adjusting your filters.'
+          {typeFilter
+            ? 'No jobs match this type — try a different filter.'
             : 'No jobs available — be the first to post one!'}
         </div>
       ) : (
@@ -174,7 +159,7 @@ export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter
               ))}
             </div>
           ) : (
-            <div key={`${search}-${typeFilter}-${sortBy}`} className="job-grid" style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 10 : 16 }}>
+            <div key={`${typeFilter}-${sortBy}`} className="job-grid" style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 10 : 16 }}>
               {pagedJobs.map(job => (
                 <JobCard key={job.id} job={job} onClaim={onClaim} onDetail={onDetail} claimingJobId={claimingJobId} />
               ))}
@@ -290,44 +275,179 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
   const isMobile = useIsMobile()
   const rewardStr = job.reward.toLocaleString(undefined, { maximumFractionDigits: 0 })
   const claimedRatio = job.maxWorkers > 0 ? job.claimedCount / job.maxWorkers : 0
-  const pad = isMobile ? 10 : 24
+  const isFull = job.claimedCount >= job.maxWorkers
+  const isAlmostFull = claimedRatio >= 0.67 && !isFull
+  const pad = isMobile ? 10 : 20
+
+  // deadline urgency check
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    const id = setInterval(() => { if (!document.hidden) setNow(Date.now()) }, COUNTDOWN_REFRESH)
+    return () => clearInterval(id)
+  }, [])
+  const endMs = getDeadlineMs(job.createdAt, job.deadline)
+  const isUrgent = endMs !== null && endMs - now < 24 * 3600 * 1000 && endMs > now
+
+  const progressColor = isFull ? colors.green : isAlmostFull ? colors.orange : colors.gold
 
   return (
-    <div className="job-card" style={{ ...card, padding: pad, display: 'flex', flexDirection: 'column', background: 'rgba(26,41,48,0.85)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? 4 : 12 }}>
-        <div style={{ background: `${JOB_TYPE_CONFIGS[job.type]?.color || colors.gold}18`, color: JOB_TYPE_CONFIGS[job.type]?.color || colors.gold, padding: isMobile ? '1px 6px' : '4px 12px', borderRadius: radii.full, fontSize: isMobile ? fontSizes.xs : fontSizes.sm, fontWeight: 600 }}>{JOB_TYPE_CONFIGS[job.type]?.label || job.type}</div>
+    <div className="job-card" style={{
+      ...card,
+      padding: pad,
+      display: 'flex',
+      flexDirection: 'column',
+      background: 'rgba(26,41,48,0.97)',
+      borderTop: `3px solid ${isFull ? colors.green : isUrgent ? colors.red : JOB_TYPE_CONFIGS[job.type]?.color || colors.gold}`,
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+
+      {/* Almost full / Full badge */}
+      {(isFull || isAlmostFull) && (
+        <div style={{
+          position: 'absolute', top: 12, right: 12,
+          background: isFull ? '#0d2e1a' : '#2a1500',
+          border: `1px solid ${isFull ? colors.green : colors.orange}`,
+          color: isFull ? colors.green : colors.orange,
+          fontSize: 9, fontWeight: 700, padding: '2px 7px',
+          borderRadius: radii.full, letterSpacing: 0.5,
+        }}>
+          {isFull ? 'FULL' : 'ALMOST FULL'}
+        </div>
+      )}
+
+      {/* Category + Job Type badges */}
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: isMobile ? 6 : 10, flexWrap: 'wrap' }}>
+        <div style={{
+          background: `${JOB_TYPE_CONFIGS[job.type]?.color || colors.gold}18`,
+          color: JOB_TYPE_CONFIGS[job.type]?.color || colors.gold,
+          padding: isMobile ? '1px 6px' : '3px 10px',
+          borderRadius: radii.full,
+          fontSize: isMobile ? fontSizes.xs : fontSizes.sm,
+          fontWeight: 600,
+        }}>
+          {JOB_TYPE_CONFIGS[job.type]?.label || job.type}
+        </div>
+        {/* Job type ZK/Standard pill */}
+        <div style={{
+          background: job.type === 'ZK' ? 'rgba(167,139,250,0.12)' : 'rgba(74,222,128,0.08)',
+          color: job.type === 'ZK' ? '#a78bfa' : colors.green,
+          padding: isMobile ? '1px 6px' : '3px 10px',
+          borderRadius: radii.full,
+          fontSize: isMobile ? fontSizes.xs : fontSizes.sm,
+          fontWeight: 600,
+          border: `1px solid ${job.type === 'ZK' ? 'rgba(167,139,250,0.25)' : 'rgba(74,222,128,0.15)'}`,
+        }}>
+          {job.type === 'ZK' ? '⚡ ZK' : '✓ Standard'}
+        </div>
       </div>
-      <div style={{ fontSize: isMobile ? fontSizes.md : fontSizes.xl, fontWeight: 700, marginBottom: isMobile ? 2 : 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.title}</div>
-      <div style={{ opacity: 0.7, fontSize: isMobile ? fontSizes.xs : fontSizes.sm, marginBottom: 8, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' as const }}>{job.description}</div>
-      <div style={{ fontSize: isMobile ? fontSizes.xs : fontSizes.sm, marginBottom: isMobile ? 4 : 12 }}>
+
+      {/* Title */}
+      <div style={{
+        fontSize: isMobile ? fontSizes.md : fontSizes.xl,
+        fontWeight: 700,
+        marginBottom: isMobile ? 2 : 4,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>
+        {job.title}
+      </div>
+
+      {/* Description */}
+      <div style={{
+        opacity: 0.6,
+        fontSize: isMobile ? fontSizes.xs : fontSizes.sm,
+        marginBottom: isMobile ? 6 : 8,
+        overflow: 'hidden',
+        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const,
+        lineHeight: 1.4,
+      }}>
+        {job.description}
+      </div>
+
+      {/* Deadline */}
+      <div style={{
+        fontSize: isMobile ? fontSizes.xs : fontSizes.sm,
+        marginBottom: isMobile ? 4 : 8,
+        display: 'flex', alignItems: 'center', gap: 4,
+      }}>
+        {isUrgent && <span style={{ color: colors.red, fontSize: 10, fontWeight: 700 }}>🔥 URGENT</span>}
         <DeadlineValue createdAt={job.createdAt} deadline={job.deadline} />
       </div>
-      <div style={{ margin: isMobile ? '4px 0' : '8px 0', fontSize: isMobile ? 14 : 20, color: colors.gold, fontWeight: 700 }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
-      <div style={{ fontSize: isMobile ? fontSizes.xs : fontSizes.xs, opacity: 0.7, marginBottom: 8 }}>Posted by {shorten(job.poster)}</div>
-      <div style={{ marginBottom: isMobile ? 6 : 8 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isMobile ? 9 : fontSizes.xs, opacity: 0.7, marginBottom: 2 }}>
-          <span>{job.claimedCount}/{job.maxWorkers}</span>
+
+      {/* Reward */}
+      <div style={{
+        margin: isMobile ? '4px 0' : '6px 0',
+        fontSize: isMobile ? 16 : 22,
+        color: colors.gold, fontWeight: 700,
+        display: 'flex', alignItems: 'baseline', gap: 4,
+      }}>
+        {rewardStr}
+        <span style={{ fontSize: isMobile ? fontSizes.xs : fontSizes.sm, opacity: 0.8 }}>{job.tokenSymbol || 'zkLTC'}</span>
+      </div>
+
+      {/* Posted by */}
+      <div style={{ fontSize: fontSizes.xs, opacity: 0.5, marginBottom: isMobile ? 6 : 10 }}>
+        Posted by {shorten(job.poster)}
+      </div>
+
+      {/* Workers progress */}
+      <div style={{ marginBottom: isMobile ? 8 : 12 }}>
+        <div style={{
+          display: 'flex', justifyContent: 'space-between',
+          fontSize: fontSizes.xs, marginBottom: 4,
+          color: progressColor, opacity: 0.85,
+        }}>
+          <span style={{ fontWeight: 600 }}>
+            {job.claimedCount}/{job.maxWorkers} workers{isFull ? ' (full)' : isAlmostFull ? ' — almost full' : ''}
+          </span>
           <span>{Math.round(claimedRatio * 100)}%</span>
         </div>
-        <div style={{ background: colors.bgElevated, borderRadius: 4, height: isMobile ? 4 : 6, overflow: 'hidden' }}>
-          <div style={{ width: `${Math.min(claimedRatio * 100, 100)}%`, background: claimedRatio >= 1 ? colors.green : colors.gold, height: '100%', borderRadius: 4, transition: 'width 0.3s' }} />
+        <div style={{ background: colors.bgElevated, borderRadius: 4, height: isMobile ? 4 : 5, overflow: 'hidden' }}>
+          <div style={{
+            width: `${Math.min(claimedRatio * 100, 100)}%`,
+            background: progressColor,
+            height: '100%', borderRadius: 4, transition: 'width 0.3s',
+          }} />
         </div>
       </div>
-      <div style={{ display: 'flex', gap: isMobile ? 4 : 8, marginTop: 'auto', paddingTop: 12 }}>
+
+      {/* Buttons */}
+      <div style={{ display: 'flex', gap: isMobile ? 4 : 8, marginTop: 'auto' }}>
         <button
           onClick={() => onDetail(job)}
           aria-label={`View details for ${job.title}`}
-          style={{ flex: 1, background: 'transparent', border: `1px solid ${colors.textDim}`, padding: isMobile ? '10px 4px' : '11px 9px', color: colors.textSecondary, cursor: 'pointer', borderRadius: radii.sm, fontWeight: 600, fontSize: isMobile ? fontSizes.xs : fontSizes.base, minHeight: 44 }}
+          style={{
+            flex: 1,
+            background: 'rgba(197,193,192,0.06)',
+            border: `1px solid rgba(197,193,192,0.2)`,
+            padding: isMobile ? '10px 4px' : '11px 9px',
+            color: colors.textPrimary,
+            cursor: 'pointer', borderRadius: radii.sm,
+            fontWeight: 600,
+            fontSize: isMobile ? fontSizes.xs : fontSizes.sm,
+            minHeight: 44,
+          }}
         >
           DETAILS
         </button>
         <button
           onClick={() => onClaim(job)}
-          disabled={claimingJobId === job.id}
+          disabled={claimingJobId === job.id || isFull}
           aria-label={`Claim job: ${job.title}`}
-          style={{ flex: 1, background: colors.gold, color: '#000', border: 'none', padding: isMobile ? '10px 4px' : '11px 9px', fontWeight: 700, cursor: 'pointer', borderRadius: radii.sm, fontSize: isMobile ? fontSizes.xs : fontSizes.base, minHeight: 44 }}
+          style={{
+            flex: 1,
+            background: isFull ? '#333' : colors.gold,
+            color: isFull ? '#666' : '#000',
+            border: 'none',
+            padding: isMobile ? '10px 4px' : '11px 9px',
+            fontWeight: 700, cursor: isFull ? 'not-allowed' : 'pointer',
+            borderRadius: radii.sm,
+            fontSize: isMobile ? fontSizes.xs : fontSizes.sm,
+            minHeight: 44,
+            opacity: isFull ? 0.5 : 1,
+          }}
         >
-          {claimingJobId === job.id ? '...' : 'CLAIM'}
+          {claimingJobId === job.id ? '...' : isFull ? 'FULL' : 'CLAIM'}
         </button>
       </div>
     </div>

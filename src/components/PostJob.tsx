@@ -3,6 +3,7 @@ import { keccak256 } from 'viem'
 import type { Job, NewJobForm, PostSubTab } from '../types'
 import { JOB_TYPE_CONFIGS } from '../constants/jobTypes'
 import { PostedJobCard } from './PostedJobCard'
+import { SearchableSelect } from './SearchableSelect'
 import { colors, radii, fontSizes, modalOverlay } from '../styles/tokens'
 import { useIsMobile, useWindowWidth } from '../hooks/useIsMobile'
 import { useFocusTrap } from '../hooks/useFocusTrap'
@@ -178,22 +179,17 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
             </div>
             <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: fontSizes.sm, opacity: 0.7, marginBottom: 4 }}>Job Type</div>
-              <select
+              <SearchableTypeSelect
                 value={editType}
-                onChange={e => {
+                onChange={newType => {
                   const hasParams = Object.keys(editParameters).length > 0
-                  if (hasParams && e.target.value !== editType) {
-                    setPendingTypeChange(e.target.value)
+                  if (hasParams && newType !== editType) {
+                    setPendingTypeChange(newType)
                   } else {
-                    setEditType(e.target.value)
+                    setEditType(newType)
                   }
                 }}
-                style={{ width: '100%', background: '#000', border: `1px solid ${colors.border}`, padding: 10, color: colors.textPrimary, borderRadius: radii.sm, fontSize: fontSizes.base, boxSizing: 'border-box' }}
-              >
-                {Object.entries(JOB_TYPE_CONFIGS).map(([key, cfg]) => (
-                  <option key={key} value={key} style={{ color: cfg.color, background: '#000' }}>{cfg.label}</option>
-                ))}
-              </select>
+              />
               {pendingTypeChange && (
                 <div style={{ marginTop: 6, padding: 8, background: 'rgba(255,255,255,0.04)', borderRadius: radii.sm, fontSize: fontSizes.xs }}>
                   <span style={{ opacity: 0.7 }}>Changing job type will reset all parameters.</span>
@@ -385,43 +381,7 @@ function DynamicJobFields({ newJob, setNewJob }: {
     if (inputFileRef.current) inputFileRef.current.value = ''
   }
 
-  const isCustom = newJob.type === 'Custom'
-  const [customEntries, setCustomEntries] = useState<{ key: string; value: string }[]>([])
-  const prevEntriesRef = useRef(customEntries)
-  useEffect(() => {
-    const prev = prevEntriesRef.current
-    setNewJob(p => {
-      const params = { ...p.parameters }
-      for (const entry of prev) {
-        if (entry.key && !customEntries.some(e => e.key === entry.key)) {
-          delete params[entry.key]
-        }
-      }
-      for (const entry of customEntries) {
-        if (entry.key) params[entry.key] = entry.value
-      }
-      return { ...p, parameters: params }
-    })
-    prevEntriesRef.current = customEntries
-  }, [customEntries])
-
   if (!config) return null
-
-  const addCustomEntry = () => {
-    setCustomEntries(prev => [...prev, { key: '', value: '' }])
-  }
-
-  const updateCustomEntry = (idx: number, field: 'key' | 'value', val: string) => {
-    setCustomEntries(prev => {
-      const next = [...prev]
-      next[idx] = { ...next[idx], [field]: val }
-      return next
-    })
-  }
-
-  const removeCustomEntry = (idx: number) => {
-    setCustomEntries(prev => prev.filter((_, i) => i !== idx))
-  }
 
   const verifOptions = config.verificationOptions || [
     { value: 'hash-check', label: 'Hash Check' },
@@ -440,69 +400,38 @@ function DynamicJobFields({ newJob, setNewJob }: {
       {/* Parameters */}
       <div style={sectionHeader}>Job Parameters</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-            {isCustom ? (
-              <div>
-                {customEntries.length === 0 && (
-                  <div style={{ fontSize: fontSizes.xs, opacity: 0.4, marginBottom: 8 }}>No parameters yet — add your own custom fields</div>
-                )}
-                {customEntries.map((entry, idx) => (
-                  <div key={idx} style={{ display: 'flex', gap: 6, marginBottom: 6, alignItems: 'center' }}>
-                    <input
-                      placeholder="Parameter name"
-                      value={entry.key}
-                      onChange={e => updateCustomEntry(idx, 'key', e.target.value)}
-                      style={{ flex: '0 0 120px', background: '#000', border: `1px solid ${colors.border}`, padding: '6px 8px', color: config.color, fontSize: fontSizes.xs, borderRadius: radii.sm, fontFamily: 'monospace', boxSizing: 'border-box' }}
-                    />
-                    <input
-                      placeholder="Value"
-                      value={entry.value}
-                      onChange={e => updateCustomEntry(idx, 'value', e.target.value)}
-                      style={{ flex: 1, background: '#000', border: `1px solid ${colors.border}`, padding: '6px 8px', color: colors.textPrimary, fontSize: fontSizes.xs, borderRadius: radii.sm, boxSizing: 'border-box' }}
-                    />
-                    <button type="button" onClick={() => removeCustomEntry(idx)} aria-label="Remove parameter" style={{ background: 'transparent', color: colors.red, border: 'none', cursor: 'pointer', fontSize: 16, padding: '4px 6px', lineHeight: 1 }}>×</button>
-                  </div>
-                ))}
-                <button type="button" onClick={addCustomEntry} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 12px', background: 'transparent', border: `1px dashed ${config.color}`, color: config.color, borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 600 }}>
-                  + Add Field
-                </button>
-              </div>
-            ) : (
-              config.fields.map(field => (
-                <div key={field.key}>
-                  <div style={{ fontSize: fontSizes.xs, opacity: 0.7, marginBottom: 3 }}>
-                    {field.label}{field.required ? <span style={{ color: config.color }}>*</span> : ''}
-                  </div>
-                  {field.type === 'select' && field.options ? (
-                    <select
-                      value={newJob.parameters[field.key] || ''}
-                      onChange={e => updateParam(field.key, e.target.value)}
-                      style={{ width: '100%', background: '#000', border: `1px solid ${colors.border}`, padding: 8, color: colors.textPrimary, fontSize: fontSizes.sm, borderRadius: radii.sm, boxSizing: 'border-box' }}
-                    >
-                      <option value="">— Select —</option>
-                      {field.options.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  ) : field.type === 'textarea' ? (
-                    <textarea
-                      value={newJob.parameters[field.key] || ''}
-                      onChange={e => updateParam(field.key, e.target.value)}
-                      placeholder={field.placeholder}
-                      style={{ width: '100%', background: '#000', border: `1px solid ${colors.border}`, padding: 8, color: colors.textPrimary, fontSize: fontSizes.sm, borderRadius: radii.sm, minHeight: 50, boxSizing: 'border-box', resize: 'none' }}
-                    />
-                  ) : (
-                    <input
-                      type={field.type}
-                      value={newJob.parameters[field.key] || ''}
-                      onChange={e => updateParam(field.key, e.target.value)}
-                      placeholder={field.placeholder}
-                      style={{ width: '100%', background: '#000', border: `1px solid ${colors.border}`, padding: 8, color: colors.textPrimary, fontSize: fontSizes.sm, borderRadius: radii.sm, boxSizing: 'border-box' }}
-                    />
-                  )}
-                  {field.hint && <div style={{ fontSize: 9, opacity: 0.4, marginTop: 2 }}>{field.hint}</div>}
+            {config.fields.map(field => (
+              <div key={field.key}>
+                <div style={{ fontSize: fontSizes.xs, opacity: 0.7, marginBottom: 3 }}>
+                  {field.label}{field.required ? <span style={{ color: config.color }}>*</span> : ''}
                 </div>
-              ))
-            )}
+                {field.type === 'select' && field.options ? (
+                  <SearchableSelect
+                    value={newJob.parameters[field.key] || ''}
+                    placeholder={field.placeholder || 'Type to search...'}
+                    options={field.options}
+                    onChange={v => updateParam(field.key, v)}
+                  />
+                ) : field.type === 'textarea' ? (
+                  <textarea
+                    value={newJob.parameters[field.key] || ''}
+                    onChange={e => updateParam(field.key, e.target.value)}
+                    placeholder={field.placeholder}
+                    style={{ width: '100%', background: '#000', border: `1px solid ${colors.border}`, padding: 8, color: colors.textPrimary, fontSize: fontSizes.sm, borderRadius: radii.sm, minHeight: 50, boxSizing: 'border-box', resize: 'none' }}
+                  />
+                ) : (
+                  <input
+                    type={field.type === 'number' ? 'number' : 'text'}
+                    value={newJob.parameters[field.key] || ''}
+                    onChange={e => updateParam(field.key, e.target.value)}
+                    placeholder={field.placeholder}
+                    style={{ width: '100%', background: '#000', border: `1px solid ${colors.border}`, padding: 8, color: colors.textPrimary, fontSize: fontSizes.sm, borderRadius: radii.sm, boxSizing: 'border-box' }}
+                  />
+                )}
+                {field.hint && <div style={{ fontSize: 9, opacity: 0.4, marginTop: 2 }}>{field.hint}</div>}
+              </div>
+            ))}
+
           </div>
 
           {/* Input Data */}
@@ -654,10 +583,9 @@ function NewJobForm({ newJob, setNewJob, onPost, loading, isMobile }: {
         {/* 3. Job Type + Dynamic Config */}
         <div style={{ marginBottom: 10 }}>
           <div style={{ fontSize: fontSizes.sm, opacity: 0.6, marginBottom: 6 }}>Job Type</div>
-          <select
+          <SearchableTypeSelect
             value={newJob.type}
-            onChange={e => {
-              const newType = e.target.value
+            onChange={newType => {
               const cfg = JOB_TYPE_CONFIGS[newType]
               update({
                 type: newType,
@@ -665,13 +593,7 @@ function NewJobForm({ newJob, setNewJob, onPost, loading, isMobile }: {
                 verificationMethod: cfg?.verificationOptions?.[0]?.value || 'hash-check',
               })
             }}
-            aria-label="Job type"
-            style={{ width: '100%', background: '#000', border: `1px solid ${colors.border}`, padding: 10, color: colors.textPrimary, fontSize: fontSizes.base, boxSizing: 'border-box' }}
-          >
-            {Object.entries(JOB_TYPE_CONFIGS).map(([key, cfg]) => (
-              <option key={key} value={key} style={{ color: cfg.color, background: '#000' }}>{cfg.label}</option>
-            ))}
-          </select>
+          />
         </div>
         <DynamicJobFields key={newJob.type} newJob={newJob} setNewJob={setNewJob} />
 
@@ -817,6 +739,28 @@ function PreviewRow({ label, value, multiline }: { label: string; value: string;
       <div style={{ fontSize: fontSizes.xs, color: colors.textPrimary, wordBreak: 'break-word', ...(multiline ? { maxHeight: 60, overflow: 'auto' } : {}) }}>
         {value || <span style={{ opacity: 0.3 }}>—</span>}
       </div>
+    </div>
+  )
+}
+
+function SearchableTypeSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const items = Object.entries(JOB_TYPE_CONFIGS).map(([key, cfg]) => ({ value: key, label: cfg.label }))
+  const selected = JOB_TYPE_CONFIGS[value]
+  return (
+    <div style={{ position: 'relative' }}>
+      <SearchableSelect
+        value={value}
+        onChange={onChange}
+        options={items}
+        placeholder="Type to search job type..."
+      />
+      {selected && (
+        <div style={{
+          position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+          width: 8, height: 8, borderRadius: '50%', background: selected.color,
+          pointerEvents: 'none',
+        }} />
+      )}
     </div>
   )
 }
