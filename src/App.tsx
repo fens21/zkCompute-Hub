@@ -87,7 +87,7 @@ function AppContent() {
   const tab = TAB_PATHS[location.pathname.replace('/', '')] || 'dashboard'
   const setTab = (t: Tab) => navigate(t === 'dashboard' ? '/dashboard' : t === 'market' ? '/' : '/' + (t === 'my' ? 'my-jobs' : t))
 
-  const needsLeaderboard = tab === 'stats' || tab === 'leaderboard' || tab === 'profile'
+  const needsLeaderboard = tab === 'dashboard' || tab === 'stats' || tab === 'leaderboard' || tab === 'profile'
 
   // Periodic auto-refresh — lighter and smarter to reduce jank during navigation
   const onChainJobsRef = useRef(onChainJobs)
