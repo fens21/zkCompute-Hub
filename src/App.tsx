@@ -834,7 +834,7 @@ function AppContent() {
               address={address || ''}
               onNavigate={setTab}
               onBoostJob={boostJob}
-              loading={jobsLoading || leaderboardLoading}
+              loading={jobsLoading}
               error={jobsError}
               realWeeklyEarnings={weeklyEarnings}
               realStreakActive={realStreakActive}
