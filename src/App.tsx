@@ -119,7 +119,6 @@ function AppContent() {
 
   const entered = !!address
 
-  const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [sortBy, setSortBy] = useState<SortBy>('reward')
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
@@ -657,7 +656,6 @@ function AppContent() {
   const filteredJobs = useMemo(() => {
     return [...jobs]
       .filter(j => j.claimedCount < j.maxWorkers)
-      .filter(j => !search || j.title.toLowerCase().includes(search.toLowerCase()) || j.type.toLowerCase().includes(search.toLowerCase()))
       .filter(j => !typeFilter || j.type === typeFilter)
       .filter(j => {
         const endMs = getDeadlineMs(j.createdAt, j.deadline)
@@ -677,7 +675,7 @@ function AppContent() {
         }
         return b.id - a.id
       })
-  }, [jobs, search, typeFilter, sortBy, ltcPrice])
+  }, [jobs, typeFilter, sortBy, ltcPrice])
 
   const postedJobs = useMemo(() =>
     jobs.filter(j => address && j.poster.toLowerCase() === address.toLowerCase()),
@@ -843,7 +841,6 @@ function AppContent() {
           <Route path="/" element={
             <Marketplace
               jobs={filteredJobs}
-              search={search} setSearch={setSearch}
               typeFilter={typeFilter} setTypeFilter={setTypeFilter}
               sortBy={sortBy} setSortBy={setSortBy}
               onClaim={claimJob} onDetail={setSelectedJob}

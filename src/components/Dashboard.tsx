@@ -123,19 +123,19 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
 
   const rankMedal = (i: number) => i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`
 
-  const statusColor = (status: string) => {
+  const statusColor = (status: string | undefined) => {
     if (status === 'paid') return colors.green
     if (status === 'completed') return '#38bdf8'
     if (status === 'claimed') return colors.gold
     if (status === 'disputed') return colors.orange
     return colors.textDim
   }
-  const statusLabel = (status: string) => {
+  const statusLabel = (status: string | undefined) => {
     if (status === 'paid') return 'PAID'
     if (status === 'completed') return 'SUBMITTED'
     if (status === 'claimed') return 'IN PROGRESS'
     if (status === 'disputed') return 'DISPUTED'
-    return status.toUpperCase()
+    return (status || '').toUpperCase()
   }
 
   if (error) {

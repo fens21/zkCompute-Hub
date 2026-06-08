@@ -9,10 +9,8 @@ import { SearchableSelect } from './SearchableSelect'
 const PER_PAGE = 12
 type ViewMode = 'grid' | 'list'
 
-export function Marketplace({ jobs, search, setSearch, typeFilter, setTypeFilter, sortBy, setSortBy, onClaim, onDetail, claimingJobId, jobsLoading, jobsError, onRetry }: {
+export function Marketplace({ jobs, typeFilter, setTypeFilter, sortBy, setSortBy, onClaim, onDetail, claimingJobId, jobsLoading, jobsError, onRetry }: {
   jobs: Job[]
-  search: string
-  setSearch: (v: string) => void
   typeFilter: string
   setTypeFilter: (v: string) => void
   sortBy: SortBy
