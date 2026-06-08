@@ -96,6 +96,7 @@ export function Marketplace({ jobs, typeFilter, setTypeFilter, sortBy, setSortBy
               ...Object.entries(JOB_TYPE_CONFIGS).map(([key, cfg]) => ({ value: key, label: cfg.label })),
             ]}
             placeholder="Filter by type..."
+            background={colors.bgInput}
           />
         </div>
         <select

@@ -7,9 +7,10 @@ interface SearchableSelectProps {
   options: { value: string; label: string }[]
   placeholder?: string
   accentColor?: string
+  background?: string
 }
 
-export function SearchableSelect({ value, onChange, options, placeholder, accentColor }: SearchableSelectProps) {
+export function SearchableSelect({ value, onChange, options, placeholder, accentColor, background }: SearchableSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [highlightIdx, setHighlightIdx] = useState(0)
@@ -79,22 +80,19 @@ export function SearchableSelect({ value, onChange, options, placeholder, accent
         onKeyDown={onKeyDown}
         style={{
           width: '100%', boxSizing: 'border-box',
-          background: colors.bgInput,
+          background: background || '#000',
           border: value ? `1px solid ${accent}66` : `1px solid ${colors.border}`,
-          padding: '9px 14px', color: colors.textPrimary,
-          fontSize: fontSizes.base, borderRadius: radii.sm, outline: 'none',
+          padding: 10, color: colors.textPrimary,
+          fontSize: fontSizes.md, borderRadius: radii.sm, outline: 'none',
         }}
       />
       {open && (
         <div style={{
           position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
-          background: '#111', border: `1px solid ${colors.border}`,
+          background: background || '#000', border: `1px solid ${colors.border}`,
           borderRadius: radii.sm, maxHeight: 240, overflow: 'auto',
           boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
         }}>
-          {!value && !query && (
-            <div style={{ padding: '8px 12px', fontSize: fontSizes.xs, opacity: 0.4 }}>— Select —</div>
-          )}
           {query && filtered.length === 0 ? (
             <div style={{ padding: '10px 12px', fontSize: fontSizes.xs, opacity: 0.4 }}>No match found</div>
           ) : filtered.map((opt, idx) => (
