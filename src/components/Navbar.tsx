@@ -230,9 +230,9 @@ function NavbarImpl({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, not
                           onFocus={e => { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.borderColor = `${colors.gold}33` }}
                           onBlur={e => { e.currentTarget.style.background = colors.bgCard; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.06)' }}>
                           {address.slice(0, 6)}...{address.slice(-4)}
-                        </button>style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, background: colors.bgElevated, border: `1px solid ${colors.borderLight}`, borderRadius: radii.md, zIndex: 999,
+                        </button>
                         {showWalletMenu && (
-                          <div role="menu" aria-label="Wallet menu"  overflow: 'hidden', minWidth: 'max-content' }}>
+                          <div role="menu" aria-label="Wallet menu" style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, background: colors.bgElevated, border: `1px solid ${colors.borderLight}`, borderRadius: radii.md, zIndex: 999, overflow: 'hidden', minWidth: 'max-content' }}>
                             <button onClick={() => { setTab('profile'); setShowWalletMenu(false) }} role="menuitem" aria-label="View profile" style={{ width: '100%', background: 'transparent', color: colors.textPrimary, border: 'none', padding: '8px 20px', textAlign: 'left', cursor: 'pointer', fontSize: fontSizes.base, fontFamily: "'Space Mono', monospace", transition: 'background 0.15s' }}
                               onMouseEnter={e => e.currentTarget.style.background = 'rgba(247,206,62,0.06)'}
                               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}

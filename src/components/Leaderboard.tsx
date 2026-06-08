@@ -14,7 +14,7 @@ function TableHeader() {
   )
 }
 
-export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltcPrice, onChainJobs, onRetry }: {
+export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltcPrice, onChainJobs: _onChainJobs, onRetry }: {
   leaderboard: LeaderboardEntry[]
   leaderboardLoading: boolean
   onViewWorker: (worker: string, entry: LeaderboardEntry, rank: number) => void
