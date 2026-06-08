@@ -13,6 +13,8 @@ import { useJobs } from './hooks/useJobs'
 import { useMyJobs, saveWorkerEvent } from './hooks/useMyJobs'
 import { useLeaderboard } from './hooks/useLeaderboard'
 import { usePrices } from './hooks/usePrices'
+import { useEarningsHistory } from './hooks/useEarningsHistory'
+import { useActivityStreak } from './hooks/useActivityStreak'
 import { LandingPage } from './components/LandingPage'
 import { Navbar } from './components/Navbar'
 
@@ -79,6 +81,8 @@ function AppContent() {
   const { myJobs, setMyJobs } = useMyJobs(address, true)
   const { leaderboard, loading: leaderboardLoading, fetchLeaderboard } = useLeaderboard()
   const { ltcPrice } = usePrices()
+  const { weeklyEarnings } = useEarningsHistory(address)
+  const { streakActive: realStreakActive } = useActivityStreak(address)
   const isMobile = useIsMobile()
 
   const navigate = useNavigate()
@@ -831,6 +835,8 @@ function AppContent() {
               onBoostJob={boostJob}
               loading={jobsLoading || leaderboardLoading}
               error={jobsError}
+              realWeeklyEarnings={weeklyEarnings}
+              realStreakActive={realStreakActive}
             />
           } />
           <Route path="/" element={

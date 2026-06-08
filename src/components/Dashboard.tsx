@@ -14,9 +14,11 @@ interface DashboardProps {
   onBoostJob?: (jobId: number, amount: number) => void
   loading?: boolean
   error?: string | null
+  realWeeklyEarnings?: { label: string; amount: number }[]
+  realStreakActive?: boolean[]
 }
 
-export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address, onNavigate, loading, error }: DashboardProps) {
+export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address, onNavigate, loading, error, realWeeklyEarnings, realStreakActive }: DashboardProps) {
   const isMobile = useIsMobile()
 
   const ownEntry = leaderboard.find(e => address && e.worker.toLowerCase() === address.toLowerCase())
@@ -48,6 +50,8 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
     { label: 'This week', amount: Math.round(totalEarned * 0.3) },
   ] : []
   const maxWeekly = Math.max(...weeklyData.map(d => d.amount), 1)
+  const chartData = realWeeklyEarnings ?? weeklyData
+  const chartMax = Math.max(...chartData.map(d => d.amount), 1)
 
   const totalActiveClaims = useMemo(() => activeClaims.length, [activeClaims])
   const totalPostedActive = useMemo(() => myPostedActive.length, [myPostedActive])
@@ -56,6 +60,9 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
   const userIndex = leaderboard.findIndex(e => address && e.worker.toLowerCase() === address.toLowerCase())
   const userRank = userIndex >= 0 ? userIndex + 1 : null
   const reputationPoints = ownEntry?.points ?? 0
+  const platformTotalEarned = useMemo(() =>
+    leaderboard.reduce((sum, e) => sum + e.totalEarned, 0),
+  [leaderboard])
 
   // Subtle entrance animation helper
   const fadeIn = (delay = 0) => ({
@@ -100,9 +107,9 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
     .slice(0, 5)
 
   // Line chart data (4 weeks)
-  const linePoints = weeklyData.map((d, i) => ({
+  const linePoints = chartData.map((d, i) => ({
     x: 10 + (i * 80),
-    y: 110 - Math.max(8, (d.amount / Math.max(1, maxWeekly)) * 85),
+    y: 110 - Math.max(8, (d.amount / Math.max(1, chartMax)) * 85),
     label: d.label,
     value: d.amount
   }))
@@ -120,7 +127,8 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
     d.setDate(d.getDate() - (6 - i))
     return completedDates.has(d.toDateString())
   })
-  const activeStreakCount = streakActive.filter(Boolean).length
+  const finalStreakActive = realStreakActive ?? streakActive
+  const activeStreakCount = finalStreakActive.filter(Boolean).length
 
   // Marketplace snapshot numbers (derived)
   const openJobsCount = onChainJobs.filter(j => j.claimedCount < j.maxWorkers).length
@@ -191,11 +199,11 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
                 <div style={{ fontWeight: 600, fontSize: 14.5, color: colors.textPrimary }}>Earnings Trend</div>
                 {totalEarned > 0 && <div style={{ fontSize: 11, color: colors.textDim, maxWidth: 320 }}>Estimated earnings over the last 4 weeks — all payouts are settled on-chain</div>}
                 <div style={{ fontSize: 12, color: colors.gold, fontWeight: 700, marginTop: 4 }}>
-                  {weeklyData.length > 0 ? fmt(weeklyData.reduce((s, w) => s + w.amount, 0)) + ' zkLTC total' : 'No earnings data yet'}
+                  {chartData.length > 0 ? fmt(chartData.reduce((s, w) => s + w.amount, 0)) + ' zkLTC total' : 'No earnings data yet'}
                 </div>
               </div>
 
-              {weeklyData.length > 0 && (
+              {chartData.length > 0 && (
               <svg width="100%" height="122" viewBox="0 0 340 122" style={{ marginTop: 2 }} role="img" aria-label="Earnings trend chart showing 4 weeks of estimated earnings">
                 <title>Earnings Trend</title>
                 {/* Subtle grid */}
@@ -354,20 +362,20 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
                       width: 27, 
                       height: 27, 
                       borderRadius: '50%',
-                      background: streakActive[i] 
+                      background: finalStreakActive[i] 
                         ? `linear-gradient(145deg, ${colors.gold}, ${colors.goldDark})` 
                         : 'rgba(197,193,192,0.08)',
-                      color: streakActive[i] ? '#000' : colors.textMuted,
+                      color: finalStreakActive[i] ? '#000' : colors.textMuted,
                       fontSize: 11, 
                       fontWeight: 700,
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center',
-                      border: streakActive[i] ? 'none' : '1px solid rgba(197,193,192,0.06)',
+                      border: finalStreakActive[i] ? 'none' : '1px solid rgba(197,193,192,0.06)',
                       transition: 'all 0.2s',
-                      boxShadow: streakActive[i] ? '0 1px 4px rgba(247,206,62,0.3)' : 'none'
+                      boxShadow: finalStreakActive[i] ? '0 1px 4px rgba(247,206,62,0.3)' : 'none'
                     }}
-                    title={streakActive[i] ? 'Completed tasks on this day' : 'No activity on this day'}
+                    title={finalStreakActive[i] ? 'Completed tasks on this day' : 'No activity on this day'}
                   >
                     {d}
                   </div>
@@ -410,7 +418,7 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
                 <div style={{ fontWeight: 700, color: colors.textPrimary, textAlign: 'right' }}>{totalWorkers}</div>
 
                 <div style={{ color: colors.textDim }}>Total Value Earned</div>
-                <div style={{ fontWeight: 700, color: colors.gold, textAlign: 'right' }}>{fmt(totalEarned)} zkLTC</div>
+                <div style={{ fontWeight: 700, color: colors.gold, textAlign: 'right' }}>{fmt(platformTotalEarned)} zkLTC</div>
 
                 <div style={{ color: colors.textDim }}>Completed Jobs (All Time)</div>
                 <div style={{ fontWeight: 700, color: colors.textPrimary, textAlign: 'right' }}>{completedAllTime}</div>
