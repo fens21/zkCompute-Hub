@@ -127,6 +127,8 @@ export function LandingPage() {
     <div style={{
       ...cssVars, color: colors.textSecondary,
       fontFamily: "system-ui, 'Segoe UI', Roboto, sans-serif",
+      background: 'linear-gradient(180deg, #0a0a00 0%, #1a1200 30%, #0d0d00 60%, #050500 100%)',
+      minHeight: '100vh',
     }}>
       <main>
       {/* ── Hero ── */}
