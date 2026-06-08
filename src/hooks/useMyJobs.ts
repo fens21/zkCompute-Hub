@@ -235,18 +235,19 @@ export function useMyJobs(address: string | undefined, _syncEnabled: boolean = t
       setMyJobsState(cached)
       // Background sync on-chain — override status by source of truth
       const addr = address.toLowerCase()
-      const addresses = cached.map(j => ({ jobId: BigInt(j.id), worker: addr as `0x${string}` }))
-      Promise.all(addresses.map(({ jobId, worker }) =>
+      Promise.all(cached.map(j =>
         Promise.all([
-          readContract(config, { address: CONTRACT_ADDRESS as `0x${string}`, abi, functionName: 'paid', args: [jobId, worker] }).catch(() => false),
-          readContract(config, { address: CONTRACT_ADDRESS as `0x${string}`, abi, functionName: 'proofSubmitted', args: [jobId, worker] }).catch(() => false),
-        ])
+          readContract(config, { address: CONTRACT_ADDRESS as `0x${string}`, abi, functionName: 'paid', args: [BigInt(j.id), addr as `0x${string}`] }).catch(() => null),
+          readContract(config, { address: CONTRACT_ADDRESS as `0x${string}`, abi, functionName: 'proofSubmitted', args: [BigInt(j.id), addr as `0x${string}`] }).catch(() => null),
+        ]).then(([isPaid, hasProof]) => ({ jobId: j.id, isPaid, hasProof }))
       )).then(results => {
+        const resultsMap = new Map(results.map(r => [r.jobId, r]))
         setMyJobsState(prev => {
-          const next = prev.map((j, i) => {
-            const [isPaid, hasProof] = results[i] || [false, false]
-            if (isPaid && j.status !== 'paid') return { ...j, status: 'paid' as const }
-            if (hasProof && j.status !== 'completed' && j.status !== 'paid') return { ...j, status: 'completed' as const }
+          const next = prev.map(j => {
+            const r = resultsMap.get(j.id)
+            if (!r) return j
+            if (r.isPaid === true && j.status !== 'paid') return { ...j, status: 'paid' as const }
+            if (r.hasProof === true && j.status !== 'completed' && j.status !== 'paid') return { ...j, status: 'completed' as const }
             return j
           })
           saveMyJobs(address, next)
@@ -256,11 +257,11 @@ export function useMyJobs(address: string | undefined, _syncEnabled: boolean = t
       // Background sync from Supabase — upgrades 'completed' → 'paid' etc.
       fetchWorkerActivities(address).then(mergeEvents).catch(() => {})
       return
-    }
+   }
 
     // No cache — restore from Supabase
     fetchWorkerActivities(address).then(mergeEvents).catch(() => {})
-  }, [address])
+ }, [address])
 
   const setMyJobs = useCallback((updater: Job[] | ((prev: Job[]) => Job[])) => {
     if (!address) return
