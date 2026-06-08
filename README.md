@@ -1,19 +1,10 @@
 # zkCompute Hub
 
-**A decentralized, verifiable compute marketplace on LitVM (Litecoin Rollup / LitForge Testnet).**
+A decentralized, verifiable compute marketplace on LitVM (Litecoin Rollup / LitForge Testnet).
 
-Post heavy compute jobs — ML training & inference, ZK proofs, 3D rendering, scientific simulations, data labeling, audio/image generation, smart contract audits, RAG, FHE, and more. Workers claim jobs, execute off-chain, and submit cryptographic proofs (real Groth16 ZK or hash-based). Funds are escrowed on-chain and released automatically only after successful on-chain verification. No trust between parties required.
+Post compute jobs — ML training & inference, ZK proofs, 3D rendering, scientific simulations, data labeling, audio/image generation, smart contract audits, RAG pipelines, FHE computation, and more. Workers claim jobs, execute off-chain, and submit cryptographic proofs (Groth16 ZK or hash-based). Funds are escrowed on-chain and released automatically upon successful verification. No trust required between parties.
 
-## How It Works (High Level)
-
-1. **Poster** creates a job and escrows the total reward (`reward × maxWorkers`). Optionally pays a visibility booster fee.
-2. **Worker** finds the job (boosted jobs rank higher) and claims it.
-3. Worker performs the actual heavy compute / puzzle / generation **off-chain**.
-4. Worker submits a proof:
-   - Regular (hash + optional file/artifact), **or**
-   - Real ZK Groth16 proof (enters private `solution` → frontend + snarkjs generates the proof on the fly).
-5. The smart contract verifies the proof on-chain via the `RealVerifier`.
-6. On success the escrowed payment is released automatically to the worker.
+---
 
 ## Tech Stack
 
@@ -24,56 +15,56 @@ Post heavy compute jobs — ML training & inference, ZK proofs, 3D rendering, sc
 | Wallet | RainbowKit 2 (MetaMask, Rabby, OKX, WalletConnect, Brave, etc.) |
 | Backend | Supabase (job metadata, activity logs, profiles) |
 
-## Key Features
+---
 
-- **Full Dashboard** — Personalized overview with quick stats (earnings, completed jobs, active claims, posted active, reputation + rank), active claims & posted jobs, recent activity, recommended jobs (type-matched), earnings trend chart, reputation progress bar, pending actions, and financial snapshot (escrowed + boost fees).
+## Features
 
-- **Job Booster (Platform Fee)** — Posters can boost any of their active jobs by paying **25% of the job's total reward** (`reward × maxWorkers`) as a **one-time platform fee sent to the developer**. The job then receives priority visibility and ranking in the Marketplace + "Recommended for You" for 7 days. **This fee does NOT increase the reward paid to workers** — it is purely a visibility/promotion cost.
+- **Dashboard** — Personalized overview with real-time stats: earnings, completed jobs, active claims, posted jobs, reputation rank, earnings trend chart, pending actions, and financial snapshot.
 
-- **Marketplace** — Browse, search, filter by job type (ML, ZK, Render, AI, Scientific, FHE, etc.), sort, grid/list, pagination, live countdowns.
+- **Marketplace** — Browse available jobs with searchable type filter, sort by reward or deadline, grid/list view, pagination, and live countdown timers.
 
-- **Post & Manage Jobs** — Rich type-specific forms, edit posted jobs, deactivate, release payments, handle disputes.
+- **Post & Manage Jobs** — Type-specific dynamic forms with searchable parameter fields. Edit, deactivate, release payments, and handle disputes for your posted jobs.
 
-- **My Jobs** — Workers: claim + submit real ZK proofs (Poseidon solution proof) or hash proofs. Posters: monitor & manage.
+- **My Jobs** — Claim available jobs, submit ZK proofs (Groth16 via snarkjs/circom) or hash proofs, and track job status.
 
-- **Real ZK Verifiable Compute** — Groth16 proofs via snarkjs/circom. Workers prove knowledge of private solution without revealing it.
+- **Verifiable Compute** — Two verification methods:
+  - **ZK Proof** — Groth16 proofs via snarkjs. Workers prove knowledge of a private solution without revealing it.
+  - **Hash Check** — Off-chain hash verification with optional file upload.
 
-- **Dual Token** — Escrow in native zkLTC or USDC.
+- **Dual Token Escrow** — Pay rewards in native zkLTC or USDC.
 
-- **Reputation & Leaderboard** — On-chain snapshots, points, podium, badges.
+- **Reputation & Leaderboard** — On-chain reputation snapshots, points system, podium display, and worker badges.
 
-- **Dispute System** — Full on-chain raise/resolve.
+- **Dispute System** — On-chain dispute resolution between posters and workers.
 
-- **Modern UI/UX** — Responsive, smooth animations (fade-ins, hovers), dark theme with gold accents (#F7CE3E), improved contrast, good empty states.
+- **Real ZK Verifiable Compute** — For jobs requiring ZK verification, the poster specifies a target Poseidon hash. Workers submit a private solution, and the frontend generates a Groth16 proof using a pre-compiled circuit. The contract verifies it via the on-chain `RealVerifier` and releases payment instantly on success.
 
-- **Live on Testnet** — Fully functional on LitVM LiteForge Testnet (Chain ID 4441).
-
-## Real ZK Verifiable Compute
-
-For jobs marked with ZK verification, the poster sets an `expectedOutput` (typically the Poseidon hash of the correct secret solution for that `jobId`).
-
-The worker who claims the job figures out the private solution off-chain, then in **My Jobs** clicks "Submit ZK Proof", enters their `solution`, and the frontend uses the pre-generated circuit + snarkjs to create a Groth16 proof.
-
-The contract calls `submitZKProof(...)` which verifies via the on-chain `RealVerifier`. If valid, payment is released instantly.
-
-The circuit was recompiled with circom 2.1.9 + snarkjs and the verification key has been set on the current `RealVerifier` for this deployment.
+---
 
 ## Getting Started (Testnet)
 
 1. Add LitVM LiteForge Testnet to your wallet:
-   - Chain ID: **4441**
-   - RPC: `https://liteforge.rpc.caldera.xyz/http`
-   - Currency: zkLTC
-   - Explorer: https://liteforge.explorer.caldera.xyz
 
-2. Get test zkLTC from the faucet (Caldera hub / LitVM faucet).
+   | Property | Value |
+   |---|---|
+   | Chain Name | LitVM LiteForge Testnet |
+   | Chain ID | 4441 |
+   | RPC URL | `https://liteforge.rpc.caldera.xyz/http` |
+   | Native Token | zkLTC |
+   | Explorer | `https://liteforge.explorer.caldera.xyz` |
 
-3. Install & run:
+2. Get test zkLTC from the LitVM faucet.
+
+3. Install and run:
+
    ```bash
    npm install
    npm run dev
    ```
-   Open http://localhost:5173 and connect your wallet.
+
+   Open `http://localhost:5173` and connect your wallet.
+
+---
 
 ## Environment Variables
 
@@ -83,70 +74,91 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-(For local contract work you also need a `PRIVATE_KEY` in a `.env` for Hardhat.)
-
-## Common Scripts
-
-```bash
-npm run dev          # Start dev server
-npm run build        # Type check + production build
-npm run deploy:all   # Deploy fresh Marketplace + RealVerifier (updates chain.ts)
-npm run set-vk       # Push new verification key after circuit changes
-```
-
-## Fresh Contract Deployment
-
-To reset the entire marketplace (start completely empty):
-
-```bash
-npm run deploy:all
-```
-
-This deploys a new `JobMarketplace` + new `RealVerifier` and updates `src/config/chain.ts`.
-
-Copy the new address into:
-- `.env` (local)
-- Vercel environment variables (for production)
-- Then redeploy the frontend.
-
-**Current live contract** (fresh empty deployment):
-`0xaaf4555aad78b7981e4e619124a28fc137faffd8`
-
-After switching contracts you will need to clear some localStorage keys in the browser for a clean "My Jobs" view (`zkcompute_myjobs_v2`, `zkcompute_workers`, etc.).
-
-The ZK circuit is already recompiled and the VK is set for the current verifier.
-
-## Network
-
-| Property      | Value                                           |
-|---------------|-------------------------------------------------|
-| Chain         | LitVM LiteForge Testnet                         |
-| Chain ID      | 4441                                            |
-| Native Token  | zkLTC (18 decimals, 1:1 backed by LTC)          |
-| RPC (HTTP)    | https://liteforge.rpc.caldera.xyz/http          |
-| Explorer      | https://liteforge.explorer.caldera.xyz          |
-
-## Links
-
-- GitHub: https://github.com/fens21/zkCompute-Hub
-- Live Frontend: https://www.zkcomputhub.io (or https://zkcompute-fspnn1icc-fens21s-projects.vercel.app)
-- Explorer: https://liteforge.explorer.caldera.xyz
-- LitVM / Caldera: https://docs.litvm.com or Caldera hub
-
-## Project Notes
-
-- **Navbar Audit (Jun 2026)** — Glass-effect tab buttons with `backdropFilter: blur(8px)`, consistent `2px` borders with gold hover/focus/active states (`${colors.gold}55` / `33`), animated gold glow pulse on active tab, shimmer sweep on hover. Notification badge: pill shape (`borderRadius: 999`, `minWidth`), wallet skeleton loading placeholder, SVG hamburger/close icons with proper `aria-*` attributes, mobile a11y (expanded/controls/current), fixed contrast on timestamps/read-opacity/clear-all, `flexWrap` on desktop tabs, wallet menu hover states, balance shows "Loading..." while undefined.
-- **Marketplace Audit (Jun 2026)** — Input/select border fixed (was `#1A2930` on `#1A2930` bg → `rgba(197,193,192,0.12)`), type badge uses config color at 18% opacity, NEW banner `#FFFFFF`→`#000` on gold, pagination hardcoded colors replaced with semantic tokens, carousel dots simplified, JobCard glass effect (`rgba(26,41,48,0.85)` + `blur(12px)`), view toggle with gold hover/focus, description & poster visible on mobile with `WebkitLineClamp`, list-row hover from 4%→6% gold.
-- **Global Token Polish (Jun 2026)** — `colors.border` changed from invisible `#1A2930` to visible `rgba(197,193,192,0.12)`, `colors.borderLight` from `#1A2930` to `rgba(197,193,192,0.06)`, `buttonPrimary.color` from `#FFFFFF` to `#000` (consistent with CLAIM buttons). All navbar buttons (notification bell, wallet address, hamburger) now use consistent `2px` borders with gold hover.
-- The UI was recently audited and lightened (removed heavy animations, standardized cards, new color system `#C5C1C0 / #0A1612 / #1A2930 / #F7CE3E`).
-- Landing page now features a subtle animated starfield background, improved copy, pruned CTAs (only "Get Started" + Connect Wallet), and better contrast.
-- New extensible job types were added (Audio Processing, Image/Video Generation, Smart Contract Audit, Data Anonymization, LLM Evaluation, etc.).
-- Dashboard implements exactly the requested panels + the real 25% developer-fee booster.
-
-## License
-
-MIT — Copyright 2026, fens21
+For local contract development, also add a `PRIVATE_KEY` to `.env` for Hardhat.
 
 ---
 
-**Testnet only.** Use with test funds. Not financial advice. Built for verifiable, trust-minimized compute on Bitcoin-aligned infrastructure (LitVM).
+## Scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start development server |
+| `npm run build` | Type check + production build |
+| `npm run deploy:all` | Deploy fresh Marketplace + RealVerifier contracts |
+| `npm run set-vk` | Push new verification key after circuit changes |
+
+---
+
+## Job Types
+
+| Type | Description |
+|---|---|
+| Machine Learning | Model training, fine-tuning, evaluation |
+| Zero Knowledge Proof | Groth16, PLONK, STARK, and other proving systems |
+| Video / 3D Render | Blender, Maya, Unreal Engine rendering |
+| AI Inference | LLM deployment, batch inference, model serving |
+| AI Training | Full fine-tune, LoRA, QLoRA, pre-training |
+| Data Labeling | Classification, bounding box, segmentation, NER |
+| Video Transcoding | H.264, H.265, VP9, AV1 encoding |
+| Scientific Simulation | GROMACS, NAMD, LAMMPS, VASP, AlphaFold |
+| RAG Pipeline | Document indexing, embedding, retrieval |
+| FHE Computation | Fully homomorphic encryption workloads |
+| Custom | User-defined compute tasks |
+
+---
+
+## Architecture
+
+```
+Poster                    Marketplace Contract            Worker
+  │                              │                          │
+  ├─ Post job + escrow ─────────>│                          │
+  │                              │  ─── Job available ────> │
+  │                              │  <── Claim job ───────── │
+  │                              │                          ├─ Execute off-chain
+  │                              │                          ├─ Generate proof
+  │                              │  <── Submit proof ────── │
+  │                              │                          │
+  │                              ├─ Verify proof on-chain   │
+  │                              ├─ Release payment ──────> │
+  │                              │                          │
+  │  <── Job completed ─────────│                          │
+```
+
+---
+
+## Project Structure
+
+```
+src/
+├── abi/              # Contract ABIs
+├── components/       # React components
+│   ├── Dashboard.tsx
+│   ├── Marketplace.tsx
+│   ├── PostJob.tsx
+│   ├── MyJobs.tsx
+│   ├── Modals.tsx
+│   ├── Navbar.tsx
+│   ├── SearchableSelect.tsx
+│   └── ...
+├── config/           # Chain configuration
+├── constants/        # Job type definitions
+├── hooks/            # Custom React hooks
+├── styles/           # Design tokens
+├── types/            # TypeScript interfaces
+└── utils/            # Utility functions
+
+contracts/            # Solidity smart contracts
+subgraph/             # The Graph subgraph
+server/               # Supabase integration
+```
+
+---
+
+## License
+
+MIT — Copyright 2026, fens21.
+
+---
+
+*Testnet only. Use with test funds. Built for verifiable, trust-minimized compute on Bitcoin-aligned infrastructure (LitVM).*
