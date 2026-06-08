@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import type { Job, LeaderboardEntry } from '../types'
 import { colors, radii, fontSizes } from '../styles/tokens'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { formatUsd, fmt } from '../utils'
 
-export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, error, onRetry }: {
+export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, error, onRetry, myJobs }: {
   onChainJobs: Job[]
   leaderboard: LeaderboardEntry[]
   ltcPrice: number | null
@@ -12,6 +12,7 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
   loading?: boolean
   error?: string | null
   onRetry?: () => void
+  myJobs?: Job[]
 }) {
   const isMobile = useIsMobile()
   const [rewardPage, setRewardPage] = useState(0)
@@ -22,11 +23,21 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
   const totalEscrowedUsdc = onChainJobs.filter(j => j.tokenSymbol === 'USDC').reduce((s, j) => s + j.reward * j.maxWorkers, 0)
   const totalEscrowedUsd = ltcPrice ? (totalEscrowedZkltc * ltcPrice + totalEscrowedUsdc) : null
   const ownEntry = leaderboard.find(e => address && e.worker.toLowerCase() === address.toLowerCase())
-  const earnedZkltc = ownEntry?.earnedZkltc ?? 0
-  const earnedUsdc = ownEntry?.earnedUsdc ?? 0
-  const jobsPaid = ownEntry?.jobsPaid ?? 0
 
-  const dedupedJobs = [...new Map(onChainJobs.map(j => [j.id, j])).values()]
+  const fromMyJobs = useMemo(() => {
+    const paid = (myJobs || []).filter(j => j.status === 'paid')
+    return {
+      earnedZkltc: paid.filter(j => j.tokenSymbol !== 'USDC').reduce((s, j) => s + j.reward, 0),
+      earnedUsdc: paid.filter(j => j.tokenSymbol === 'USDC').reduce((s, j) => s + j.reward, 0),
+      jobsPaid: paid.length,
+    }
+  }, [myJobs])
+
+  const earnedZkltc = ownEntry?.earnedZkltc ?? fromMyJobs.earnedZkltc
+  const earnedUsdc = ownEntry?.earnedUsdc ?? fromMyJobs.earnedUsdc
+  const jobsPaid = ownEntry?.jobsPaid ?? fromMyJobs.jobsPaid
+
+  const dedupedJobs = [...new Map(onChainJobs.map(j => [j.id, j])).values()].filter(j => j.active !== false)
   const usdRate = (t: string | undefined) => t === 'USDC' ? 1 : (ltcPrice ?? 0)
   const topRewardAll = [...dedupedJobs].sort((a, b) => (b.reward * usdRate(b.tokenSymbol)) - (a.reward * usdRate(a.tokenSymbol)))
   const topClaimedAll = [...dedupedJobs].filter(j => j.claimedCount > 0).sort((a, b) => b.claimedCount - a.claimedCount)

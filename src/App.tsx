@@ -890,6 +890,7 @@ function AppContent() {
           } />
           <Route path="/stats" element={
             <Stats
+              myJobs={myJobs}
               onChainJobs={onChainJobs}
               leaderboard={leaderboard}
               ltcPrice={ltcPrice}
