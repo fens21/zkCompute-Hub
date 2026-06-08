@@ -19,8 +19,9 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
   const [claimedPage, setClaimedPage] = useState(0)
   const PER_PAGE = 20
 
-  const totalEscrowedZkltc = onChainJobs.filter(j => j.tokenSymbol !== 'USDC').reduce((s, j) => s + j.reward * j.maxWorkers, 0)
-  const totalEscrowedUsdc = onChainJobs.filter(j => j.tokenSymbol === 'USDC').reduce((s, j) => s + j.reward * j.maxWorkers, 0)
+  const dedupedJobs = [...new Map(onChainJobs.map(j => [j.id, j])).values()].filter(j => j.active !== false)
+  const totalEscrowedZkltc = dedupedJobs.filter(j => j.tokenSymbol !== 'USDC').reduce((s, j) => s + j.reward * j.maxWorkers, 0)
+  const totalEscrowedUsdc = dedupedJobs.filter(j => j.tokenSymbol === 'USDC').reduce((s, j) => s + j.reward * j.maxWorkers, 0)
   const totalEscrowedUsd = ltcPrice ? (totalEscrowedZkltc * ltcPrice + totalEscrowedUsdc) : null
   const ownEntry = leaderboard.find(e => address && e.worker.toLowerCase() === address.toLowerCase())
 
@@ -36,8 +37,6 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
   const earnedZkltc = ownEntry?.earnedZkltc ?? fromMyJobs.earnedZkltc
   const earnedUsdc = ownEntry?.earnedUsdc ?? fromMyJobs.earnedUsdc
   const jobsPaid = ownEntry?.jobsPaid ?? fromMyJobs.jobsPaid
-
-  const dedupedJobs = [...new Map(onChainJobs.map(j => [j.id, j])).values()].filter(j => j.active !== false)
   const usdRate = (t: string | undefined) => t === 'USDC' ? 1 : (ltcPrice ?? 0)
   const topRewardAll = [...dedupedJobs].sort((a, b) => (b.reward * usdRate(b.tokenSymbol)) - (a.reward * usdRate(a.tokenSymbol)))
   const topClaimedAll = [...dedupedJobs].filter(j => j.claimedCount > 0).sort((a, b) => b.claimedCount - a.claimedCount)
