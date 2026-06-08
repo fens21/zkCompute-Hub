@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import type { Job, LeaderboardEntry } from '../types'
 import { colors, radii, fontSizes } from '../styles/tokens'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -98,16 +98,18 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
           value={formatUsd(earnedUsd)}
           highlight={earnedZkltc + earnedUsdc > 0}
           isMobile={isMobile}
+          delay={0}
           sub={earnedZkltc + earnedUsdc > 0 ? (
             <>{earnedZkltc > 0 && <span style={{ color: colors.gold }}>{fmt(earnedZkltc)} zkLTC</span>}{earnedZkltc > 0 && earnedUsdc > 0 ? ' · ' : ''}{earnedUsdc > 0 && <span style={{ color: colors.blue }}>{fmt(earnedUsdc)} USDC</span>}</>
           ) : <span style={{ opacity: 0.4 }}>No earnings yet</span>}
         />
-        <StatCard label="Jobs Paid" value={`${jobsPaid}`} isMobile={isMobile} sub={<span style={{ opacity: 0.5, fontSize: fontSizes.xs }}>completed &amp; paid by employer</span>} />
-        <StatCard label="On-Chain Jobs" value={`${onChainJobs.length}`} isMobile={isMobile} />
+        <StatCard label="Jobs Paid" value={`${jobsPaid}`} isMobile={isMobile} delay={0.1} sub={<span style={{ opacity: 0.5, fontSize: fontSizes.xs }}>completed &amp; paid by employer</span>} />
+        <StatCard label="On-Chain Jobs" value={`${onChainJobs.length}`} isMobile={isMobile} delay={0.2} />
         <StatCard
           label="Total Escrowed"
           value={formatUsd(totalEscrowedUsd)}
           isMobile={isMobile}
+          delay={0.3}
           sub={
             <>{totalEscrowedZkltc > 0 && <span style={{ color: colors.gold }}>{fmt(totalEscrowedZkltc)} zkLTC</span>}{totalEscrowedZkltc > 0 && totalEscrowedUsdc > 0 ? ' · ' : ''}{totalEscrowedUsdc > 0 && <span style={{ color: colors.blue }}>{fmt(totalEscrowedUsdc)} USDC</span>}</>
           }
@@ -192,11 +194,70 @@ function PaginationBar({ page, totalPages, totalItems, onPrev, onNext, isFirst, 
   )
 }
 
-function StatCard({ label, value, highlight, isMobile, sub }: { label: string; value: string; highlight?: boolean; isMobile?: boolean; sub?: React.ReactNode }) {
+function StatCard({ label, value, highlight, isMobile, sub, delay = 0 }: { label: string; value: string; highlight?: boolean; isMobile?: boolean; sub?: React.ReactNode; delay?: number }) {
+  const [displayVal, setDisplayVal] = useState('')
+  const prevVal = useRef('')
+  const cardRef = useRef<HTMLDivElement>(null)
+  const animFrame = useRef<number>(0)
+
+  useEffect(() => {
+    if (value === prevVal.current) return
+    prevVal.current = value
+    const num = parseFloat(value.replace(/[^0-9.]/g, ''))
+    if (isNaN(num)) { setDisplayVal(value); return }
+    const prefix = value.startsWith('$') ? '$' : ''
+    const start = performance.now()
+    const duration = 800
+    const from = 0
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1)
+      const eased = 1 - Math.pow(1 - t, 3)
+      const current = from + (num - from) * eased
+      setDisplayVal(prefix + (Number.isInteger(num) ? Math.round(current) : current.toFixed(2)))
+      if (t < 1) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  }, [value])
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isMobile) return
+    const el = cardRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const x = (e.clientX - rect.left) / rect.width - 0.5
+    const y = (e.clientY - rect.top) / rect.height - 0.5
+    const rotX = -y * 12
+    const rotY = x * 12
+    cancelAnimationFrame(animFrame.current)
+    animFrame.current = requestAnimationFrame(() => {
+      el.style.transform = `perspective(800px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateY(-3px)`
+      el.style.boxShadow = `0 8px 30px rgba(0,0,0,0.25), 0 4px 20px rgba(247,206,62,${highlight ? 0.15 : 0})`
+    })
+  }
+  const handleMouseLeave = () => {
+    const el = cardRef.current
+    if (!el) return
+    cancelAnimationFrame(animFrame.current)
+    animFrame.current = requestAnimationFrame(() => {
+      el.style.transform = 'none'
+      el.style.borderColor = highlight ? colors.gold : colors.borderLight
+      el.style.boxShadow = 'none'
+    })
+  }
+
   return (
-    <div style={{ background: colors.bgCard, padding: isMobile ? 14 : 20, border: `1px solid ${highlight ? colors.gold : colors.borderLight}`, borderRadius: radii.xl }}>
+    <div ref={cardRef} style={{
+      background: colors.bgCard, padding: isMobile ? 14 : 20,
+      border: `1px solid ${highlight ? colors.gold : colors.borderLight}`,
+      borderRadius: radii.xl,
+      animation: `statFadeUp 0.5s ease-out ${delay}s both`,
+      transition: 'border-color 0.3s, box-shadow 0.3s',
+      cursor: 'default', transformStyle: 'preserve-3d', willChange: 'transform',
+    }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}>
       <div style={{ fontSize: fontSizes.base, opacity: 0.45, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
-      <div style={{ fontSize: isMobile ? 18 : 22, color: highlight ? colors.green : '#e0e0e0', fontWeight: 700, marginTop: 4, minHeight: '1.2em' }}>{value}</div>
+      <div style={{ fontSize: isMobile ? 18 : 22, color: highlight ? colors.green : '#e0e0e0', fontWeight: 700, marginTop: 4, minHeight: '1.2em' }}>{displayVal || value}</div>
       {sub && <div style={{ fontSize: fontSizes.sm, fontWeight: 600, marginTop: 4, lineHeight: 1.4 }}>{sub}</div>}
     </div>
   )

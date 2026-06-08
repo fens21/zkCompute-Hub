@@ -806,9 +806,6 @@ function AppContent() {
 
   return (
     <div className="app-container">
-      {/* Lightweight static background (heavy animations removed for snappier navigation) */}
-      <div className={`app-bg app-bg--${tab}`} />
-
       <Navbar
         tab={tab} setTab={setTab}
         entered={entered}

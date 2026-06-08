@@ -1,7 +1,7 @@
 :root {
   --text: #C5C1C0;
   --text-h: #F7CE3E;
-  --bg: #0A1612;
+  --bg: #0a0a0a;
   --border: #1A2930;
   --code-bg: #1A2930;
   --accent: #F7CE3E;
@@ -35,7 +35,7 @@
 
 body {
   margin: 0;
-  background: #0A1612;
+  background: #0a0a0a;
   min-height: 100vh;
   position: relative;
 }
@@ -187,12 +187,18 @@ a:focus-visible,
 
 /* App Container */
 .app-container {
-  background: #0A1612;
   color: #C5C1C0;
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   min-height: 100vh;
   position: relative;
   overflow: hidden;
+  background:
+    radial-gradient(ellipse 600px 400px at 20% 25%, #1a6b3a 0%, transparent 60%),
+    radial-gradient(ellipse 500px 350px at 80% 35%, #1a5c8a 0%, transparent 55%),
+    radial-gradient(ellipse 450px 400px at 45% 75%, #b8860b 0%, transparent 50%),
+    radial-gradient(ellipse 550px 300px at 55% 20%, #d4a52e 0%, transparent 50%),
+    radial-gradient(ellipse 400px 450px at 30% 55%, #1a7a4a 0%, transparent 55%),
+    #0a0a0a;
 }
 
 /* Job card */
@@ -248,70 +254,4 @@ a:focus-visible,
 /* ============================================
    Background
    ============================================ */
-.app-bg {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-  background-size: 64px 64px, 64px 64px;
-}
 
-.app-bg::before {
-  content: '';
-  position: absolute; inset: 0;
-  pointer-events: none;
-}
-
-.app-bg--dashboard::before {
-  background:
-    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(247, 206, 62, 0.04) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 85% 80%, rgba(91, 126, 60, 0.03) 0%, transparent 55%);
-}
-
-.app-bg--market::before {
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 80%, rgba(194, 208, 153, 0.04) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 70% 15%, rgba(247, 206, 62, 0.03) 0%, transparent 55%);
-}
-
-.app-bg--post::before {
-  background:
-    radial-gradient(ellipse 75% 55% at 50% 30%, rgba(238, 250, 189, 0.04) 0%, transparent 60%),
-    radial-gradient(ellipse 65% 50% at 30% 70%, rgba(247, 206, 62, 0.02) 0%, transparent 55%);
-}
-
-.app-bg--my::before {
-  background:
-    radial-gradient(ellipse 70% 60% at 75% 25%, rgba(91, 126, 60, 0.04) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 25% 75%, rgba(194, 208, 153, 0.03) 0%, transparent 55%);
-}
-
-.app-bg--stats::before {
-  background:
-    radial-gradient(ellipse 80% 50% at 30% 30%, rgba(197, 193, 192, 0.04) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 55% at 70% 70%, rgba(247, 206, 62, 0.02) 0%, transparent 55%);
-}
-
-.app-bg--leaderboard::before {
-  background:
-    radial-gradient(ellipse 75% 55% at 50% 20%, rgba(247, 206, 62, 0.05) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 50% 80%, rgba(91, 126, 60, 0.03) 0%, transparent 55%);
-}
-
-.app-bg--profile::before {
-  background:
-    radial-gradient(ellipse 70% 50% at 25% 40%, rgba(238, 250, 189, 0.04) 0%, transparent 60%),
-    radial-gradient(ellipse 65% 55% at 75% 60%, rgba(197, 193, 192, 0.03) 0%, transparent 55%);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .app-bg {
-    background: #0A1612;
-  }
-  .app-bg::before {
-    display: none;
-  }
-}

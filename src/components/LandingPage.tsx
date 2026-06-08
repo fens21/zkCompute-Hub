@@ -89,6 +89,14 @@ const sectionTitle: CSSProperties = {
 }
 
 export function LandingPage() {
+  const bgGradient = `radial-gradient(ellipse 75% 55% at 18% 22%, rgba(60, 20, 80, 0.5) 0%, transparent 65%),
+radial-gradient(ellipse 65% 50% at 82% 32%, rgba(15, 30, 65, 0.45) 0%, transparent 60%),
+radial-gradient(ellipse 55% 65% at 48% 78%, rgba(70, 40, 10, 0.3) 0%, transparent 55%),
+radial-gradient(ellipse 85% 40% at 68% 55%, rgba(35, 10, 60, 0.35) 0%, transparent 60%),
+radial-gradient(ellipse 60% 75% at 28% 62%, rgba(20, 15, 50, 0.25) 0%, transparent 55%),
+radial-gradient(ellipse 70% 45% at 52% 18%, rgba(55, 30, 10, 0.18) 0%, transparent 60%),
+#0f0c14`
+
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const [copyAnnounce, setCopyAnnounce] = useState('')
@@ -127,21 +135,13 @@ export function LandingPage() {
     <div style={{
       ...cssVars, color: colors.textSecondary,
       fontFamily: "system-ui, 'Segoe UI', Roboto, sans-serif",
-      background: 'linear-gradient(180deg, #0a0a00 0%, #1a1200 30%, #0d0d00 60%, #050500 100%)',
+      background: bgGradient,
       minHeight: '100vh',
     }}>
       <main>
       {/* ── Hero ── */}
       <section className="lp-hero-section" aria-label="Hero" id="hero">
-        <div className="lp-aurora" />
-        <div className="lp-aurora2" />
-        <div className="lp-ring lp-ring-outer" />
-        <div className="lp-ring lp-ring-inner" />
-        <div className="lp-dot" style={{ top: '38%', left: '38%', animationDelay: '0s' }} />
-        <div className="lp-dot" style={{ top: '62%', left: '62%', animationDelay: '2s' }} />
-        <div className="lp-glow" />
-        <div className="lp-grid" />
-        <div className="lp-stars" />
+
 
         <div className="lp-hero-content">
           <div style={{ animation: 'fadeIn 0.8s ease-out 0s both' }}>
@@ -222,7 +222,7 @@ export function LandingPage() {
           <p style={{ color: colors.textDim, fontSize: fontSizes.lg }}>Built on LitVM — Litecoin's Virtual Machine</p>
         </div>
         <div role="status" aria-live="polite" className="sr-only">{copyAnnounce}</div>
-        <div className="lp-net-grid">
+        <div className="lp-net-card">
           {[
             ['Network Name', 'LitVM LiteForge'],
             ['Chain ID', '4441'],
@@ -249,10 +249,10 @@ export function LandingPage() {
           ))}
         </div>
         <div className="lp-quick-links">
-          <a href="https://liteforge.explorer.caldera.xyz" target="_blank" rel="noopener noreferrer" className="lp-ql-link">Explorer</a>
-          <a href="https://liteforge.hub.caldera.xyz" target="_blank" rel="noopener noreferrer" className="lp-ql-link">Faucet</a>
-          <a href="https://docs.litvm.com" target="_blank" rel="noopener noreferrer" className="lp-ql-link">Docs</a>
-          <a href="https://litvm.com" target="_blank" rel="noopener noreferrer" className="lp-ql-link">LitVM</a>
+          <a href="https://liteforge.explorer.caldera.xyz" target="_blank" rel="noopener noreferrer" className="lp-ql-btn" style={{ ...ctaBtnSx, textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>Explorer</a>
+          <a href="https://liteforge.hub.caldera.xyz" target="_blank" rel="noopener noreferrer" className="lp-ql-btn" style={{ ...ctaBtnSx, textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>Faucet</a>
+          <a href="https://docs.litvm.com" target="_blank" rel="noopener noreferrer" className="lp-ql-btn" style={{ ...ctaBtnSx, textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>Docs</a>
+          <a href="https://litvm.com" target="_blank" rel="noopener noreferrer" className="lp-ql-btn" style={{ ...ctaBtnSx, textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>LitVM</a>
         </div>
       </section>
 
@@ -270,7 +270,7 @@ export function LandingPage() {
                 <span>{item.q}</span>
                 <span className="lp-faq-arrow">{openFaq === i ? '−' : '+'}</span>
               </button>
-              <div id={`faq-answer-${i}`} role="region" className="lp-faq-a" style={{ maxHeight: openFaq === i ? 300 : 0 }}>{item.a}</div>
+              <div id={`faq-answer-${i}`} role="region" className="lp-faq-a" style={{ maxHeight: openFaq === i ? 120 : 0 }}>{item.a}</div>
             </div>
           ))}
         </div>

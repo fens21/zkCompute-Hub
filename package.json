@@ -23,7 +23,7 @@
     "react-router-dom": "^7.16.0",
     "snarkjs": "^0.7.6",
     "viem": "^2.50.4",
-    "wagmi": "^3.6.15"
+    "wagmi": "^2.19.5"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.1.2",
