@@ -65,13 +65,13 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
 
   // Subtle entrance animation helper
   const fadeIn = (delay = 0) => ({
-    animation: `fadeIn 0.65s cubic-bezier(0.23, 1, 0.32, 1) ${delay}s both`
+    animation: `fadeIn 0.3s ease-out ${delay}s both`
   })
 
   // Glassmorphism effect (dark theme)
   const glass = {
     background: colors.bgCard,
-    backdropFilter: 'blur(18px)',
+    backdropFilter: 'blur(8px)',
     border: '1px solid rgba(197,193,192,0.06)',
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15)',
   } as const
@@ -186,7 +186,7 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
                 ...glass,
                 borderRadius: 16, 
                 padding: '16px 18px',
-                transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s, border 0.3s',
+                transition: 'transform 0.12s, box-shadow 0.12s, border 0.12s',
                 outline: 'none'
               }}
               onMouseEnter={glassHover}
@@ -252,7 +252,7 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
                 padding: '16px 18px',
                 display: 'flex',
                 flexDirection: 'column',
-                transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s, border 0.3s',
+                transition: 'transform 0.12s, box-shadow 0.12s, border 0.12s',
                 outline: 'none'
               }}
               onMouseEnter={glassHover}
@@ -312,7 +312,7 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
                     height: '100%', 
                     width: `${Math.min(100, (reputationPoints % 100))}%`, 
                     background: `linear-gradient(90deg, ${colors.gold}, ${colors.goldDark})`,
-                    transition: 'width .5s cubic-bezier(0.4, 0, 0.2, 1)'
+                    transition: 'width .2s'
                   }} />
                 </div>
                 <div style={{ fontSize: 11, color: colors.textDim, marginTop: 5, display: 'flex', justifyContent: 'space-between' }}>
@@ -337,7 +337,7 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
                 ...glass,
                 borderRadius: 16, 
                 padding: '16px 18px',
-                transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s, border 0.3s',
+                transition: 'transform 0.12s, box-shadow 0.12s, border 0.12s',
                 outline: 'none'
               }}
               onMouseEnter={glassHover}
@@ -392,7 +392,7 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
                 ...glass,
                 borderRadius: 16, 
                 padding: '16px 18px',
-                transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s, border 0.3s',
+                transition: 'transform 0.12s, box-shadow 0.12s, border 0.12s',
                 outline: 'none'
               }}
               onMouseEnter={glassHover}
@@ -440,7 +440,7 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
                 ...glass,
                 borderRadius: 16, 
                 padding: '14px 16px',
-                transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s, border 0.3s',
+                transition: 'transform 0.12s, box-shadow 0.12s, border 0.12s',
                 outline: 'none'
               }}
               onMouseEnter={glassHover}
@@ -492,7 +492,7 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
                 ...glass,
                 borderRadius: 16, 
                 padding: '14px 16px',
-                transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s, border 0.3s'
+                transition: 'transform 0.12s, box-shadow 0.12s, border 0.12s'
               }}
               onMouseEnter={glassHover}
               onMouseLeave={glassLeave}
@@ -529,7 +529,7 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
                 ...glass,
                 borderRadius: 16, 
                 padding: '14px 16px',
-                transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s, border 0.3s',
+                transition: 'transform 0.12s, box-shadow 0.12s, border 0.12s',
                 outline: 'none'
               }}
               onMouseEnter={glassHover}
@@ -607,7 +607,7 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
-                    transition: 'all 0.2s cubic-bezier(0.23,1,0.32,1)',
+                    transition: 'all 0.1s',
                     backdropFilter: 'blur(8px)'
                   }}
                   onMouseEnter={e => { 
@@ -718,7 +718,7 @@ function StatCard({ icon, label, value, sub }: { icon: string; label: string; va
         borderRadius: 16, 
         padding: '14px 16px',
         height: 110,
-        transition: 'transform 0.25s cubic-bezier(0.23,1,0.32,1), box-shadow 0.25s, border 0.25s',
+        transition: 'transform 0.12s, box-shadow 0.12s, border 0.12s',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
