@@ -8,10 +8,17 @@ import type { LeaderboardEntry, Job } from '../types'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 const CACHE_DURATION = 5 * 60 * 1000
+const CACHE_STORAGE_KEY = 'zkcompute_leaderboard'
 const SUBGRAPH_URL = import.meta.env.VITE_SUBGRAPH_URL || ''
 
 export function useLeaderboard() {
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(() => {
+    try {
+      const cached = localStorage.getItem(CACHE_STORAGE_KEY)
+      if (cached) return JSON.parse(cached)
+    } catch {}
+    return []
+  })
   const [loading, setLoading] = useState(false)
   const cacheRef = useRef<{ data: LeaderboardEntry[]; time: number } | null>(null)
   const fetchingRef = useRef(false)
@@ -63,6 +70,7 @@ export function useLeaderboard() {
       entries.sort((a, b) => b.points - a.points)
       cacheRef.current = { data: entries, time: Date.now() }
       setLeaderboard(entries)
+      localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(entries))
       return true
     } catch {
       console.warn('Subgraph unavailable, falling back to on-chain')
@@ -175,6 +183,7 @@ export function useLeaderboard() {
       const sorted = [...merged.values()].sort((a, b) => b.points - a.points)
       cacheRef.current = { data: sorted, time: Date.now() }
       setLeaderboard(sorted)
+      localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(sorted))
     } catch (e) {
       console.error('Failed to fetch leaderboard:', e)
     }
