@@ -49,7 +49,6 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
     { label: 'Last week', amount: Math.round(totalEarned * 0.3) },
     { label: 'This week', amount: Math.round(totalEarned * 0.3) },
   ] : []
-  const maxWeekly = Math.max(...weeklyData.map(d => d.amount), 1)
   const chartData = realWeeklyEarnings ?? weeklyData
   const chartMax = Math.max(...chartData.map(d => d.amount), 1)
 
