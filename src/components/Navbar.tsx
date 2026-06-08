@@ -76,37 +76,6 @@ function NavbarImpl({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, not
 
   return (
     <>
-      <style>{`
-        @keyframes glassPulse {
-          0%, 100% { box-shadow: 0 0 6px rgba(247,206,62,0.15), 0 0 0 rgba(247,206,62,0); }
-          50% { box-shadow: 0 0 12px rgba(247,206,62,0.3), 0 0 4px rgba(247,206,62,0.1); }
-        }
-        @keyframes glassShimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-        .tab-active {
-          animation: glassPulse 3s ease-in-out infinite;
-        }
-        .tab-inactive {
-          position: relative;
-          overflow: hidden;
-        }
-        .tab-inactive::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(90deg, transparent 0%, rgba(247,206,62,0.06) 50%, transparent 100%);
-          background-size: 200% 100%;
-          opacity: 0;
-          transition: opacity 0.3s;
-          pointer-events: none;
-        }
-        .tab-inactive:hover::after {
-          opacity: 1;
-          animation: glassShimmer 1.5s ease-in-out infinite;
-        }
-      `}</style>
       <nav style={{
         background: '#1A2930',
         borderBottom: `1px solid rgba(247, 206, 62, 0.15)`,
@@ -363,7 +332,7 @@ function NavbarImpl({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, not
 
 function TabButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
   return (
-    <button onClick={onClick} aria-label={`${label} tab`} aria-current={active ? 'page' : undefined} className={active ? 'tab-active' : 'tab-inactive'} style={{
+    <button onClick={onClick} aria-label={`${label} tab`} aria-current={active ? 'page' : undefined} style={{
       background: active ? 'rgba(247,206,62,0.1)' : 'rgba(197,193,192,0.04)',
       border: active ? `2px solid ${colors.gold}55` : '2px solid rgba(197,193,192,0.06)',
       padding: '7px 14px',
@@ -375,13 +344,7 @@ function TabButton({ active, onClick, label }: { active: boolean; onClick: () =>
       minWidth: 90,
       backdropFilter: 'blur(8px)',
       WebkitBackdropFilter: 'blur(8px)',
-      transition: 'all 0.2s ease',
-    }}
-      onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(247,206,62,0.08)'; e.currentTarget.style.color = colors.textPrimary; e.currentTarget.style.borderColor = `${colors.gold}33`; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
-      onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'rgba(197,193,192,0.04)'; e.currentTarget.style.color = colors.textDim; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.06)'; e.currentTarget.style.transform = 'translateY(0)'; } }}
-      onFocus={e => { if (!active) { e.currentTarget.style.background = 'rgba(247,206,62,0.08)'; e.currentTarget.style.color = colors.textPrimary; e.currentTarget.style.borderColor = `${colors.gold}33`; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
-      onBlur={e => { if (!active) { e.currentTarget.style.background = 'rgba(197,193,192,0.04)'; e.currentTarget.style.color = colors.textDim; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.06)'; e.currentTarget.style.transform = 'translateY(0)'; } }}
-    >
+    }}>
       {label}
     </button>
   )
