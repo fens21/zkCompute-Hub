@@ -153,7 +153,8 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
             display: 'grid', 
             gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)', 
             gap: 11, 
-            marginBottom: 20 
+            marginBottom: 20,
+            alignItems: 'stretch'
           }}>
             <div style={fadeIn(0)}><StatCard icon="💰" label="Total Earnings" value={earnedUsd ? formatUsd(earnedUsd) : fmt(totalEarned) + ' zkLTC'} sub={earnedUsd ? fmt(totalEarned) + ' zkLTC' : totalEarned > 0 ? '+12% this month' : 'No earnings yet'} /></div>
             <div style={fadeIn(0.08)}><StatCard icon="✅" label="Jobs Completed" value={jobsCompleted.toString()} sub={jobsCompleted > 0 ? 'Paid on-chain & verified via zk-proofs' : 'No completed jobs yet'} /></div>
@@ -709,7 +710,7 @@ function StatCard({ icon, label, value, sub }: { icon: string; label: string; va
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15)',
         borderRadius: 16, 
         padding: '14px 16px',
-        minHeight: 84,
+        height: 110,
         transition: 'transform 0.25s cubic-bezier(0.23,1,0.32,1), box-shadow 0.25s, border 0.25s',
         display: 'flex',
         flexDirection: 'column',
