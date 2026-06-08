@@ -31,7 +31,7 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
   useEffect(() => { setPage(1) }, [leaderboard.length])
 
   const hasData = leaderboard.length > 0
-  const inferredError = !leaderboardLoading && !hasData && (onChainJobs?.length ?? 0) > 0
+  const inferredError = false
 
   if (inferredError) {
     return (

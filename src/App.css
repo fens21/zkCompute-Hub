@@ -182,3 +182,18 @@
     border-right-color: var(--border);
   }
 }
+
+/* Fix RainbowKit modal terlalu besar di mobile */
+@media (max-width: 768px) {
+  [data-rk] [role="dialog"] {
+    max-width: 92vw !important;
+    width: 92vw !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    margin: 0 !important;
+  }
+
+  [data-rk] {
+    --rk-connectModalMobileBottomSheetBorderRadius: 16px;
+  }
+}
