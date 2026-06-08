@@ -197,3 +197,13 @@
     --rk-connectModalMobileBottomSheetBorderRadius: 16px;
   }
 }
+
+body {
+  background: linear-gradient(135deg, #0a0a00 0%, #1a1200 40%, #0d0d00 70%, #050500 100%) !important;
+  background-attachment: fixed !important;
+  min-height: 100vh;
+}
+
+.app-container {
+  background: transparent !important;
+}
