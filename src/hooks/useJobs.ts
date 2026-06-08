@@ -20,6 +20,7 @@ function parseJob(raw: [bigint, string, string, bigint, string, string, bigint, 
     title: raw[1],
     type: raw[2],
     reward: rewardNum,
+    active: raw[8] as boolean,
     deadline: '',
     description: `${raw[2]} job — ${rewardNum} ${tokenSymbol} reward`,
     requirements: `Posted by ${(raw[5] as string).slice(0, 6)}...`,
@@ -67,7 +68,7 @@ async function fetchJobsBatch(ids: number[]): Promise<Job[]> {
 
   const jobs: Job[] = []
   for (const result of results) {
-    if (result.status === 'fulfilled' && result.value[8]) {
+    if (result.status === 'fulfilled' && result.value[0] > 0n ) {
       jobs.push(parseJob(result.value))
     }
   }
@@ -109,7 +110,7 @@ export function useJobs(autoFetch: boolean) {
       const merged = mergeMetadata(onChain, metaMap)
 
       setOnChainJobs(merged)
-      setJobs(merged)
+      setJobs(merged.filter(j => j.active !== false))
     } catch (e) {
       console.error('Failed to fetch on-chain jobs:', e)
       setError('Failed to load jobs. Please check your wallet connection.')

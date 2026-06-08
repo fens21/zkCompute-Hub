@@ -19,6 +19,7 @@ export interface Job {
   inputData?: string
   expectedOutput?: string
   verificationMethod?: string
+  active?: boolean
 }
 
 export interface Notification {
