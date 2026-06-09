@@ -540,41 +540,6 @@ export function ChatRoom({
               End Chat
             </button>
           )}
-          {canApproveReject && (
-            <div style={{ display: "flex", gap: 6 }}>
-              <button
-                onClick={approveClose}
-                style={{
-                  color: "#34d399", background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.2)",
-                  cursor: "pointer", padding: "4px 10px", borderRadius: radii.md, fontSize: fontSizes.xs,
-                  fontWeight: 500, transition: "all 0.15s", whiteSpace: "nowrap",
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = "rgba(52,211,153,0.2)"; e.currentTarget.style.borderColor = "rgba(52,211,153,0.4)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "rgba(52,211,153,0.1)"; e.currentTarget.style.borderColor = "rgba(52,211,153,0.2)"; }}
-                aria-label="Approve end chat"
-              >
-                Approve
-              </button>
-              <button
-                onClick={rejectClose}
-                style={{
-                  color: "#fbbf24", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)",
-                  cursor: "pointer", padding: "4px 10px", borderRadius: radii.md, fontSize: fontSizes.xs,
-                  fontWeight: 500, transition: "all 0.15s", whiteSpace: "nowrap",
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = "rgba(251,191,36,0.2)"; e.currentTarget.style.borderColor = "rgba(251,191,36,0.4)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "rgba(251,191,36,0.1)"; e.currentTarget.style.borderColor = "rgba(251,191,36,0.2)"; }}
-                aria-label="Reject end chat"
-              >
-                Reject
-              </button>
-            </div>
-          )}
-          {isClosingRequested && requestedByMe && (
-            <span style={{ fontSize: fontSizes.xs, color: "#fbbf24", fontWeight: 500, whiteSpace: "nowrap" }}>
-              Waiting for approval\u2026
-            </span>
-          )}
           {mode === "floating" && (
             <button
               onClick={() => setIsOpen(false)}
@@ -586,6 +551,55 @@ export function ChatRoom({
               </svg>
             </button>
           )}
+        </div>
+      )}
+
+      {canApproveReject && (
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(251,191,36,0.15)", background: "rgba(251,191,36,0.04)", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#fbbf24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+          <span style={{ flex: 1, fontSize: fontSizes.sm, color: "#fbbf24" }}>
+            {room?.closing_requested_by === posterAddress?.toLowerCase() ? "Poster" : "Worker"} wants to end this chat.
+          </span>
+          <button
+            onClick={approveClose}
+            style={{ color: "#34d399", background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.25)", cursor: "pointer", padding: "5px 12px", borderRadius: radii.md, fontSize: fontSizes.xs, fontWeight: 600, transition: "all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(52,211,153,0.22)"; e.currentTarget.style.borderColor = "rgba(52,211,153,0.4)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(52,211,153,0.12)"; e.currentTarget.style.borderColor = "rgba(52,211,153,0.25)"; }}
+          >
+            Approve
+          </button>
+          <button
+            onClick={rejectClose}
+            style={{ color: "#fbbf24", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", cursor: "pointer", padding: "5px 12px", borderRadius: radii.md, fontSize: fontSizes.xs, fontWeight: 600, transition: "all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(251,191,36,0.2)"; e.currentTarget.style.borderColor = "rgba(251,191,36,0.35)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(251,191,36,0.1)"; e.currentTarget.style.borderColor = "rgba(251,191,36,0.2)"; }}
+          >
+            Reject
+          </button>
+        </div>
+      )}
+
+      {isClosingRequested && requestedByMe && (
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(251,191,36,0.1)", background: "rgba(251,191,36,0.03)", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#fbbf24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span style={{ fontSize: fontSizes.sm, color: "#fbbf24" }}>
+            You requested to end this chat. Waiting for the other party to approve\u2026
+          </span>
+        </div>
+      )}
+
+      {isClosed && (
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(113,113,122,0.15)", background: "rgba(113,113,122,0.04)", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#34d399" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span style={{ fontSize: fontSizes.sm, color: "#a1a1aa" }}>
+            This chat has been ended.
+          </span>
         </div>
       )}
 
