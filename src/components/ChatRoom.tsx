@@ -452,7 +452,17 @@ export function ChatRoom({
   const roomStatus = room?.status || "active";
   const isClosed = roomStatus === "closed";
   const isClosingRequested = roomStatus === "closing_requested";
-  const requestedByMe = isClosingRequested && room?.closing_requested_by === walletAddress?.toLowerCase();
+
+  const closeRequestMsg = [...messages].reverse().find(
+    (m) => m.is_system && m.content.includes("has requested to end this chat")
+  );
+  const closeRequesterIsPoster = closeRequestMsg?.content.startsWith("Poster");
+  const closeRequesterIsWorker = closeRequestMsg?.content.startsWith("Worker");
+  const iAmPoster = posterAddress && walletAddress?.toLowerCase() === posterAddress.toLowerCase();
+  const requestedByMe = isClosingRequested && (
+    (closeRequesterIsPoster && iAmPoster) ||
+    (closeRequesterIsWorker && !iAmPoster)
+  );
   const canApproveReject = isClosingRequested && !requestedByMe;
 
   const typingOtherUsers = typingUsers.filter((u) => u !== walletAddress?.toLowerCase());
@@ -560,7 +570,7 @@ export function ChatRoom({
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
           </svg>
           <span style={{ flex: 1, fontSize: fontSizes.sm, color: "#fbbf24" }}>
-            {room?.closing_requested_by === posterAddress?.toLowerCase() ? "Poster" : "Worker"} wants to end this chat.
+            {closeRequesterIsPoster ? "Poster" : "Worker"} wants to end this chat.
           </span>
           <button
             onClick={approveClose}
