@@ -10,7 +10,6 @@ import {
 import { colors, radii, fontSizes } from "../styles/tokens";
 import { useIsMobile, useWindowWidth } from "../hooks/useIsMobile";
 import { JOB_TYPE_CONFIGS } from "../constants/jobTypes";
-
 type ViewMode = "grid" | "list";
 
 export function MyJobs({
@@ -22,6 +21,7 @@ export function MyJobs({
   submittingProof,
   onDispute,
   onResolveDispute,
+  walletAddress,
 }: {
   myJobs: Job[];
   onOpenProof: (job: Job) => void;
@@ -31,6 +31,7 @@ export function MyJobs({
   submittingProof?: boolean;
   onDispute: (job: Job, worker?: string) => void;
   onResolveDispute: (job: Job, acceptCancel: boolean) => void;
+  walletAddress?: string;
 }) {
   const [now, setNow] = useState(Date.now());
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
@@ -86,32 +87,35 @@ export function MyJobs({
     );
   }
 
+  const sortDesc = (a: Job, b: Job) => b.id - a.id;
+
   const activeJobs = myJobs.filter(
     (j) =>
       j.status === "claimed" &&
       (getDeadlineMs(j.createdAt, j.deadline) ?? Infinity) > now,
-  );
+  ).sort(sortDesc);
   const expiredJobs = myJobs.filter(
     (j) =>
       j.status === "claimed" &&
       (getDeadlineMs(j.createdAt, j.deadline) ?? Infinity) <= now,
-  );
-  const completedJobs = myJobs.filter((j) => j.status === "completed");
-  const disputedJobs = myJobs.filter((j) => j.status === "disputed");
-  const paidJobs = myJobs.filter((j) => j.status === "paid");
+  ).sort(sortDesc);
+  const completedJobs = myJobs.filter((j) => j.status === "completed").sort(sortDesc);
+  const disputedJobs = myJobs.filter((j) => j.status === "disputed").sort(sortDesc);
+  const paidJobs = myJobs.filter((j) => j.status === "paid").sort(sortDesc);
 
   return (
     <div>
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
+          flexDirection: "column",
           alignItems: "center",
+          gap: 8,
           marginBottom: 24,
         }}
       >
         <h2 style={{ fontSize: 20, margin: 0 }}>My Jobs</h2>
-        <div style={{ display: "flex", gap: 4 }}>
+        <div style={{ display: "flex", gap: 4, alignSelf: "flex-end" }}>
           <button
             type="button"
             onClick={() => setViewMode("grid")}
@@ -195,18 +199,26 @@ export function MyJobs({
               return (
                 <div key={job.id}>
                   {viewMode === "list" ? (
-                    <ActiveRow
-                      job={job}
-                      now={now}
-                      onOpenProof={onOpenProof}
-                      onSubmitZKProof={onSubmitZKProof}
-                      onUnclaim={onUnclaim}
-                      submittingProof={submittingProof ?? false}
-                    />
+                    <>
+                      <ActiveRow
+                        job={job}
+                        now={now}
+                        onOpenProof={onOpenProof}
+                        onSubmitZKProof={onSubmitZKProof}
+                        onUnclaim={onUnclaim}
+                        submittingProof={submittingProof ?? false}
+                        onChat={() =>
+                          navigate(`/chat/${job.id}`, {
+                            state: { posterAddress: job.poster, jobTitle: job.title, hasClaimed: true, workerAddress: walletAddress },
+                          })
+                        }
+                      />
+                    </>
                   ) : (
-                    <div
-                      className="job-card"
-                      style={cardStyle(true, isMobile, expired)}
+                    <>
+                      <div
+                        className="job-card"
+                        style={cardStyle(true, isMobile, expired)}
                     >
                       <CardHeader job={job} now={now} />
                       <div
@@ -239,9 +251,10 @@ export function MyJobs({
                                 submittingProof || expired ? "#555" : "#a78bfa",
                               color: "#000",
                               border: "none",
-                              padding: 10,
-                              fontWeight: 700,
+                              padding: "6px 10px",
+                              fontWeight: 600,
                               borderRadius: radii.sm,
+                              fontSize: fontSizes.sm,
                               cursor:
                                 submittingProof || expired
                                   ? "not-allowed"
@@ -269,9 +282,10 @@ export function MyJobs({
                                   : colors.gold,
                               color: "#000",
                               border: "none",
-                              padding: 10,
-                              fontWeight: 700,
+                              padding: "6px 10px",
+                              fontWeight: 600,
                               borderRadius: radii.sm,
+                              fontSize: fontSizes.sm,
                               cursor:
                                 submittingProof || expired
                                   ? "not-allowed"
@@ -284,7 +298,8 @@ export function MyJobs({
                               : expired
                               ? "EXPIRED"
                               : "SUBMIT PROOF"}
-                          </button>
+
+                        </button>
                         )}
                         <button
                           type="button"
@@ -309,9 +324,10 @@ export function MyJobs({
                                 ? "#000"
                                 : colors.red,
                             border: `1px solid ${colors.red}`,
-                            padding: 10,
+                            padding: "6px 10px",
                             fontWeight: 600,
                             borderRadius: radii.sm,
+                            fontSize: fontSizes.sm,
                             cursor: submittingProof ? "not-allowed" : "pointer",
                             opacity: submittingProof ? 0.4 : 1,
                           }}
@@ -321,6 +337,28 @@ export function MyJobs({
                             : expired
                             ? "RELEASE (EXPIRED)"
                             : "UNCLAIM"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(`/chat/${job.id}`, {
+                              state: { posterAddress: job.poster, jobTitle: job.title, hasClaimed: true, workerAddress: walletAddress },
+                            })
+                          }
+                          aria-label="Chat"
+                          style={{
+                            flex: 1,
+                            background: "transparent",
+                            color: colors.textMuted,
+                            border: `1px solid ${colors.border}`,
+                            padding: "6px 10px",
+                            borderRadius: radii.sm,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontSize: fontSizes.sm,
+                          }}
+                        >
+                          CHAT
                         </button>
                       </div>
                       {expired && (
@@ -335,6 +373,7 @@ export function MyJobs({
                         </div>
                       )}
                     </div>
+                    </>
                   )}
                 </div>
               );
@@ -1346,6 +1385,7 @@ function ActiveRow({
   onSubmitZKProof,
   onUnclaim,
   submittingProof,
+  onChat,
 }: {
   job: Job;
   now: number;
@@ -1353,6 +1393,7 @@ function ActiveRow({
   onSubmitZKProof?: (job: Job) => void;
   onUnclaim?: (jobId: number) => void;
   submittingProof: boolean;
+  onChat?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [confirmingUnclaim, setConfirmingUnclaim] = useState(false);
@@ -1447,6 +1488,23 @@ function ActiveRow({
             : expired
             ? "RELEASE (EXPIRED)"
             : "UNCLAIM"}
+        </button>
+        <button
+          type="button"
+          onClick={onChat}
+          aria-label="Chat"
+          style={{
+            background: "transparent",
+            color: colors.textMuted,
+            border: `1px solid ${colors.border}`,
+            padding: "6px 12px",
+            borderRadius: radii.sm,
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: fontSizes.sm,
+          }}
+        >
+          CHAT
         </button>
       </div>
     </TableRow>

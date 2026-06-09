@@ -1,9 +1,11 @@
 import { useRef, useEffect, useState, memo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAccount, useDisconnect, useBalance } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import type { Tab, Notification } from '../types'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { colors, radii, fontSizes } from '../styles/tokens'
+import { chatStore } from '../store/chatStore'
 
 function NavbarImpl({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, notifications, setNotifications, showNotifications, setShowNotifications }: {
   tab: Tab
@@ -22,8 +24,14 @@ function NavbarImpl({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, not
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showWalletMenu, setShowWalletMenu] = useState(false)
   const isMobile = useIsMobile()
+  const navigate = useNavigate()
   const { address } = useAccount()
   const { disconnect } = useDisconnect()
+  const [chatUnread, setChatUnread] = useState(0)
+
+  useEffect(() => {
+    return chatStore.subscribe(() => setChatUnread(chatStore.getTotal()));
+  }, [])
   const { data: balance } = useBalance({ address, chainId: 4441 })
 
   useEffect(() => {
@@ -168,6 +176,29 @@ function NavbarImpl({ tab, setTab, entered, onSwitchNetwork, isWrongNetwork, not
                 </div>
               )}
             </div>
+          )}
+
+          {/* Chat */}
+          {entered && (
+            <button
+              onClick={() => navigate('/chat')}
+              aria-label="Open chat"
+              style={{ background: colors.bgCard, border: '2px solid rgba(197,193,192,0.06)', padding: '7px 10px', borderRadius: radii.md, cursor: 'pointer', position: 'relative', fontSize: 16, lineHeight: 1, transition: 'all 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.borderColor = `${colors.gold}33` }}
+              onMouseLeave={e => { e.currentTarget.style.background = colors.bgCard; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.06)' }}
+              onFocus={e => { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.borderColor = `${colors.gold}33` }}
+              onBlur={e => { e.currentTarget.style.background = colors.bgCard; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.06)' }}>
+              💬
+              {chatUnread > 0 && (
+                <span style={{
+                  position: 'absolute', top: -4, right: -4, width: 18, height: 18, borderRadius: '50%',
+                  background: '#ef4444', color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {chatUnread > 9 ? '9+' : chatUnread}
+                </span>
+              )}
+            </button>
           )}
 
           {/* Wallet — RainbowKit ConnectButton.Custom */}

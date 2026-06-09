@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { readContract } from '@wagmi/core'
 import { keccak256 } from 'viem'
 import abi from '../abi/JobMarketplace.json'
@@ -15,6 +16,7 @@ export function PostedJobCard({ job, onRelease, onDeactivate, onDispute, loading
   const [claimantsLoading, setClaimantsLoading] = useState(true)
   const [claimantsRefreshKey, setClaimantsRefreshKey] = useState(0)
   const prevReleaseKey = useRef(releaseRefreshKey)
+  const navigate = useNavigate()
   useEffect(() => {
     if (releaseRefreshKey !== undefined && releaseRefreshKey !== prevReleaseKey.current) {
       prevReleaseKey.current = releaseRefreshKey
@@ -82,21 +84,22 @@ export function PostedJobCard({ job, onRelease, onDeactivate, onDispute, loading
         </div>
         <div style={{ display: 'flex', gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
           {onEdit && <button type="button" onClick={() => onEdit(job)} disabled={isExpired} aria-label={`Edit job: ${job.title}`} style={{ background: 'transparent', color: isExpired ? '#555' : colors.gold, border: `1px solid ${isExpired ? '#444' : colors.gold}`, padding: '3px 10px', borderRadius: radii.sm, cursor: isExpired ? 'not-allowed' : 'pointer', fontSize: fontSizes.xs, fontWeight: 600, opacity: isExpired ? 0.4 : 1 }} title={isExpired ? 'Cannot edit expired jobs' : ''}>EDIT</button>}
+          <button type="button" onClick={() => navigate(`/chat/${job.id}`, { state: { posterAddress: job.poster, jobTitle: job.title, hasClaimed: false, workerAddress: claimantsList[0] || '' } })} style={{ background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.border}`, padding: '3px 10px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 600 }}>CHAT</button>
           <button type="button" onClick={() => onDeactivate(job)} disabled={deactivating} aria-label={`Cancel and refund job: ${job.title}`} style={{ background: colors.red, color: '#000', border: 'none', padding: '4px 10px', borderRadius: radii.sm, cursor: deactivating ? 'not-allowed' : 'pointer', fontSize: fontSizes.xs, fontWeight: 700, opacity: deactivating ? 0.5 : 1 }}>{deactivating ? 'CANCELLING...' : 'CANCEL & REFUND'}</button>
         </div>
       </div>
 
-      {listOpen && claimantsList.length > 0 && !claimantsLoading && (
+      <div style={{ overflow: 'hidden', transition: 'max-height 0.35s cubic-bezier(0.33, 1, 0.68, 1)', maxHeight: listOpen && claimantsList.length > 0 && !claimantsLoading ? 600 : 0 }}>
         <div style={{ borderTop: `1px solid ${colors.border}`, padding: '8px 16px 12px', background: colors.bgElevated }}>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
             <button type="button" onClick={refreshClaimants} aria-label="Refresh claimants" style={{ background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.border}`, padding: '2px 8px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs }}>↻ Refresh</button>
           </div>
-          <CheckProofs jobId={job.id} claimants={claimantsList} claimantsRefreshKey={claimantsRefreshKey} onRelease={handleReleaseRequest} job={job} loading={loading} onDispute={onDispute} />
+          <CheckProofs jobId={job.id} claimants={claimantsList} claimantsRefreshKey={claimantsRefreshKey} onRelease={handleReleaseRequest} job={job} loading={loading} onDispute={onDispute} onChat={(w) => navigate(`/chat/${job.id}`, { state: { posterAddress: job.poster, jobTitle: job.title, hasClaimed: false, workerAddress: w } })} />
         </div>
-      )}
+      </div>
     </>
   ) : (
-    <div className="job-card" style={{ background: colors.bgCard, border: `1px solid ${isExpired ? colors.red : colors.gold}`, borderRadius: radii.xl, padding: 24, opacity: isExpired ? 0.65 : 1, display: 'flex', flexDirection: 'column' }}>
+    <div className="job-card" style={{ background: colors.bgCard, border: `1px solid ${isExpired ? colors.red : colors.gold}`, borderRadius: radii.xl, padding: 16, opacity: isExpired ? 0.65 : 1, display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div style={{ fontSize: fontSizes.xl, fontWeight: 700 }}>{job.title}</div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -113,10 +116,21 @@ export function PostedJobCard({ job, onRelease, onDeactivate, onDispute, loading
         <div style={{ fontSize: fontSizes.sm, opacity: 0.5, padding: '8px 0', textAlign: 'center' }}>Loading claimants...</div>
       ) : claimantsList.length > 0 ? (
         <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: 12, marginTop: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
-            <button type="button" onClick={refreshClaimants} aria-label="Refresh claimants" style={{ background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.border}`, padding: '2px 8px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs }}>↻ Refresh</button>
+          <div
+            onClick={() => setListOpen(!listOpen)}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+          >
+            <CheckProofsSummary jobId={job.id} claimants={claimantsList} claimantsRefreshKey={claimantsRefreshKey} />
+            <span style={{ color: colors.textMuted, fontSize: fontSizes.sm }}>{listOpen ? '−' : '+'}</span>
           </div>
-          <CheckProofs jobId={job.id} claimants={claimantsList} claimantsRefreshKey={claimantsRefreshKey} onRelease={handleReleaseRequest} job={job} loading={loading} onDispute={onDispute} />
+          <div style={{ overflow: 'hidden', transition: 'max-height 0.35s cubic-bezier(0.33, 1, 0.68, 1)', maxHeight: listOpen ? 600 : 0 }}>
+            <div style={{ marginTop: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
+                <button type="button" onClick={refreshClaimants} aria-label="Refresh claimants" style={{ background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.border}`, padding: '2px 8px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs }}>↻ Refresh</button>
+              </div>
+              <CheckProofs jobId={job.id} claimants={claimantsList} claimantsRefreshKey={claimantsRefreshKey} onRelease={handleReleaseRequest} job={job} loading={loading} onDispute={onDispute} onChat={(w) => navigate(`/chat/${job.id}`, { state: { posterAddress: job.poster, jobTitle: job.title, hasClaimed: false, workerAddress: w } })} />
+            </div>
+          </div>
         </div>
       ) : (
         <div>
@@ -124,6 +138,7 @@ export function PostedJobCard({ job, onRelease, onDeactivate, onDispute, loading
             <span style={{ opacity: 0.5 }}>No workers claimed yet</span>
             <div style={{ display: 'flex', gap: 6 }}>
               {onEdit && <button type="button" onClick={() => onEdit(job)} disabled={isExpired} aria-label={`Edit job: ${job.title}`} style={{ background: 'transparent', color: isExpired ? '#555' : colors.gold, border: `1px solid ${isExpired ? '#444' : colors.gold}`, padding: '4px 12px', borderRadius: radii.sm, cursor: isExpired ? 'not-allowed' : 'pointer', fontSize: fontSizes.sm, fontWeight: 600, opacity: isExpired ? 0.4 : 1 }} title={isExpired ? 'Cannot edit expired jobs' : ''}>EDIT</button>}
+              <button type="button" onClick={() => navigate(`/chat/${job.id}`, { state: { posterAddress: job.poster, jobTitle: job.title, hasClaimed: false, workerAddress: claimantsList[0] || '' } })} style={{ background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.border}`, padding: '4px 12px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.sm, fontWeight: 600 }}>CHAT</button>
               <button type="button" onClick={() => onDeactivate(job)} disabled={deactivating} aria-label={`Cancel and refund job: ${job.title}`} style={{ background: colors.red, color: '#000', border: 'none', padding: '6px 14px', borderRadius: radii.sm, cursor: deactivating ? 'not-allowed' : 'pointer', fontSize: fontSizes.sm, fontWeight: 700, opacity: deactivating ? 0.5 : 1 }}>{deactivating ? 'CANCELLING...' : job.claimedCount > 0 ? `CANCEL & REFUND (${job.claimedCount})` : 'CANCEL & REFUND'}</button>
             </div>
           </div>
@@ -153,7 +168,46 @@ export function PostedJobCard({ job, onRelease, onDeactivate, onDispute, loading
 )
 }
 
-function CheckProofs({ jobId, claimants, claimantsRefreshKey, onRelease, job, loading, onDispute }: { jobId: number; claimants: string[]; claimantsRefreshKey: number; onRelease: (worker: string, j: Job) => void; job: Job; loading: boolean; onDispute: (j: Job, worker?: string) => void }) {
+function CheckProofsSummary({ jobId, claimants, claimantsRefreshKey }: { jobId: number; claimants: string[]; claimantsRefreshKey: number }) {
+  const [pending, setPending] = useState(0)
+  const [claimed, setClaimed] = useState(0)
+  const [paid, setPaid] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    const fetchAll = async () => {
+      const results = await Promise.all(claimants.map(async (addr) => {
+        try {
+          const [hasProof, , isPaid] = await Promise.all([
+            readContract(config, { address: CONTRACT_ADDRESS as `0x${string}`, abi, functionName: 'proofSubmitted', args: [BigInt(jobId), addr as `0x${string}`] }) as Promise<boolean>,
+            readContract(config, { address: CONTRACT_ADDRESS as `0x${string}`, abi, functionName: 'disputed', args: [BigInt(jobId), addr as `0x${string}`] }) as Promise<boolean>,
+            readContract(config, { address: CONTRACT_ADDRESS as `0x${string}`, abi, functionName: 'paid', args: [BigInt(jobId), addr as `0x${string}`] }) as Promise<boolean>,
+          ])
+          return { hasProof, isPaid }
+        } catch { return { hasProof: false, isPaid: false } }
+      }))
+      if (!cancelled) {
+        setPending(results.filter(w => w.hasProof && !w.isPaid).length)
+        setPaid(results.filter(w => w.isPaid).length)
+        setClaimed(results.filter(w => !w.hasProof && !w.isPaid).length)
+      }
+    }
+    fetchAll()
+    return () => { cancelled = true }
+  }, [jobId, claimants, claimantsRefreshKey])
+
+  return (
+    <div style={{ display: 'flex', gap: 8, fontSize: fontSizes.xs }}>
+      <span style={{ color: colors.green }}>{pending} pending</span>
+      <span style={{ opacity: 0.3 }}>|</span>
+      <span style={{ opacity: 0.6 }}>{claimed} claimed</span>
+      <span style={{ opacity: 0.3 }}>|</span>
+      <span style={{ opacity: 0.5 }}>{paid} paid</span>
+    </div>
+  )
+}
+
+function CheckProofs({ jobId, claimants, claimantsRefreshKey, onRelease, job, loading, onDispute, onChat }: { jobId: number; claimants: string[]; claimantsRefreshKey: number; onRelease: (worker: string, j: Job) => void; job: Job; loading: boolean; onDispute: (j: Job, worker?: string) => void; onChat?: (worker: string) => void }) {
   const [workers, setWorkers] = useState<{ addr: string; hasProof: boolean; isPaid: boolean; isDisputed: boolean }[]>([])
   const [openSection, setOpenSection] = useState<string | null>(null)
 
@@ -232,7 +286,7 @@ function CheckProofs({ jobId, claimants, claimantsRefreshKey, onRelease, job, lo
           <div style={{ maxHeight: openSection === 'pending' ? '600px' : '0', overflow: 'hidden', transition: 'max-height 0.3s ease' }}>
             <div style={{ padding: '4px 8px 8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
               {pending.map((w, i) => (
-                <PendingRow key={i} jobId={job.id} worker={w.addr} loading={loading} onRelease={onRelease} onDispute={onDispute} job={job} />
+                <PendingRow key={i} jobId={job.id} worker={w.addr} loading={loading} onRelease={onRelease} onDispute={onDispute} job={job} onChat={onChat} />
               ))}
             </div>
           </div>
@@ -271,6 +325,7 @@ function CheckProofs({ jobId, claimants, claimantsRefreshKey, onRelease, job, lo
               {claimed.map((w, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 6px', background: colors.bgElevated, borderRadius: radii.sm }}>
                   <span style={{ fontFamily: 'monospace', flex: 1, fontSize: fontSizes.xs, opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shorten(w.addr)}</span>
+                  {onChat && <button type="button" onClick={() => onChat(w.addr)} style={{ background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.border}`, padding: '1px 6px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 600, whiteSpace: 'nowrap' }}>CHAT</button>}
                   <button type="button" onClick={() => onDispute(job, w.addr)} aria-label={`Dispute worker ${shorten(w.addr)}`} style={{ background: 'transparent', color: colors.orange, border: `1px solid ${colors.orange}`, padding: '1px 6px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 600, whiteSpace: 'nowrap' }} title="File a dispute — worker has not submitted proof yet">DISPUTE</button>
                 </div>
               ))}
@@ -282,7 +337,7 @@ function CheckProofs({ jobId, claimants, claimantsRefreshKey, onRelease, job, lo
   )
 }
 
-function PendingRow({ jobId, worker, loading, onRelease, onDispute, job }: { jobId: number; worker: string; loading: boolean; onRelease: (w: string, j: Job) => void; onDispute: (j: Job, w?: string) => void; job: Job }) {
+function PendingRow({ jobId, worker, loading, onRelease, onDispute, job, onChat }: { jobId: number; worker: string; loading: boolean; onRelease: (w: string, j: Job) => void; onDispute: (j: Job, w?: string) => void; job: Job; onChat?: (worker: string) => void }) {
   const [exists, setExists] = useState<boolean | null>(null)
   const [fileUrl, setFileUrl] = useState('')
   const [proofHash, setProofHash] = useState('')
@@ -430,6 +485,7 @@ function PendingRow({ jobId, worker, loading, onRelease, onDispute, job }: { job
       {proofHash && (
         <span title={`Proof hash: ${proofHash}`} style={{ fontSize: 9, opacity: 0.4, cursor: 'help', fontFamily: 'monospace', maxWidth: 50, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{proofHash.slice(0, 10)}...</span>
       )}
+      {onChat && <button type="button" onClick={() => onChat(worker)} style={{ background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.border}`, padding: '1px 6px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 600, whiteSpace: 'nowrap' }}>CHAT</button>}
       <button type="button" onClick={() => onRelease(worker, job)} disabled={loading} aria-label={`Release payment to ${shorten(worker)}`} style={{ background: colors.green, color: '#000', border: 'none', padding: '2px 6px', fontWeight: 700, borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, whiteSpace: 'nowrap' }}>RELEASE</button>
       <button type="button" onClick={() => onDispute(job, worker)} aria-label={`Dispute worker ${shorten(worker)}`} style={{ background: 'transparent', color: colors.orange, border: `1px solid ${colors.orange}`, padding: '1px 6px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 600, whiteSpace: 'nowrap' }}>DISPUTE</button>
     </div>

@@ -251,6 +251,9 @@ export function useMyJobs(
     // Mark loaded true BEFORE any async ops so setMyJobs can always persist
     loadedRef.current = true;
 
+    const statusRank: Record<string, number> = { claimed: 0, completed: 1, paid: 2, disputed: 1 };
+    const getRank = (s: string | undefined) => (s ? (statusRank[s] ?? -1) : -1);
+
     const mergeEvents = (events: (WorkerEvent & { job?: Job })[]) => {
       setMyJobsState((prev) => {
         const jobsMap = new Map<number, Job>();
@@ -262,7 +265,8 @@ export function useMyJobs(
         }
         for (const ev of events) {
           const existing = jobsMap.get(ev.jobId);
-          if (!existing || ev.job) {
+          const evRank = getRank(ev.status);
+          if (!existing) {
             if (ev.job) {
               jobsMap.set(ev.jobId, { ...ev.job, status: ev.status });
             } else {
@@ -284,11 +288,11 @@ export function useMyJobs(
                 claimedBy: address?.toLowerCase(),
               });
             }
-          } else if (
-            ev.status === "paid" ||
-            (ev.status === "completed" && existing.status !== "paid")
-          ) {
-            jobsMap.set(ev.jobId, { ...existing, status: ev.status });
+          } else {
+            const existingRank = getRank(existing.status);
+            if (evRank > existingRank) {
+              jobsMap.set(ev.jobId, { ...existing, status: ev.status });
+            }
           }
         }
         const merged = [...jobsMap.values()];

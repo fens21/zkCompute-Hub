@@ -89,13 +89,14 @@ const sectionTitle: CSSProperties = {
 }
 
 export function LandingPage() {
-  const bgGradient = `radial-gradient(ellipse 75% 55% at 18% 22%, rgba(60, 20, 80, 0.5) 0%, transparent 65%),
-radial-gradient(ellipse 65% 50% at 82% 32%, rgba(15, 30, 65, 0.45) 0%, transparent 60%),
-radial-gradient(ellipse 55% 65% at 48% 78%, rgba(70, 40, 10, 0.3) 0%, transparent 55%),
-radial-gradient(ellipse 85% 40% at 68% 55%, rgba(35, 10, 60, 0.35) 0%, transparent 60%),
-radial-gradient(ellipse 60% 75% at 28% 62%, rgba(20, 15, 50, 0.25) 0%, transparent 55%),
-radial-gradient(ellipse 70% 45% at 52% 18%, rgba(55, 30, 10, 0.18) 0%, transparent 60%),
-#0f0c14`
+  const bgGradient = `radial-gradient(ellipse 700px 500px at 15% 15%, #1a6b3a 0%, transparent 65%),
+radial-gradient(ellipse 400px 600px at 85% 20%, #1a5c8a 0%, transparent 60%),
+radial-gradient(ellipse 500px 350px at 50% 85%, #b8860b 0%, transparent 55%),
+radial-gradient(ellipse 350px 450px at 75% 60%, #d4a52e 0%, transparent 50%),
+radial-gradient(ellipse 600px 350px at 25% 45%, #1a7a4a 0%, transparent 58%),
+radial-gradient(ellipse 450px 300px at 60% 30%, #1a6b3a 0%, transparent 55%),
+radial-gradient(ellipse 300px 500px at 10% 70%, #1a5c8a 0%, transparent 60%),
+#0a0a0a`
 
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [copied, setCopied] = useState<string | null>(null)

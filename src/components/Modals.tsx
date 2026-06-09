@@ -43,11 +43,13 @@ export function JobDetailModal({
   onClose,
   onClaim,
   loading,
+  walletAddress,
 }: {
   job: Job;
   onClose: () => void;
   onClaim: (job: Job) => void;
   loading: boolean;
+  walletAddress?: string;
 }) {
   useEscape(onClose);
   useAriaHidden(true);
@@ -101,8 +103,23 @@ export function JobDetailModal({
           width: "90%",
           maxHeight: "85vh",
           overflowY: "auto",
+          position: "relative",
         }}
       >
+        <div style={{ position: 'absolute', top: 12, right: 12 }}>
+          <button
+            onClick={onClose}
+            aria-label="Close job details"
+            style={{
+              width: 28, height: 28, borderRadius: '50%', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(255,255,255,0.05)', border: '1px solid #3f3f46',
+              color: '#a1a1aa', cursor: 'pointer', fontSize: 14, lineHeight: 1,
+            }}
+          >
+            ✕
+          </button>
+        </div>
         <h3 style={{ marginTop: 0 }}>{job.title}</h3>
         <div style={{ opacity: 0.8, fontSize: fontSizes.md, marginBottom: 16 }}>
           {job.description}
@@ -233,7 +250,7 @@ export function JobDetailModal({
             </div>
           )}
         </div>
-        <div style={{ display: "flex", gap: 12 }}>
+        <div style={{ display: "flex", gap: 12, marginBottom: walletAddress ? 12 : 0 }}>
           <button
             onClick={onClose}
             aria-label="Close job details"

@@ -60,7 +60,7 @@ export function Marketplace({ jobs, typeFilter, setTypeFilter, sortBy, setSortBy
       })()}
 
       <div style={{ textAlign: 'center', marginBottom: isMobile ? 16 : 20 }}>
-        <h1 style={{ fontSize: isMobile ? 20 : fontSizes.heading, margin: 0, color: colors.textPrimary, lineHeight: 1.3 }}>
+        <h1 style={{ fontSize: isMobile ? 20 : fontSizes.heading, margin: 0, color: colors.gold, lineHeight: 1.3 }}>
           Verifiable Compute Marketplace
         </h1>
         <p style={{ opacity: 0.7, marginTop: 4, fontSize: fontSizes.base }}>Earn zkLTC by running verified compute jobs</p>
@@ -105,6 +105,7 @@ export function Marketplace({ jobs, typeFilter, setTypeFilter, sortBy, setSortBy
           aria-label="Sort jobs"
           style={{ ...input, flex: isMobile ? '1' : 'none', minWidth: isMobile ? 80 : 0, boxSizing: 'border-box' as const }}
         >
+          <option value="newest">Sort: Newest</option>
           <option value="reward">Sort: Reward</option>
           <option value="deadline">Sort: Deadline</option>
         </select>
@@ -276,7 +277,7 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
   const claimedRatio = job.maxWorkers > 0 ? job.claimedCount / job.maxWorkers : 0
   const isFull = job.claimedCount >= job.maxWorkers
   const isAlmostFull = claimedRatio >= 0.67 && !isFull
-  const pad = isMobile ? 10 : 20
+  const pad = isMobile ? 10 : 16
 
   // deadline urgency check
   const [now, setNow] = useState(Date.now())
@@ -316,7 +317,7 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
       )}
 
       {/* Category + Job Type badges */}
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: isMobile ? 6 : 10, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: isMobile ? 4 : 6, flexWrap: 'wrap' }}>
         <div style={{
           background: `${JOB_TYPE_CONFIGS[job.type]?.color || colors.gold}18`,
           color: JOB_TYPE_CONFIGS[job.type]?.color || colors.gold,
@@ -343,9 +344,9 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
 
       {/* Title */}
       <div style={{
-        fontSize: isMobile ? fontSizes.md : fontSizes.xl,
+        fontSize: isMobile ? fontSizes.md : fontSizes.lg,
         fontWeight: 700,
-        marginBottom: isMobile ? 2 : 4,
+        marginBottom: isMobile ? 2 : 2,
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
       }}>
         {job.title}
@@ -355,7 +356,7 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
       <div style={{
         opacity: 0.6,
         fontSize: isMobile ? fontSizes.xs : fontSizes.sm,
-        marginBottom: isMobile ? 6 : 8,
+        marginBottom: isMobile ? 4 : 6,
         overflow: 'hidden',
         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const,
         lineHeight: 1.4,
@@ -366,7 +367,7 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
       {/* Deadline */}
       <div style={{
         fontSize: isMobile ? fontSizes.xs : fontSizes.sm,
-        marginBottom: isMobile ? 4 : 8,
+        marginBottom: isMobile ? 4 : 6,
         display: 'flex', alignItems: 'center', gap: 4,
       }}>
         {isUrgent && <span style={{ color: colors.red, fontSize: 10, fontWeight: 700 }}>🔥 URGENT</span>}
@@ -375,8 +376,8 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
 
       {/* Reward */}
       <div style={{
-        margin: isMobile ? '4px 0' : '6px 0',
-        fontSize: isMobile ? 16 : 22,
+        margin: isMobile ? '2px 0' : '4px 0',
+        fontSize: isMobile ? 14 : 18,
         color: colors.gold, fontWeight: 700,
         display: 'flex', alignItems: 'baseline', gap: 4,
       }}>
@@ -385,12 +386,12 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
       </div>
 
       {/* Posted by */}
-      <div style={{ fontSize: fontSizes.xs, opacity: 0.5, marginBottom: isMobile ? 6 : 10 }}>
+      <div style={{ fontSize: fontSizes.xs, opacity: 0.5, marginBottom: isMobile ? 4 : 6 }}>
         Posted by {shorten(job.poster)}
       </div>
 
       {/* Workers progress */}
-      <div style={{ marginBottom: isMobile ? 8 : 12 }}>
+      <div style={{ marginBottom: isMobile ? 6 : 8 }}>
         <div style={{
           display: 'flex', justifyContent: 'space-between',
           fontSize: fontSizes.xs, marginBottom: 4,
@@ -419,12 +420,11 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
             flex: 1,
             background: 'rgba(197,193,192,0.06)',
             border: `1px solid rgba(197,193,192,0.2)`,
-            padding: isMobile ? '10px 4px' : '11px 9px',
+            padding: isMobile ? '8px 4px' : '8px 8px',
             color: colors.textPrimary,
             cursor: 'pointer', borderRadius: radii.sm,
             fontWeight: 600,
             fontSize: isMobile ? fontSizes.xs : fontSizes.sm,
-            minHeight: 44,
           }}
         >
           DETAILS
@@ -438,7 +438,7 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
             background: isFull ? '#333' : colors.gold,
             color: isFull ? '#666' : '#000',
             border: 'none',
-            padding: isMobile ? '10px 4px' : '11px 9px',
+            padding: isMobile ? '8px 4px' : '8px 8px',
             fontWeight: 700, cursor: isFull ? 'not-allowed' : 'pointer',
             borderRadius: radii.sm,
             fontSize: isMobile ? fontSizes.xs : fontSizes.sm,

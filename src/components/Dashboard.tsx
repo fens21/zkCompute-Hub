@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useIsMobile } from '../hooks/useIsMobile'
-import { colors } from '../styles/tokens'
+import { colors, fontSizes } from '../styles/tokens'
 import type { Job, LeaderboardEntry } from '../types'
 import { formatUsd, fmt } from '../utils'
 
@@ -192,6 +192,7 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
               </div>
             </div>
 
+            {linePoints.length > 0 ? (
             <svg width="100%" height="120" viewBox="0 0 340 120" role="img" aria-label="Earnings trend">
               <title>Earnings Trend</title>
               {[30, 55, 80, 105].map((y, i) => (
@@ -223,6 +224,11 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
                 </g>
               ))}
             </svg>
+            ) : (
+              <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.4, fontSize: fontSizes.sm }}>
+                No earnings data yet
+              </div>
+            )}
           </div>
 
           {/* On-Chain Reputation */}

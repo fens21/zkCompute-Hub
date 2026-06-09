@@ -56,7 +56,7 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
   const [postedViewMode, setPostedViewMode] = useState<ViewMode>('grid')
   const [pendingTypeChange, setPendingTypeChange] = useState<string | null>(null)
   const [postSearch, setPostSearch] = useState('')
-  const [postSort, setPostSort] = useState<'reward-desc' | 'reward-asc' | 'deadline' | 'type'>('reward-desc')
+  const [postSort, setPostSort] = useState<'newest' | 'reward-desc' | 'reward-asc' | 'deadline' | 'type'>('newest')
   const prevEditTypeRef = useRef('')
  useEffect(() => {
   if (pendingTypeChange) return
@@ -118,18 +118,16 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
             </div>
           ) : (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-                <input value={postSearch} onChange={e => setPostSearch(e.target.value)} placeholder="Search posted jobs..." aria-label="Search posted jobs" style={{ flex: '1 1 180px', background: '#000', border: `1px solid ${colors.border}`, padding: '7px 10px', color: colors.textPrimary, borderRadius: radii.sm, fontSize: fontSizes.xs, boxSizing: 'border-box' }} />
-                <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                  <select value={postSort} onChange={e => setPostSort(e.target.value as typeof postSort)} aria-label="Sort posted jobs" style={{ background: '#000', border: `1px solid ${colors.border}`, padding: '6px 8px', color: colors.textPrimary, borderRadius: radii.sm, fontSize: fontSizes.xs }}>
-                    <option value="reward-desc">Reward ↓</option>
-                    <option value="reward-asc">Reward ↑</option>
-                    <option value="deadline">Deadline</option>
-                    <option value="type">Type</option>
-                  </select>
-                  <button onClick={() => setPostedViewMode('grid')} aria-label="Grid view" style={{ background: postedViewMode === 'grid' ? colors.gold : colors.bgElevated, color: postedViewMode === 'grid' ? '#000' : colors.textMuted, border: 'none', padding: '4px 10px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Grid view">⊞ Grid</button>
-                  <button onClick={() => setPostedViewMode('list')} aria-label="List view" style={{ background: postedViewMode === 'list' ? colors.gold : colors.bgElevated, color: postedViewMode === 'list' ? '#000' : colors.textMuted, border: 'none', padding: '4px 10px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="List view">≡ List</button>
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                <input value={postSearch} onChange={e => setPostSearch(e.target.value)} placeholder="Search posted jobs..." aria-label="Search posted jobs" style={{ width: 160, background: '#000', border: `1px solid ${colors.border}`, padding: '7px 10px', color: colors.textPrimary, borderRadius: radii.sm, fontSize: fontSizes.xs, boxSizing: 'border-box' }} />
+                <select value={postSort} onChange={e => setPostSort(e.target.value as typeof postSort)} aria-label="Sort posted jobs" style={{ background: '#000', border: `1px solid ${colors.border}`, padding: '6px 8px', color: colors.textPrimary, borderRadius: radii.sm, fontSize: fontSizes.xs }}>
+                  <option value="reward-desc">Reward ↓</option>
+                  <option value="reward-asc">Reward ↑</option>
+                  <option value="deadline">Deadline</option>
+                  <option value="type">Type</option>
+                </select>
+                <button onClick={() => setPostedViewMode('grid')} aria-label="Grid view" style={{ background: postedViewMode === 'grid' ? colors.gold : colors.bgElevated, color: postedViewMode === 'grid' ? '#000' : colors.textMuted, border: 'none', padding: '4px 10px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Grid view">⊞ Grid</button>
+                <button onClick={() => setPostedViewMode('list')} aria-label="List view" style={{ background: postedViewMode === 'list' ? colors.gold : colors.bgElevated, color: postedViewMode === 'list' ? '#000' : colors.textMuted, border: 'none', padding: '4px 10px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="List view">≡ List</button>
               </div>
                {(() => {
                 const query = postSearch.toLowerCase()
@@ -138,6 +136,7 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
                 else if (postSort === 'reward-asc') filtered = [...filtered].sort((a, b) => a.reward - b.reward)
                 else if (postSort === 'deadline') filtered = [...filtered].sort((a, b) => (a.deadline || '').localeCompare(b.deadline || ''))
                 else if (postSort === 'type') filtered = [...filtered].sort((a, b) => a.type.localeCompare(b.type))
+                else filtered = [...filtered].sort((a, b) => b.id - a.id)
                 return filtered.length === 0 ? (
                   <div style={{ opacity: 0.5, padding: 40, textAlign: 'center', fontSize: fontSizes.sm }}>
                     {postSearch ? 'No jobs match your search.' : 'No posted jobs yet.'}
@@ -151,7 +150,7 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
                   ))}
                 </div>
               ) : (
-                <div className="job-grid" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: isMobile ? 12 : 20 }}>
+                <div className="job-grid" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(280px, 1fr))', gap: isMobile ? 10 : 16 }}>
                   {filtered.map(job => (
                     <PostedJobCard key={job.id} job={job} onRelease={onReleaseWorker} onDeactivate={onDeactivate} onDispute={onDispute} loading={loading} deactivating={deactivating} onEdit={onEditPostedJob} view={postedViewMode} releaseRefreshKey={releaseRefreshKey} />
                   ))}

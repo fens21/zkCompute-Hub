@@ -21,6 +21,7 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.16.0",
+    "@supabase/supabase-js": "^2.108.0",
     "snarkjs": "^0.7.6",
     "viem": "^2.50.4",
     "wagmi": "^2.19.5"

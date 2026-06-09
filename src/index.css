@@ -159,6 +159,16 @@ code {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes blink {
+  0%, 60%, 100% { opacity: 0.3; }
+  30% { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
@@ -190,8 +200,11 @@ a:focus-visible,
   color: #C5C1C0;
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   min-height: 100vh;
+  flex: 1;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
   background:
     radial-gradient(ellipse 600px 400px at 20% 25%, #1a6b3a 0%, transparent 60%),
     radial-gradient(ellipse 500px 350px at 80% 35%, #1a5c8a 0%, transparent 55%),

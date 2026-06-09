@@ -37,6 +37,8 @@ Post compute jobs — ML training & inference, ZK proofs, 3D rendering, scientif
 
 - **Dispute System** — On-chain dispute resolution between posters and workers.
 
+- **Real-Time Chat** — In-app messaging between posters and workers for each job. Powered by Supabase Realtime. Includes unread badge, message notifications, and typing indicators.
+
 - **Real ZK Verifiable Compute** — For jobs requiring ZK verification, the poster specifies a target Poseidon hash. Workers submit a private solution, and the frontend generates a Groth16 proof using a pre-compiled circuit. The contract verifies it via the on-chain `RealVerifier` and releases payment instantly on success.
 
 ---
@@ -133,6 +135,8 @@ Poster                    Marketplace Contract            Worker
 src/
 ├── abi/              # Contract ABIs
 ├── components/       # React components
+│   ├── ChatPage.tsx  # Chat inbox & room list
+│   ├── ChatRoom.tsx  # Individual chat room (realtime)
 │   ├── Dashboard.tsx
 │   ├── Marketplace.tsx
 │   ├── PostJob.tsx
@@ -144,6 +148,10 @@ src/
 ├── config/           # Chain configuration
 ├── constants/        # Job type definitions
 ├── hooks/            # Custom React hooks
+│   ├── useChat.ts    # Realtime chat hook
+│   └── ...
+├── lib/              # Client libraries (Supabase, notifications)
+├── store/            # Zustand stores (chat unread count)
 ├── styles/           # Design tokens
 ├── types/            # TypeScript interfaces
 └── utils/            # Utility functions

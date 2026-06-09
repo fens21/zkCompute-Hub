@@ -149,4 +149,4 @@ export interface Groth16Proof {
 
 export type Tab = 'dashboard' | 'market' | 'post' | 'my' | 'stats' | 'leaderboard' | 'profile'
 export type PostSubTab = 'new' | 'manage'
-export type SortBy = 'reward' | 'deadline'
+export type SortBy = 'newest' | 'reward' | 'deadline'
