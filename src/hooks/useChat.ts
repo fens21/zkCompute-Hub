@@ -413,10 +413,19 @@ export function useChat({
     });
   }, [addr]);
 
+  const syncRoom = useCallback(async () => {
+    if (!room?.id) return;
+    const { data } = await supabase
+      .from("chat_rooms")
+      .select("*")
+      .eq("id", room.id)
+      .single();
+    if (data) setRoom(data as ChatRoom);
+  }, [room?.id]);
+
   const requestClose = useCallback(async () => {
     if (!room || !addr) return;
     const now = new Date().toISOString();
-    setRoom({ ...room, status: "closing_requested", closing_requested_by: addr });
     await supabase
       .from("chat_rooms")
       .update({ status: "closing_requested", closing_requested_by: addr })
@@ -430,12 +439,12 @@ export function useChat({
       is_system: true,
       created_at: now,
     });
-  }, [room, addr, posterAddress]);
+    await syncRoom();
+  }, [room, addr, posterAddress, syncRoom]);
 
   const approveClose = useCallback(async () => {
     if (!room || !addr) return;
     const now = new Date().toISOString();
-    setRoom({ ...room, status: "closed", closed_at: now });
     await supabase
       .from("chat_rooms")
       .update({ status: "closed", closed_at: now })
@@ -447,12 +456,12 @@ export function useChat({
       is_system: true,
       created_at: now,
     });
-  }, [room, addr]);
+    await syncRoom();
+  }, [room, addr, syncRoom]);
 
   const rejectClose = useCallback(async () => {
     if (!room || !addr) return;
     const now = new Date().toISOString();
-    setRoom({ ...room, status: "active", closing_requested_by: undefined });
     await supabase
       .from("chat_rooms")
       .update({ status: "active", closing_requested_by: null })
@@ -466,7 +475,8 @@ export function useChat({
       is_system: true,
       created_at: now,
     });
-  }, [room, addr, posterAddress]);
+    await syncRoom();
+  }, [room, addr, posterAddress, syncRoom]);
 
   const myRole = deriveRole(addr, room, posterAddress);
 
