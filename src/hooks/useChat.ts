@@ -416,6 +416,7 @@ export function useChat({
   const requestClose = useCallback(async () => {
     if (!room || !addr) return;
     const now = new Date().toISOString();
+    setRoom({ ...room, status: "closing_requested", closing_requested_by: addr });
     await supabase
       .from("chat_rooms")
       .update({ status: "closing_requested", closing_requested_by: addr })
@@ -434,6 +435,7 @@ export function useChat({
   const approveClose = useCallback(async () => {
     if (!room || !addr) return;
     const now = new Date().toISOString();
+    setRoom({ ...room, status: "closed", closed_at: now });
     await supabase
       .from("chat_rooms")
       .update({ status: "closed", closed_at: now })
@@ -450,6 +452,7 @@ export function useChat({
   const rejectClose = useCallback(async () => {
     if (!room || !addr) return;
     const now = new Date().toISOString();
+    setRoom({ ...room, status: "active", closing_requested_by: undefined });
     await supabase
       .from("chat_rooms")
       .update({ status: "active", closing_requested_by: null })
