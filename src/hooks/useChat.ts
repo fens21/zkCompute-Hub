@@ -34,6 +34,9 @@ interface UseChatReturn {
   sendMessage: (content: string, replyTo?: string, replyPreview?: string, attachment?: { url: string; type: string; name: string }) => Promise<void>;
   uploadAttachment: (file: File) => Promise<string | null>;
   broadcastTyping: () => void;
+  requestClose: () => Promise<void>;
+  approveClose: () => Promise<void>;
+  rejectClose: () => Promise<void>;
 }
 
 export function useChat({
@@ -410,6 +413,58 @@ export function useChat({
     });
   }, [addr]);
 
+  const requestClose = useCallback(async () => {
+    if (!room || !addr) return;
+    const now = new Date().toISOString();
+    await supabase
+      .from("chat_rooms")
+      .update({ status: "closing_requested", closing_requested_by: addr })
+      .eq("id", room.id);
+    await supabase.from("messages").insert({
+      room_id: room.id,
+      sender_address: "SYSTEM",
+      content: `${
+        addr === posterAddress?.toLowerCase() ? "Poster" : "Worker"
+      } has requested to end this chat. Waiting for the other party to approve.`,
+      is_system: true,
+      created_at: now,
+    });
+  }, [room, addr, posterAddress]);
+
+  const approveClose = useCallback(async () => {
+    if (!room || !addr) return;
+    const now = new Date().toISOString();
+    await supabase
+      .from("chat_rooms")
+      .update({ status: "closed", closed_at: now })
+      .eq("id", room.id);
+    await supabase.from("messages").insert({
+      room_id: room.id,
+      sender_address: "SYSTEM",
+      content: "Chat has been ended by mutual agreement.",
+      is_system: true,
+      created_at: now,
+    });
+  }, [room, addr]);
+
+  const rejectClose = useCallback(async () => {
+    if (!room || !addr) return;
+    const now = new Date().toISOString();
+    await supabase
+      .from("chat_rooms")
+      .update({ status: "active", closing_requested_by: null })
+      .eq("id", room.id);
+    await supabase.from("messages").insert({
+      room_id: room.id,
+      sender_address: "SYSTEM",
+      content: `${
+        addr === posterAddress?.toLowerCase() ? "Poster" : "Worker"
+      } has declined the request to end the chat.`,
+      is_system: true,
+      created_at: now,
+    });
+  }, [room, addr, posterAddress]);
+
   const myRole = deriveRole(addr, room, posterAddress);
 
   return {
@@ -423,5 +478,8 @@ export function useChat({
     sendMessage,
     uploadAttachment,
     broadcastTyping,
+    requestClose,
+    approveClose,
+    rejectClose,
   };
 }

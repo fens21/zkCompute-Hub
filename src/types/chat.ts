@@ -24,6 +24,9 @@ export interface ChatRoom {
   last_message?: string;
   last_message_at?: string;
   last_sender?: string;
+  status?: "active" | "closing_requested" | "closed";
+  closing_requested_by?: string;
+  closed_at?: string;
 }
 
 export type ParticipantRole = "poster" | "worker" | "unknown";

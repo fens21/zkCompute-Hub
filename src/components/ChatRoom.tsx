@@ -295,6 +295,7 @@ export function ChatRoom({
   const {
     room, messages, loading, error, myRole,
     typingUsers, onlineUsers, sendMessage, uploadAttachment, broadcastTyping,
+    requestClose, approveClose, rejectClose,
   } = useChat({ jobId, jobTitle, walletAddress, posterAddress, workerAddress, hasClaimed });
 
   useEffect(() => {
@@ -448,6 +449,12 @@ export function ChatRoom({
   const isParticipant = room && walletAddress && room.participants.includes(walletAddress.toLowerCase());
   const canChat = isPoster || hasClaimed || !!isParticipant;
 
+  const roomStatus = room?.status || "active";
+  const isClosed = roomStatus === "closed";
+  const isClosingRequested = roomStatus === "closing_requested";
+  const requestedByMe = isClosingRequested && room?.closing_requested_by === walletAddress?.toLowerCase();
+  const canApproveReject = isClosingRequested && !requestedByMe;
+
   const typingOtherUsers = typingUsers.filter((u) => u !== walletAddress?.toLowerCase());
   const typingNames = typingOtherUsers.map(getTypingName);
 
@@ -518,6 +525,56 @@ export function ChatRoom({
             </p>
           </div>
 
+          {!isClosed && !isClosingRequested && (
+            <button
+              onClick={requestClose}
+              style={{
+                color: "#f87171", background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.2)",
+                cursor: "pointer", padding: "4px 10px", borderRadius: radii.md, fontSize: fontSizes.xs,
+                fontWeight: 500, transition: "all 0.15s", whiteSpace: "nowrap",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(248,113,113,0.2)"; e.currentTarget.style.borderColor = "rgba(248,113,113,0.4)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(248,113,113,0.1)"; e.currentTarget.style.borderColor = "rgba(248,113,113,0.2)"; }}
+              aria-label="Request to end chat"
+            >
+              End Chat
+            </button>
+          )}
+          {canApproveReject && (
+            <div style={{ display: "flex", gap: 6 }}>
+              <button
+                onClick={approveClose}
+                style={{
+                  color: "#34d399", background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.2)",
+                  cursor: "pointer", padding: "4px 10px", borderRadius: radii.md, fontSize: fontSizes.xs,
+                  fontWeight: 500, transition: "all 0.15s", whiteSpace: "nowrap",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(52,211,153,0.2)"; e.currentTarget.style.borderColor = "rgba(52,211,153,0.4)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(52,211,153,0.1)"; e.currentTarget.style.borderColor = "rgba(52,211,153,0.2)"; }}
+                aria-label="Approve end chat"
+              >
+                Approve
+              </button>
+              <button
+                onClick={rejectClose}
+                style={{
+                  color: "#fbbf24", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)",
+                  cursor: "pointer", padding: "4px 10px", borderRadius: radii.md, fontSize: fontSizes.xs,
+                  fontWeight: 500, transition: "all 0.15s", whiteSpace: "nowrap",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(251,191,36,0.2)"; e.currentTarget.style.borderColor = "rgba(251,191,36,0.4)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(251,191,36,0.1)"; e.currentTarget.style.borderColor = "rgba(251,191,36,0.2)"; }}
+                aria-label="Reject end chat"
+              >
+                Reject
+              </button>
+            </div>
+          )}
+          {isClosingRequested && requestedByMe && (
+            <span style={{ fontSize: fontSizes.xs, color: "#fbbf24", fontWeight: 500, whiteSpace: "nowrap" }}>
+              Waiting for approval\u2026
+            </span>
+          )}
           {mode === "floating" && (
             <button
               onClick={() => setIsOpen(false)}
@@ -737,8 +794,17 @@ export function ChatRoom({
         </div>
       )}
 
+      {isClosed && (
+        <div style={{ padding: "10px 12px", borderTop: "1px solid #27272a", background: "#000", textAlign: "center" }}>
+          <span style={{ fontSize: fontSizes.sm, color: "#71717a" }}>
+            This chat has been ended.
+          </span>
+        </div>
+      )}
       <div style={{ padding: "12px 12px", borderTop: "1px solid #27272a", background: "#000" }}>
-        {!walletAddress ? (
+        {isClosed ? (
+          <p style={{ fontSize: fontSizes.sm, color: "#52525b", textAlign: "center", margin: "4px 0" }}>Chat ended. No new messages can be sent.</p>
+        ) : !walletAddress ? (
           <p style={{ fontSize: fontSizes.sm, color: "#71717a", textAlign: "center", margin: "4px 0" }}>Connect wallet to send messages</p>
         ) : (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

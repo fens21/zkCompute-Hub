@@ -174,6 +174,7 @@ export function ChatPage() {
         {rooms.map((room) => {
           const isActive = room.job_id === jobId;
           const unread = chatStore.getUnread(room.id);
+          const isClosed = room.status === "closed";
           return (
             <button
               key={room.id}
@@ -182,7 +183,7 @@ export function ChatPage() {
               style={{
                 width: "100%", textAlign: "left", padding: "10px 12px", borderRadius: radii.md,
                 transition: "all 0.1s", cursor: "pointer", border: "1px solid",
-                fontFamily: "inherit",
+                fontFamily: "inherit", opacity: isClosed ? 0.5 : 1,
                 ...(isActive
                   ? { background: "#27272a", borderColor: colors.border }
                   : { background: "transparent", borderColor: "transparent" }),
@@ -191,17 +192,22 @@ export function ChatPage() {
               onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = "transparent"; } }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981", flexShrink: 0 }} />
-                <span style={{ fontSize: fontSizes.sm, fontWeight: 500, color: colors.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, background: isClosed ? "#52525b" : "#10b981" }} />
+                <span style={{ fontSize: fontSizes.sm, fontWeight: 500, color: isClosed ? "#52525b" : colors.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
                   {room.job_title || `Job #${room.job_id.slice(0, 8)}`}{room.worker_address ? ` · ${room.worker_address.slice(0, 6)}…${room.worker_address.slice(-4)}` : ""}
                 </span>
-                {unread > 0 && (
+                {unread > 0 && !isClosed && (
                   <span style={{ background: "#ef4444", color: "#fff", fontSize: 9, fontWeight: 700, borderRadius: 99, padding: "1px 5px", flexShrink: 0 }}>
                     {unread > 9 ? "9+" : unread}
                   </span>
                 )}
+                {isClosed && (
+                  <span style={{ background: "#27272a", color: "#71717a", fontSize: 9, fontWeight: 600, borderRadius: 99, padding: "1px 5px", flexShrink: 0 }}>
+                    Closed
+                  </span>
+                )}
               </div>
-              <p style={{ fontSize: fontSizes.xs, color: "#71717a", margin: "2px 0 0 12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <p style={{ fontSize: fontSizes.xs, color: isClosed ? "#3f3f46" : "#71717a", margin: "2px 0 0 12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {room.last_message || `${room.participants.length} participant${room.participants.length !== 1 ? "s" : ""}`}
               </p>
             </button>
