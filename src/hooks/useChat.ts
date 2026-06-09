@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import type { ChatMessage, ChatRoom, ParticipantRole } from "../types/chat";
+import { REALTIME_LISTEN_TYPES } from "@supabase/supabase-js";
 
 function deriveRole(
   address: string,
@@ -270,9 +271,9 @@ export function useChat({
         }
       )
       .on(
-        "broadcast",
+        REALTIME_LISTEN_TYPES.BROADCAST,
         { event: "typing" },
-        (payload: { sender_address: string }) => {
+        (payload: any) => {
           const sender = payload.sender_address?.toLowerCase();
           if (!sender || sender === addr) return;
 
@@ -289,9 +290,9 @@ export function useChat({
         }
       )
       .on(
-        "broadcast",
+        REALTIME_LISTEN_TYPES.BROADCAST,
         { event: "presence" },
-        (payload: { user_address: string; ts: number }) => {
+        (payload: any) => {
           const sender = payload.user_address?.toLowerCase();
           if (!sender || sender === addr) return;
           setOnlineUsers((prev) => prev.includes(sender) ? prev : [...prev, sender]);

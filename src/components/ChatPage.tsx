@@ -9,36 +9,6 @@ import { chatStore } from "../store/chatStore";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { playMessageSound } from "../lib/notifySound";
 
-function IdenticonSmall({ address, size = 20 }: { address: string; size?: number }) {
-  const hash = address.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  const hues = [210, 160, 40, 280, 320, 180];
-  const hue = hues[hash % hues.length];
-  const initials = address.startsWith("0x")
-    ? address.slice(2, 4).toUpperCase()
-    : address.slice(0, 2).toUpperCase();
-
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        background: `hsl(${hue}, 55%, 42%)`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: size * 0.38,
-        fontWeight: 600,
-        color: "#fff",
-        flexShrink: 0,
-        fontFamily: "monospace",
-      }}
-    >
-      {initials}
-    </div>
-  );
-}
-
 export function ChatPage() {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
