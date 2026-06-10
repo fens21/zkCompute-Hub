@@ -37,7 +37,7 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
     return (
       <div>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 24, position: 'relative' }}>
-          <h2 style={{ fontSize: 20, margin: 0, color: colors.gold }}>Top Worker</h2>
+          <h1 style={{ fontSize: isMobile ? 20 : fontSizes.heading, margin: 0, color: colors.gold, lineHeight: 1.3 }}>Top Worker</h1>
         </div>
         <div style={{ background: colors.bgCard, border: `1px solid ${colors.red}`, borderRadius: radii.xl, padding: 40, textAlign: 'center' }}>
           <div style={{ fontSize: 28, marginBottom: 12 }}>!</div>
@@ -51,7 +51,7 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 8, position: 'relative' }}>
-        <h2 style={{ fontSize: 20, margin: 0, color: colors.gold }}>Top Worker</h2>
+        <h1 style={{ fontSize: isMobile ? 20 : fontSizes.heading, margin: 0, color: colors.gold, lineHeight: 1.3 }}>Top Worker</h1>
         {onRetry && <div style={{ position: 'absolute', right: 0 }}><button onClick={onRetry} aria-label="Refresh leaderboard" style={{ background: colors.bgElevated, color: colors.textMuted, border: 'none', width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, borderRadius: radii.sm, cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Refresh data">↻</button></div>}
       </div>
       <p style={{ textAlign: 'center', opacity: 0.6, fontSize: fontSizes.base, marginBottom: 24 }}>Rankings based on jobs completed and points earned on-chain</p>
@@ -67,7 +67,7 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
             </div>
           )}
           {(leaderboard[1] || leaderboard[2]) && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: isMobile ? 12 : 24 }}>
               <PodiumCard rank={2} entry={leaderboard[1]} onView={onViewWorker} ltcPrice={ltcPrice} isMobile={isMobile} />
               <PodiumCard rank={3} entry={leaderboard[2]} onView={onViewWorker} ltcPrice={ltcPrice} isMobile={isMobile} />
             </div>
@@ -108,7 +108,7 @@ export function Leaderboard({ leaderboard, leaderboardLoading, onViewWorker, ltc
         </div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <div style={{ background: colors.bgCard, border: `1px solid ${colors.borderLight}`, borderRadius: radii.xl, padding: '8px 12px', minWidth: 500 }}>
+          <div style={{ background: colors.bgCard, border: `1px solid ${colors.borderLight}`, borderRadius: radii.xl, padding: '8px 12px', minWidth: isMobile ? 300 : 500 }}>
             <TableHeader />
             {sliced.slice((page - 1) * PER_PAGE, page * PER_PAGE).map((w, i) => {
               const rank = i + 4 + (page - 1) * PER_PAGE

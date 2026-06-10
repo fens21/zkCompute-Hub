@@ -183,21 +183,6 @@
   }
 }
 
-/* Fix RainbowKit modal terlalu besar di mobile */
-@media (max-width: 768px) {
-  [data-rk] [role="dialog"] {
-    max-width: 92vw !important;
-    width: 92vw !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    margin: 0 !important;
-  }
-
-  [data-rk] {
-    --rk-connectModalMobileBottomSheetBorderRadius: 16px;
-  }
-}
-
 body {
   background: linear-gradient(135deg, #0a0a00 0%, #1a1200 40%, #0d0d00 70%, #050500 100%) !important;
   background-attachment: fixed !important;

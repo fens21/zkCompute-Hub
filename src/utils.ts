@@ -11,6 +11,7 @@ export function handleTxError(error: unknown, action: string, showToast: (messag
 }
 
 export function getDeadlineMs(createdAt: number | undefined, deadline: string): number | null {
+  if (!deadline) return null
   // Try parsing as ISO date string or numeric timestamp string
   const ts = Date.parse(deadline)
   if (!isNaN(ts)) return ts
@@ -61,7 +62,8 @@ export function formatUsd(usd: number | null): string {
 export function fmt(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
   if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k'
-  return n.toLocaleString(undefined, { maximumFractionDigits: 0 })
+  if (Number.isInteger(n)) return n.toLocaleString()
+  return n.toLocaleString(undefined, { maximumFractionDigits: 4 })
 }
 
 export function generateIdenticon(address: string): string {

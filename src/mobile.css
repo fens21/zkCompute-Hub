@@ -87,12 +87,6 @@
 }
 
 /* ── Grid cards ── */
-@media (max-width: 768px) {
-  .job-grid {
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
-  }
-}
 
 /* ── Job cards ── */
 @media (max-width: 768px) {
@@ -163,20 +157,6 @@
     -webkit-overflow-scrolling: touch !important;
   }
 
-  /* ── RainbowKit Connect Modal mobile fix ── */
-  [data-rk] [role="dialog"] {
-    max-height: 85dvh !important;
-    overflow-y: auto !important;
-  }
-
-  [data-rk] [role="dialog"] > div {
-    max-height: 85dvh !important;
-    overflow-y: auto !important;
-  }
-
-  [data-rk] [role="dialog"] > div > div {
-    border-radius: 16px !important;
-  }
 }
 
 /* ── Toast container ── */

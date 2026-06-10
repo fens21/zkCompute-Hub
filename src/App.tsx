@@ -1,33 +1,31 @@
-import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
 import { useAccount, useWriteContract, useSwitchChain, useChainId } from 'wagmi'
-import { RainbowKitProvider, lightTheme } from '@rainbow-me/rainbowkit'
+import { ConnectKitProvider } from 'connectkit'
 import { readContract, waitForTransactionReceipt } from '@wagmi/core'
 import { parseUnits } from 'viem'
 import abi from './abi/JobMarketplace.json'
 import { config, CONTRACT_ADDRESS, USDC_ADDRESS } from './config/chain'
 import { useToasts } from './hooks/useToasts'
 import { useJobs } from './hooks/useJobs'
-import { useMyJobs, saveWorkerEvent } from './hooks/useMyJobs'
+import { useMyJobs, saveWorkerEvent, markClaimRevoked } from './hooks/useMyJobs'
 import { useLeaderboard } from './hooks/useLeaderboard'
 import { usePrices } from './hooks/usePrices'
 import { useEarningsHistory } from './hooks/useEarningsHistory'
 import { useActivityStreak } from './hooks/useActivityStreak'
+import { supabase } from './lib/supabase'
 import { LandingPage } from './components/LandingPage'
 import { Navbar } from './components/Navbar'
-
-// Lazy load heavy route components to improve tab switch performance
-// Using .then() because components use named exports (not default)
-const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })))
-const Marketplace = lazy(() => import('./components/Marketplace').then(m => ({ default: m.Marketplace })))
-const PostJob = lazy(() => import('./components/PostJob').then(m => ({ default: m.PostJob })))
-const MyJobs = lazy(() => import('./components/MyJobs').then(m => ({ default: m.MyJobs })))
-const Stats = lazy(() => import('./components/Stats').then(m => ({ default: m.Stats })))
-const Leaderboard = lazy(() => import('./components/Leaderboard').then(m => ({ default: m.Leaderboard })))
-const Profile = lazy(() => import('./components/Profile').then(m => ({ default: m.Profile })))
-const ChatPage = lazy(() => import('./components/ChatPage').then(m => ({ default: m.ChatPage })))
+import { Dashboard } from './components/Dashboard'
+import { Marketplace } from './components/Marketplace'
+import { PostJob } from './components/PostJob'
+import { MyJobs } from './components/MyJobs'
+import { Stats } from './components/Stats'
+import { Leaderboard } from './components/Leaderboard'
+import { Profile } from './components/Profile'
+import { ChatPage } from './components/ChatPage'
 import { colors, fontSizes } from './styles/tokens'
 import './styles/landing.css'
 import { ToastContainer } from './components/ToastContainer'
@@ -44,25 +42,6 @@ const USDC_DECIMALS = 6
 const ERC20_ABI = [
   { type: 'function', name: 'approve', stateMutability: 'nonpayable', inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [{ name: '', type: 'bool' }] },
 ] as const
-
-// Lightweight skeleton shown during lazy chunk load or initial data — much better than plain "Loading..."
-function PageSkeleton({ isMobile }: { isMobile: boolean }) {
-  return (
-    <div style={{ padding: isMobile ? 8 : 20, opacity: 0.7 }}>
-      <div style={{ height: 28, background: '#1A2930', borderRadius: 6, width: 220, margin: '0 auto 24px' }} />
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))', gap: isMobile ? 10 : 16 }}>
-        {Array.from({ length: isMobile ? 3 : 6 }).map((_, i) => (
-          <div key={i} style={{ background: '#1A2930', border: '1px solid #1A2930', borderRadius: 12, padding: isMobile ? 12 : 18, height: isMobile ? 140 : 200 }}>
-            <div className="skeleton" style={{ height: 18, width: '35%', marginBottom: 12 }} />
-            <div className="skeleton" style={{ height: 14, width: '80%', marginBottom: 6 }} />
-            <div className="skeleton" style={{ height: 14, width: '60%', marginBottom: 16 }} />
-            <div className="skeleton" style={{ height: 22, width: '40%' }} />
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 const queryClient = new QueryClient()
 let notifIdCounter = 0
@@ -219,10 +198,10 @@ function AppContent() {
   }, [tab, entered, fetchLeaderboard, onChainJobs, needsLeaderboard])
 
   // On first connect (or reconnect), if user is at root, send them to Dashboard.
-  // We keep '/' as the Marketplace route so the tab still works.
+  // Route to marketplace on connect, regardless of previous page
   useEffect(() => {
-    if (entered && location.pathname === '/') {
-      navigate('/dashboard')
+    if (entered) {
+      navigate('/')
     }
   }, [entered])
 
@@ -376,6 +355,16 @@ function AppContent() {
         })
       setSelectedJob(null)
       saveWorkerEvent('claimed', job, address)
+      supabase.from('chat_rooms').upsert({
+        job_id: job.id,
+        job_title: job.title,
+        worker_address: address.toLowerCase(),
+        participants: [job.poster.toLowerCase(), address.toLowerCase()],
+        poster_address: job.poster.toLowerCase(),
+        status: 'active',
+      }).then(({ error }) => {
+        if (error) console.warn('Failed to create chat room on claim:', error)
+      })
       showToast(`Job claimed! Tx: ${hash.slice(0, 10)}...`, 'success')
       addNotification(`Job claimed: "${job.title}" — +${job.reward} ${job.tokenSymbol || 'zkLTC'}`, 'claim', job.title)
       scheduleRefresh(refetchJobs)
@@ -645,6 +634,7 @@ function AppContent() {
         args: [BigInt(confirmAction.job.id), confirmAction.disputeWorker as `0x${string}`, true],
       })
       setMyJobs(prev => prev.filter(j => confirmAction.job && j.id !== confirmAction.job.id))
+      if (confirmAction.job) markClaimRevoked(confirmAction.job.id)
       showToast(`Claim cancelled! Tx: ${hash.slice(0, 10)}...`, 'success')
       scheduleRefresh(refetchJobs)
     } catch (e: unknown) {
@@ -819,8 +809,7 @@ function AppContent() {
         setShowNotifications={setShowNotifications}
       />
 
-      <div style={{ padding: isMobile ? '14px 14px' : '20px 24px', flex: '1 0 auto', minHeight: 0 }}>
-        <Suspense fallback={<PageSkeleton isMobile={isMobile} />}>
+      <div style={{ paddingTop: isMobile ? 120 : 24, paddingRight: isMobile ? 14 : 24, paddingBottom: isMobile ? 14 : 20, paddingLeft: isMobile ? 14 : 24, flex: '1 0 auto', minHeight: 0 }}>
         <Routes>
           <Route path="/dashboard" element={
             <Dashboard
@@ -928,7 +917,6 @@ function AppContent() {
             </div>
           } />
         </Routes>
-        </Suspense>
       </div>
 
       <ToastContainer toasts={toasts} />
@@ -1046,11 +1034,11 @@ export default function App() {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={lightTheme({ accentColor: '#F7CE3E', accentColorForeground: '#0A1612', borderRadius: 'small', fontStack: 'system' })}>
+        <ConnectKitProvider theme="midnight" options={{ overlayBlur: 0 }}>
           <BrowserRouter>
             <AppContent />
           </BrowserRouter>
-        </RainbowKitProvider>
+        </ConnectKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   )

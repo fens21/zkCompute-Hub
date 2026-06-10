@@ -234,7 +234,7 @@ export function ChatPage() {
         onClick={() => navigate(-1)}
         style={{
           position: "absolute", top: 12, right: 12, zIndex: 10,
-          width: 28, height: 28, borderRadius: "50%",
+          width: isMobile ? 44 : 28, height: isMobile ? 44 : 28, borderRadius: "50%",
           display: "flex", alignItems: "center", justifyContent: "center",
           background: "rgba(255,255,255,0.05)", border: "1px solid #3f3f46",
           color: "#a1a1aa", cursor: "pointer",
@@ -242,7 +242,7 @@ export function ChatPage() {
         }}
         aria-label="Close chat"
       >
-        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg width={isMobile ? 18 : 14} height={isMobile ? 18 : 14} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>

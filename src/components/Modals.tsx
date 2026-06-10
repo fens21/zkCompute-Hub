@@ -780,7 +780,7 @@ export function ConfirmModal({
   return (
     <div
       ref={trapRef}
-      style={{ ...modalOverlay, zIndex: 200 }}
+      style={{ ...modalOverlay, zIndex: 300 }}
       role="dialog"
       aria-modal="true"
       aria-label={typeLabel}
@@ -915,14 +915,19 @@ export function EditProfileModal({
           overflow: "auto",
         }}
       >
-        <h3 style={{ marginTop: 0 }}>Edit Profile</h3>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
+          <div style={{ width: 28 }}></div>
+          <h3 style={{ margin: 0, flex: 1, textAlign: 'center' }}>Edit Profile</h3>
+          <button onClick={onClose} aria-label="Close" style={{ background: 'transparent', border: 'none', color: colors.textMuted, fontSize: 20, cursor: 'pointer', padding: '0 4px', lineHeight: 1, width: 28 }}>✕</button>
+        </div>
 
         <div
           style={{
             marginBottom: 24,
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
-            gap: 16,
+            gap: 8,
           }}
         >
           <div style={{ position: "relative", flexShrink: 0 }}>
@@ -947,16 +952,7 @@ export function EditProfileModal({
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
               ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 24,
-                  }}
-                ></div>
+                <div style={{ width: "100%", height: "100%" }}></div>
               )}
             </div>
             <div
@@ -967,59 +963,25 @@ export function EditProfileModal({
                 position: "absolute",
                 bottom: -6,
                 right: -6,
-                width: 22,
-                height: 22,
+                width: 24,
+                height: 24,
                 background: colors.gold,
                 borderRadius: "50%",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
-                fontSize: fontSizes.sm,
+                fontSize: 13,
+                lineHeight: 1,
+                color: "#000",
               }}
-            ></div>
+            >✏️</div>
           </div>
-          <div style={{ flex: 1 }}>
-            <div
-              style={{
-                fontSize: fontSizes.base,
-                opacity: 0.7,
-                marginBottom: 6,
-              }}
-            >
-              Profile Photo
+          {uploadError && (
+            <div style={{ fontSize: fontSizes.xs, color: colors.red }}>
+              {uploadError}
             </div>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingAvatar}
-              aria-label="Choose profile image"
-              style={{
-                padding: "6px 14px",
-                background: "#222",
-                border: "1px solid #555",
-                color: colors.textPrimary,
-                borderRadius: radii.sm,
-                fontSize: fontSizes.sm,
-                cursor: "pointer",
-              }}
-            >
-              {uploadingAvatar ? "Uploading..." : "Choose Image"}
-            </button>
-            <div style={{ fontSize: fontSizes.xs, opacity: 0.4, marginTop: 4 }}>
-              Max 2MB · JPG, PNG, GIF, WebP
-            </div>
-            {uploadError && (
-              <div
-                style={{
-                  fontSize: fontSizes.xs,
-                  color: colors.red,
-                  marginTop: 4,
-                }}
-              >
-                {uploadError}
-              </div>
-            )}
-          </div>
+          )}
           <input
             ref={fileInputRef}
             type="file"
@@ -1238,6 +1200,7 @@ export function DisputeModal({
             aria-label="Dispute reason"
             style={{
               width: "100%",
+              boxSizing: "border-box",
               background: "#000",
               border: `1px solid ${
                 reasonLen > 0 && reasonLen < 10 ? colors.orange : colors.border
@@ -1406,11 +1369,12 @@ export function ZKSolutionModal({
               width: "100%",
               background: "#000",
               border: `1px solid ${solution ? "#a78bfa" : colors.border}`,
-              padding: "12px 14px",
+              padding: 8,
               color: colors.textPrimary,
-              fontSize: fontSizes.md,
+              fontSize: fontSizes.sm,
               borderRadius: radii.sm,
               fontFamily: "monospace",
+              boxSizing: "border-box",
             }}
           />
           <div style={{ fontSize: 10, opacity: 0.4, marginTop: 4 }}>

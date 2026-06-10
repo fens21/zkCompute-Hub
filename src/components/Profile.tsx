@@ -78,13 +78,20 @@ export function Profile({ account, myJobs, bio, skills, avatarUrl, setEditBio, s
       <div style={{ background: colors.bgCard, padding: isMobile ? 16 : 28, border: `1px solid ${colors.borderLight}`, borderRadius: 16 }}>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-          <img
-            src={displayAvatar}
-            alt="avatar"
-            loading="lazy"
-            onLoad={e => (e.currentTarget.style.opacity = '1')}
-            style={{ width: 64, height: 64, borderRadius: radii.xl, border: hasEarnings ? `2px solid ${colors.gold}` : `2px solid ${colors.borderLight}`, objectFit: avatarUrl ? 'cover' : 'none', imageRendering: avatarUrl ? 'auto' : 'pixelated', flexShrink: 0, opacity: avatarUrl ? 0 : 1, transition: 'opacity 0.3s' }}
-          />
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <img
+              src={displayAvatar}
+              alt="avatar"
+              onLoad={e => (e.currentTarget.style.opacity = '1')}
+              style={{ width: 64, height: 64, borderRadius: radii.xl, border: hasEarnings ? `2px solid ${colors.gold}` : `2px solid ${colors.borderLight}`, objectFit: avatarUrl ? 'cover' : 'none', imageRendering: avatarUrl ? 'auto' : 'pixelated', display: 'block', opacity: avatarUrl ? 0 : 1, transition: 'opacity 0.3s' }}
+            />
+            <div
+              onClick={() => { setEditBio(bio); setShowEditProfile(true) }}
+              role="button"
+              aria-label="Edit profile"
+              style={{ position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, background: colors.gold, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 11, lineHeight: 1, color: '#000' }}
+            >✏️</div>
+          </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 16, fontWeight: 600 }}>
               {shorten(account)}
@@ -95,7 +102,7 @@ export function Profile({ account, myJobs, bio, skills, avatarUrl, setEditBio, s
               <button
                 onClick={copyAddress}
                 aria-label={copied ? 'Address copied' : 'Copy wallet address'}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: copied ? '#1a3c1a' : colors.bgElevated, border: `1px solid ${copied ? colors.green : colors.border}`, color: copied ? colors.green : colors.textMuted, borderRadius: radii.sm, fontSize: fontSizes.sm, cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', minHeight: isMobile ? 44 : 'auto', background: copied ? '#1a3c1a' : colors.bgElevated, border: `1px solid ${copied ? colors.green : colors.border}`, color: copied ? colors.green : colors.textMuted, borderRadius: radii.sm, fontSize: fontSizes.sm, cursor: 'pointer' }}
               >
                 {copied ? 'Copied!' : 'Copy Address'}
               </button>
@@ -116,7 +123,7 @@ export function Profile({ account, myJobs, bio, skills, avatarUrl, setEditBio, s
             <button
               onClick={() => { setEditBio(bio); setShowEditProfile(true) }}
               aria-label="Edit profile"
-              style={{ padding: '6px 14px', background: colors.bgElevated, border: `1px solid ${colors.border}`, color: colors.textPrimary, borderRadius: radii.sm, fontSize: fontSizes.sm, cursor: 'pointer' }}
+              style={{ padding: '6px 14px', minHeight: isMobile ? 44 : 'auto', background: colors.bgElevated, border: `1px solid ${colors.border}`, color: colors.textPrimary, borderRadius: radii.sm, fontSize: fontSizes.sm, cursor: 'pointer' }}
             >
               Edit Profile
             </button>

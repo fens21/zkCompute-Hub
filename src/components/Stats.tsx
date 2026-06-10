@@ -55,7 +55,7 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
   if (error) {
     return (
       <div>
-        <h2 style={{ fontSize: 20, marginBottom: 24 }}>Statistics Overview</h2>
+        <h1 style={{ fontSize: isMobile ? 20 : fontSizes.heading, margin: 0, marginBottom: 24, color: colors.gold, lineHeight: 1.3 }}>Statistics Overview</h1>
         <div style={{ background: colors.bgCard, border: `1px solid ${colors.red}`, borderRadius: radii.xl, padding: 40, textAlign: 'center' }}>
           <div style={{ fontSize: 28, marginBottom: 12 }}>!</div>
           <div style={{ opacity: 0.7, marginBottom: 16, fontSize: fontSizes.md }}>{error}</div>
@@ -68,7 +68,7 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
   if (loading && onChainJobs.length === 0) {
     return (
       <div>
-        <h2 style={{ fontSize: 20, marginBottom: 24 }}>Statistics Overview</h2>
+        <h1 style={{ fontSize: isMobile ? 20 : fontSizes.heading, margin: 0, marginBottom: 24, color: colors.gold, lineHeight: 1.3 }}>Statistics Overview</h1>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
           {['Earnings', 'Completed', 'On-Chain Jobs', 'Escrowed'].map(label => (
             <div key={label} style={{ background: colors.bgCard, borderRadius: radii.xl, padding: 20, border: `1px solid ${colors.borderLight}` }} aria-label={`Loading ${label}`}>
@@ -86,7 +86,7 @@ export function Stats({ onChainJobs, leaderboard, ltcPrice, address, loading, er
     <section aria-label="Statistics overview" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div style={{ flex: 1 }} />
-        <h2 style={{ fontSize: 20, margin: 0, color: colors.gold, textAlign: 'center' }}>Statistics Overview</h2>
+        <h1 style={{ fontSize: isMobile ? 20 : fontSizes.heading, margin: 0, color: colors.gold, lineHeight: 1.3 }}>Statistics Overview</h1>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
           {onRetry &&       <button onClick={onRetry} aria-label="Reload statistics" style={{ background: colors.bgElevated, color: colors.textMuted, border: 'none', width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, borderRadius: radii.sm, cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Refresh data">↻</button>}
         </div>

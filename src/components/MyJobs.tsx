@@ -60,7 +60,7 @@ export function MyJobs({
   if (myJobs.length === 0) {
     return (
       <div>
-        <h2 style={{ fontSize: 20, marginBottom: 24 }}>My Jobs</h2>
+        <h1 style={{ fontSize: isMobile ? 20 : fontSizes.heading, margin: 0, marginBottom: 24, color: colors.gold, lineHeight: 1.3 }}>My Jobs</h1>
         <div style={{ opacity: 0.7, padding: 60, textAlign: "center" }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}></div>
           <div style={{ marginBottom: 16 }}>
@@ -114,7 +114,7 @@ export function MyJobs({
           marginBottom: 24,
         }}
       >
-        <h2 style={{ fontSize: 20, margin: 0 }}>My Jobs</h2>
+        <h1 style={{ fontSize: isMobile ? 20 : fontSizes.heading, margin: 0, color: colors.gold, lineHeight: 1.3 }}>My Jobs</h1>
         <div style={{ display: "flex", gap: 4, alignSelf: "flex-end" }}>
           <button
             type="button"
@@ -192,7 +192,8 @@ export function MyJobs({
           >
             {activeJobs.map((job) => {
               const rewardStr = job.reward.toLocaleString(undefined, {
-                maximumFractionDigits: 0,
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 4,
               });
               const endMs = getDeadlineMs(job.createdAt, job.deadline);
               const expired = endMs !== null && endMs <= now;
@@ -207,6 +208,7 @@ export function MyJobs({
                         onSubmitZKProof={onSubmitZKProof}
                         onUnclaim={onUnclaim}
                         submittingProof={submittingProof ?? false}
+                        isMobile={isMobile}
                         onChat={() =>
                           navigate(`/chat/${job.id}`, {
                             state: { posterAddress: job.poster, jobTitle: job.title, hasClaimed: true, workerAddress: walletAddress },
@@ -239,7 +241,7 @@ export function MyJobs({
                           flexDirection: isMobile ? "column" : "row",
                         }}
                       >
-                        {job.type === "ZK" ? (
+                        {job.type === "ZK" || job.verificationMethod === "zk-proof" ? (
                           <button
                             type="button"
                             onClick={() => onSubmitZKProof?.(job)}
@@ -255,6 +257,7 @@ export function MyJobs({
                               fontWeight: 600,
                               borderRadius: radii.sm,
                               fontSize: fontSizes.sm,
+                              minHeight: isMobile ? 44 : "auto",
                               cursor:
                                 submittingProof || expired
                                   ? "not-allowed"
@@ -286,6 +289,7 @@ export function MyJobs({
                               fontWeight: 600,
                               borderRadius: radii.sm,
                               fontSize: fontSizes.sm,
+                              minHeight: isMobile ? 44 : "auto",
                               cursor:
                                 submittingProof || expired
                                   ? "not-allowed"
@@ -328,6 +332,7 @@ export function MyJobs({
                             fontWeight: 600,
                             borderRadius: radii.sm,
                             fontSize: fontSizes.sm,
+                            minHeight: isMobile ? 44 : "auto",
                             cursor: submittingProof ? "not-allowed" : "pointer",
                             opacity: submittingProof ? 0.4 : 1,
                           }}
@@ -417,7 +422,8 @@ export function MyJobs({
           >
             {expiredJobs.map((job) => {
               const rewardStr = job.reward.toLocaleString(undefined, {
-                maximumFractionDigits: 0,
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 4,
               });
               return (
                 <div key={job.id}>
@@ -429,6 +435,12 @@ export function MyJobs({
                       onSubmitZKProof={onSubmitZKProof}
                       onUnclaim={onUnclaim}
                       submittingProof={submittingProof ?? false}
+                      isMobile={isMobile}
+                      onChat={() =>
+                        navigate(`/chat/${job.id}`, {
+                          state: { posterAddress: job.poster, jobTitle: job.title, hasClaimed: true, workerAddress: walletAddress },
+                        })
+                      }
                     />
                   ) : (
                     <div
@@ -543,7 +555,8 @@ export function MyJobs({
           >
             {completedJobs.map((job) => {
               const rewardStr = job.reward.toLocaleString(undefined, {
-                maximumFractionDigits: 0,
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 4,
               });
               return (
                 <div key={job.id}>
@@ -670,7 +683,8 @@ export function MyJobs({
           >
             {disputedJobs.map((job) => {
               const rewardStr = job.reward.toLocaleString(undefined, {
-                maximumFractionDigits: 0,
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 4,
               });
               return (
                 <div key={job.id}>
@@ -802,7 +816,8 @@ export function MyJobs({
           >
             {paidJobs.map((job) => {
               const rewardStr = job.reward.toLocaleString(undefined, {
-                maximumFractionDigits: 0,
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 4,
               });
               return (
                 <div key={job.id}>
@@ -1229,7 +1244,8 @@ function TableRow({
   onToggle: () => void;
 }) {
   const rewardStr = job.reward.toLocaleString(undefined, {
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 4,
   });
   const endMs = getDeadlineMs(job.createdAt, job.deadline);
   const expired = endMs !== null && endMs <= now;
@@ -1385,6 +1401,7 @@ function ActiveRow({
   onSubmitZKProof,
   onUnclaim,
   submittingProof,
+  isMobile,
   onChat,
 }: {
   job: Job;
@@ -1393,6 +1410,7 @@ function ActiveRow({
   onSubmitZKProof?: (job: Job) => void;
   onUnclaim?: (jobId: number) => void;
   submittingProof: boolean;
+  isMobile: boolean;
   onChat?: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -1407,7 +1425,7 @@ function ActiveRow({
       onToggle={() => setOpen(!open)}
     >
       <div style={{ display: "flex", gap: 8, flexDirection: "row" }}>
-        {job.type === "ZK" ? (
+        {job.type === "ZK" || job.verificationMethod === "zk-proof" ? (
           <button
             type="button"
             onClick={() => onSubmitZKProof?.(job)}
@@ -1423,6 +1441,7 @@ function ActiveRow({
               fontWeight: 700,
               cursor: submittingProof || expired ? "not-allowed" : "pointer",
               fontSize: fontSizes.sm,
+              minHeight: isMobile ? 44 : "auto",
               opacity: submittingProof || expired ? 0.5 : 1,
             }}
           >
@@ -1448,6 +1467,7 @@ function ActiveRow({
               fontWeight: 700,
               cursor: submittingProof || expired ? "not-allowed" : "pointer",
               fontSize: fontSizes.sm,
+              minHeight: isMobile ? 44 : "auto",
               opacity: submittingProof || expired ? 0.5 : 1,
             }}
           >
@@ -1480,6 +1500,7 @@ function ActiveRow({
             fontWeight: 600,
             cursor: submittingProof ? "not-allowed" : "pointer",
             fontSize: fontSizes.sm,
+            minHeight: isMobile ? 44 : "auto",
             opacity: submittingProof ? 0.4 : 1,
           }}
         >
@@ -1502,6 +1523,7 @@ function ActiveRow({
             fontWeight: 600,
             cursor: "pointer",
             fontSize: fontSizes.sm,
+            minHeight: isMobile ? 44 : "auto",
           }}
         >
           CHAT

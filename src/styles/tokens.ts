@@ -62,7 +62,7 @@ export const modalOverlay = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  zIndex: 100,
+  zIndex: 300,
 }
 
 export const modalContent = {

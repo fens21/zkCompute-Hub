@@ -700,7 +700,7 @@ export function ChatRoom({
           aria-label="Scroll to bottom"
           style={{
             position: "absolute", bottom: 72, right: 16, zIndex: 5,
-            width: 32, height: 32, borderRadius: "50%",
+            width: 40, height: 40, borderRadius: "50%",
             background: "#27272a", border: "1px solid #3f3f46", color: "#a1a1aa",
             cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
@@ -928,7 +928,7 @@ export function ChatRoom({
 
         {isOpen && (
           <div style={{
-            position: "fixed", bottom: 24, right: 24, zIndex: 50, width: 360, height: 480,
+            position: "fixed", bottom: 24, right: 24, zIndex: 50, width: "min(360px, calc(100vw - 24px))", height: "min(480px, calc(100dvh - 48px))",
             borderRadius: 16, overflow: "hidden", border: "1px solid #27272a", boxShadow: "0 25px 80px rgba(0,0,0,0.5)",
           }}>
             {content}

@@ -8,16 +8,38 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const MYJOBS_KEY = "zkcompute_myjobs_v2";
 const WORKER_KEY = "zkcompute_workers";
+const REVOKED_KEY = "zkcompute_revoked_claims";
+
+function getRevoked(): Set<number> {
+  try {
+    const raw = localStorage.getItem(REVOKED_KEY);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw));
+  } catch {
+    return new Set();
+  }
+}
+
+function saveRevoked(ids: Set<number>) {
+  localStorage.setItem(REVOKED_KEY, JSON.stringify([...ids]));
+}
+
+export function markClaimRevoked(jobId: number) {
+  const ids = getRevoked();
+  ids.add(jobId);
+  saveRevoked(ids);
+}
 
 function loadMyJobs(address?: string): Job[] {
   if (!address) return [];
   const addr = address.toLowerCase();
+  const revoked = getRevoked();
   try {
     const saved = localStorage.getItem(MYJOBS_KEY);
     if (!saved) return [];
     const data = JSON.parse(saved);
-    if (Array.isArray(data)) return data;
-    return data[addr] || [];
+    const jobs: Job[] = Array.isArray(data) ? data : data[addr] || [];
+    return jobs.filter((j) => !revoked.has(j.id));
   } catch {
     return [];
   }
@@ -254,16 +276,13 @@ export function useMyJobs(
     const statusRank: Record<string, number> = { claimed: 0, completed: 1, paid: 2, disputed: 1 };
     const getRank = (s: string | undefined) => (s ? (statusRank[s] ?? -1) : -1);
 
+    const revoked = getRevoked();
     const mergeEvents = (events: (WorkerEvent & { job?: Job })[]) => {
       setMyJobsState((prev) => {
         const jobsMap = new Map<number, Job>();
         for (const j of prev) jobsMap.set(j.id, j);
-        if (cached.length > 0) {
-          for (const j of cached) {
-            if (!jobsMap.has(j.id)) jobsMap.set(j.id, j);
-          }
-        }
         for (const ev of events) {
+          if (revoked.has(ev.jobId)) continue;
           const existing = jobsMap.get(ev.jobId);
           const evRank = getRank(ev.status);
           if (!existing) {
@@ -301,58 +320,61 @@ export function useMyJobs(
       });
     };
 
-    if (cached.length > 0) {
-      setMyJobsState(cached);
-      // Background sync on-chain — override status by source of truth
-      const addr = address.toLowerCase();
+    const addr = address.toLowerCase();
+
+    const syncOnChain = (jobsToCheck: Job[]) => {
+      if (jobsToCheck.length === 0) return;
       Promise.all(
-        cached.map((j) =>
+        jobsToCheck.map((j) =>
           Promise.all([
-            readContract(config, {
-              address: CONTRACT_ADDRESS as `0x${string}`,
-              abi,
-              functionName: "paid",
-              args: [BigInt(j.id), addr as `0x${string}`],
-            }).catch(() => null),
-            readContract(config, {
-              address: CONTRACT_ADDRESS as `0x${string}`,
-              abi,
-              functionName: "proofSubmitted",
-              args: [BigInt(j.id), addr as `0x${string}`],
-            }).catch(() => null),
-          ]).then(([isPaid, hasProof]) => ({ jobId: j.id, isPaid, hasProof })),
+            readContract(config, { address: CONTRACT_ADDRESS as `0x${string}`, abi, functionName: "paid", args: [BigInt(j.id), addr as `0x${string}`] }).catch(() => null),
+            readContract(config, { address: CONTRACT_ADDRESS as `0x${string}`, abi, functionName: "proofSubmitted", args: [BigInt(j.id), addr as `0x${string}`] }).catch(() => null),
+            readContract(config, { address: CONTRACT_ADDRESS as `0x${string}`, abi, functionName: "hasClaimed", args: [BigInt(j.id), addr as `0x${string}`] }).catch(() => null),
+          ]).then(([isPaid, hasProof, stillClaimed]) => ({ jobId: j.id, isPaid, hasProof, stillClaimed })),
         ),
       )
         .then((results) => {
-          const statusRank = { claimed: 0, completed: 1, paid: 2, disputed: 1 };
-          const resultsMap = new Map(results.map((r) => [r.jobId, r]));
           setMyJobsState((prev) => {
-            const next = prev.map((j) => {
-              const r = resultsMap.get(j.id);
+            const nextRevoked = new Set(revoked);
+            const next = prev.filter((j) => {
+              const r = results.find((x) => x.jobId === j.id);
+              if (r && r.stillClaimed === false) { nextRevoked.add(j.id); return false; }
+              return true;
+            }).map((j) => {
+              const r = results.find((x) => x.jobId === j.id);
               if (!r) return j;
-              const currentRank =
-                statusRank[j.status as keyof typeof statusRank] ?? 0;
-              if (r.isPaid === true && currentRank < 2)
-                return { ...j, status: "paid" as const };
-              if (r.hasProof === true && currentRank < 1)
-                return { ...j, status: "completed" as const };
+              const statusRank = { claimed: 0, completed: 1, paid: 2, disputed: 1 };
+              const currentRank = statusRank[j.status as keyof typeof statusRank] ?? 0;
+              if (r.isPaid === true && currentRank < 2) return { ...j, status: "paid" as const };
+              if (r.hasProof === true && currentRank < 1) return { ...j, status: "completed" as const };
               return j;
             });
+            if (nextRevoked.size > revoked.size) saveRevoked(nextRevoked);
             saveMyJobs(address, next);
-            return next;
-          });
-        })
-        .catch(() => {});
-      // Background sync from Supabase — upgrades 'completed' → 'paid' etc.
+              return next;
+            });
+          })
+          .catch(() => {});
+      };
+
+    const afterSync = () => {
+      setMyJobsState((prev) => {
+        if (prev.length > 0) syncOnChain(prev);
+        return prev;
+      });
+    };
+
+    if (cached.length > 0) {
+      setMyJobsState(cached);
       fetchWorkerActivities(address)
-        .then(mergeEvents)
-        .catch(() => {});
+        .then((events) => { mergeEvents(events); afterSync(); })
+        .catch(() => syncOnChain(cached));
       return;
     }
 
-    // No cache — restore from Supabase
+    // No cache — restore from Supabase, then on-chain cleanup
     fetchWorkerActivities(address)
-      .then(mergeEvents)
+      .then((events) => { mergeEvents(events); afterSync(); })
       .catch(() => {});
   }, [address]);
 

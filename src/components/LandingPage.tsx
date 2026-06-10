@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react'
-import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { ConnectKitButton } from 'connectkit'
 import { colors, radii, fontSizes } from '../styles/tokens'
 import '../styles/landing.css'
 
@@ -153,17 +153,14 @@ radial-gradient(ellipse 300px 500px at 10% 70%, #1a5c8a 0%, transparent 60%),
           </div>
 
           <div className="lp-cta-row" style={{ animation: 'fadeIn 0.8s ease-out 0.2s both', marginTop: 48 }}>
-            <ConnectButton.Custom>
-              {({ openConnectModal, authenticationStatus, mounted }) => {
-                const ready = mounted && authenticationStatus !== 'loading'
-                return (
-                  <button id="lp-connect-top" onClick={openConnectModal} disabled={!ready} aria-label="Connect wallet to enter"
-                    className="lp-cta" style={{ ...ctaBtnSx, opacity: ready ? 1 : 0.6, cursor: ready ? 'pointer' : 'not-allowed' }}>
-                    {authenticationStatus === 'loading' ? <><span className="lp-spinner" />LOADING…</> : 'CONNECT WALLET'}
-                  </button>
-                )
-              }}
-            </ConnectButton.Custom>
+            <ConnectKitButton.Custom>
+              {({ show, isConnecting }) => (
+                <button id="lp-connect-top" onClick={show} disabled={isConnecting} aria-label="Connect wallet to enter"
+                  className="lp-cta" style={{ ...ctaBtnSx, opacity: isConnecting ? 0.6 : 1, cursor: isConnecting ? 'not-allowed' : 'pointer' }}>
+                  {isConnecting ? <><span className="lp-spinner" />LOADING…</> : 'CONNECT WALLET'}
+                </button>
+              )}
+            </ConnectKitButton.Custom>
           </div>
 
           <div className="lp-features" style={{ animation: 'fadeIn 0.8s ease-out 0.6s both', display: 'flex', gap: 24, justifyContent: 'center', marginTop: 52, marginBottom: 16 }}>

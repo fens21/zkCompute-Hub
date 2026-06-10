@@ -75,18 +75,6 @@ export function Marketplace({ jobs, typeFilter, setTypeFilter, sortBy, setSortBy
         flexWrap: 'wrap',
         gap: isMobile ? 8 : 10,
       }}>
-        <div style={{ display: 'flex', gap: 4, marginRight: 'auto' }}>
-          <button onClick={() => setViewMode('grid')} aria-label="Grid view" style={{ background: viewMode === 'grid' ? colors.gold : 'rgba(197,193,192,0.04)', color: viewMode === 'grid' ? '#000' : colors.textDim, border: `1px solid ${viewMode === 'grid' ? colors.gold : 'rgba(197,193,192,0.08)'}`, width: 32, height: 32, borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.lg, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
-            onMouseEnter={e => { if (viewMode !== 'grid') { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.color = colors.textPrimary; e.currentTarget.style.borderColor = 'rgba(247,206,62,0.2)' } }}
-            onMouseLeave={e => { if (viewMode !== 'grid') { e.currentTarget.style.background = 'rgba(197,193,192,0.04)'; e.currentTarget.style.color = colors.textDim; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.08)' } }}
-            onFocus={e => { if (viewMode !== 'grid') { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.color = colors.textPrimary; e.currentTarget.style.borderColor = 'rgba(247,206,62,0.2)' } }}
-            onBlur={e => { if (viewMode !== 'grid') { e.currentTarget.style.background = 'rgba(197,193,192,0.04)'; e.currentTarget.style.color = colors.textDim; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.08)' } }} title="Grid view">▦</button>
-          <button onClick={() => setViewMode('list')} aria-label="List view" style={{ background: viewMode === 'list' ? colors.gold : 'rgba(197,193,192,0.04)', color: viewMode === 'list' ? '#000' : colors.textDim, border: `1px solid ${viewMode === 'list' ? colors.gold : 'rgba(197,193,192,0.08)'}`, width: 32, height: 32, borderRadius: radii.sm, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
-            onMouseEnter={e => { if (viewMode !== 'list') { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.color = colors.textPrimary; e.currentTarget.style.borderColor = 'rgba(247,206,62,0.2)' } }}
-            onMouseLeave={e => { if (viewMode !== 'list') { e.currentTarget.style.background = 'rgba(197,193,192,0.04)'; e.currentTarget.style.color = colors.textDim; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.08)' } }}
-            onFocus={e => { if (viewMode !== 'list') { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.color = colors.textPrimary; e.currentTarget.style.borderColor = 'rgba(247,206,62,0.2)' } }}
-            onBlur={e => { if (viewMode !== 'list') { e.currentTarget.style.background = 'rgba(197,193,192,0.04)'; e.currentTarget.style.color = colors.textDim; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.08)' } }} title="List view">☰</button>
-        </div>
         <div style={{ flex: isMobile ? '1' : 'none', minWidth: isMobile ? 100 : 160, maxWidth: isMobile ? '' : 200 }}>
           <SearchableSelect
             value={typeFilter}
@@ -109,6 +97,18 @@ export function Marketplace({ jobs, typeFilter, setTypeFilter, sortBy, setSortBy
           <option value="reward">Sort: Reward</option>
           <option value="deadline">Sort: Deadline</option>
         </select>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button onClick={() => setViewMode('grid')} aria-label="Grid view" style={{ background: viewMode === 'grid' ? colors.gold : 'rgba(197,193,192,0.04)', color: viewMode === 'grid' ? '#000' : colors.textDim, border: `1px solid ${viewMode === 'grid' ? colors.gold : 'rgba(197,193,192,0.08)'}`, width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.lg, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+            onMouseEnter={e => { if (viewMode !== 'grid') { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.color = colors.textPrimary; e.currentTarget.style.borderColor = 'rgba(247,206,62,0.2)' } }}
+            onMouseLeave={e => { if (viewMode !== 'grid') { e.currentTarget.style.background = 'rgba(197,193,192,0.04)'; e.currentTarget.style.color = colors.textDim; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.08)' } }}
+            onFocus={e => { if (viewMode !== 'grid') { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.color = colors.textPrimary; e.currentTarget.style.borderColor = 'rgba(247,206,62,0.2)' } }}
+            onBlur={e => { if (viewMode !== 'grid') { e.currentTarget.style.background = 'rgba(197,193,192,0.04)'; e.currentTarget.style.color = colors.textDim; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.08)' } }} title="Grid view">▦</button>
+          <button onClick={() => setViewMode('list')} aria-label="List view" style={{ background: viewMode === 'list' ? colors.gold : 'rgba(197,193,192,0.04)', color: viewMode === 'list' ? '#000' : colors.textDim, border: `1px solid ${viewMode === 'list' ? colors.gold : 'rgba(197,193,192,0.08)'}`, width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, borderRadius: radii.sm, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+            onMouseEnter={e => { if (viewMode !== 'list') { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.color = colors.textPrimary; e.currentTarget.style.borderColor = 'rgba(247,206,62,0.2)' } }}
+            onMouseLeave={e => { if (viewMode !== 'list') { e.currentTarget.style.background = 'rgba(197,193,192,0.04)'; e.currentTarget.style.color = colors.textDim; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.08)' } }}
+            onFocus={e => { if (viewMode !== 'list') { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.color = colors.textPrimary; e.currentTarget.style.borderColor = 'rgba(247,206,62,0.2)' } }}
+            onBlur={e => { if (viewMode !== 'list') { e.currentTarget.style.background = 'rgba(197,193,192,0.04)'; e.currentTarget.style.color = colors.textDim; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.08)' } }} title="List view">☰</button>
+        </div>
       </div>
 
       {jobsLoading && jobs.length === 0 ? (
@@ -135,7 +135,7 @@ export function Marketplace({ jobs, typeFilter, setTypeFilter, sortBy, setSortBy
         </div>
       ) : (
         <>
-          {totalPages > 1 && (
+          {totalPages > 1 && !isMobile && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginBottom: 16 }}>
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} style={{ background: page <= 1 ? colors.bgCard : colors.bgElevated, border: `1px solid ${page <= 1 ? 'rgba(197,193,192,0.06)' : 'rgba(197,193,192,0.12)'}`, color: page <= 1 ? colors.textDim : colors.textPrimary, padding: '4px 12px', borderRadius: radii.sm, cursor: page <= 1 ? 'default' : 'pointer', fontSize: fontSizes.sm, fontWeight: 600, transition: 'all 0.15s' }}
                 onMouseEnter={e => { if (page > 1) { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.borderColor = 'rgba(247,206,62,0.3)' } }}
@@ -167,13 +167,13 @@ export function Marketplace({ jobs, typeFilter, setTypeFilter, sortBy, setSortBy
           )}
           {totalPages > 1 && (
             <div className="pagination-bar" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} style={{ background: page <= 1 ? colors.bgCard : colors.bgElevated, border: `1px solid ${page <= 1 ? 'rgba(197,193,192,0.06)' : 'rgba(197,193,192,0.12)'}`, color: page <= 1 ? colors.textDim : colors.textPrimary, padding: '4px 12px', borderRadius: radii.sm, cursor: page <= 1 ? 'default' : 'pointer', fontSize: fontSizes.sm, fontWeight: 600, transition: 'all 0.15s' }}
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} style={{ background: page <= 1 ? colors.bgCard : colors.bgElevated, border: `1px solid ${page <= 1 ? 'rgba(197,193,192,0.06)' : 'rgba(197,193,192,0.12)'}`, color: page <= 1 ? colors.textDim : colors.textPrimary, padding: '4px 12px', borderRadius: radii.sm, cursor: page <= 1 ? 'default' : 'pointer', fontSize: fontSizes.sm, fontWeight: 600, transition: 'all 0.15s', minHeight: isMobile ? 44 : 'auto' }}
                 onMouseEnter={e => { if (page > 1) { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.borderColor = 'rgba(247,206,62,0.3)' } }}
                 onMouseLeave={e => { if (page > 1) { e.currentTarget.style.background = colors.bgElevated; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.12)' } }}
                 onFocus={e => { if (page > 1) { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.borderColor = 'rgba(247,206,62,0.3)' } }}
                 onBlur={e => { if (page > 1) { e.currentTarget.style.background = colors.bgElevated; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.12)' } }}>Prev</button>
               <span style={{ fontSize: fontSizes.base, color: colors.textDim }}>Page {page} of {totalPages}</span>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={!hasMore} style={{ background: !hasMore ? colors.bgCard : colors.bgElevated, border: `1px solid ${!hasMore ? 'rgba(197,193,192,0.06)' : 'rgba(197,193,192,0.12)'}`, color: !hasMore ? colors.textDim : colors.textPrimary, padding: '4px 12px', borderRadius: radii.sm, cursor: !hasMore ? 'default' : 'pointer', fontSize: fontSizes.sm, fontWeight: 600, transition: 'all 0.15s' }}
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={!hasMore} style={{ background: !hasMore ? colors.bgCard : colors.bgElevated, border: `1px solid ${!hasMore ? 'rgba(197,193,192,0.06)' : 'rgba(197,193,192,0.12)'}`, color: !hasMore ? colors.textDim : colors.textPrimary, padding: '4px 12px', borderRadius: radii.sm, cursor: !hasMore ? 'default' : 'pointer', fontSize: fontSizes.sm, fontWeight: 600, transition: 'all 0.15s', minHeight: isMobile ? 44 : 'auto' }}
                 onMouseEnter={e => { if (hasMore) { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.borderColor = 'rgba(247,206,62,0.3)' } }}
                 onMouseLeave={e => { if (hasMore) { e.currentTarget.style.background = colors.bgElevated; e.currentTarget.style.borderColor = 'rgba(197,193,192,0.12)' } }}
                 onFocus={e => { if (hasMore) { e.currentTarget.style.background = 'rgba(247,206,62,0.06)'; e.currentTarget.style.borderColor = 'rgba(247,206,62,0.3)' } }}
@@ -199,7 +199,7 @@ function JobCarousel({ jobs, onDetail, onClose }: { jobs: Job[]; onDetail: (job:
   const job = jobs[idx]
   if (!job) return null
 
-  const rewardStr = job.reward.toLocaleString(undefined, { maximumFractionDigits: 0 })
+  const rewardStr = job.reward.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 4 })
 
   return (
     <div
@@ -273,7 +273,7 @@ function DeadlineValue({ createdAt, deadline }: { createdAt?: number; deadline: 
 
 function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim: (job: Job) => void; onDetail: (job: Job) => void; claimingJobId?: number | null }) {
   const isMobile = useIsMobile()
-  const rewardStr = job.reward.toLocaleString(undefined, { maximumFractionDigits: 0 })
+  const rewardStr = job.reward.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 4 })
   const claimedRatio = job.maxWorkers > 0 ? job.claimedCount / job.maxWorkers : 0
   const isFull = job.claimedCount >= job.maxWorkers
   const isAlmostFull = claimedRatio >= 0.67 && !isFull
@@ -302,43 +302,42 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
       overflow: 'hidden',
     }}>
 
-      {/* Almost full / Full badge */}
-      {(isFull || isAlmostFull) && (
-        <div style={{
-          position: 'absolute', top: 12, right: 12,
-          background: isFull ? '#0d2e1a' : '#2a1500',
-          border: `1px solid ${isFull ? colors.green : colors.orange}`,
-          color: isFull ? colors.green : colors.orange,
-          fontSize: 9, fontWeight: 700, padding: '2px 7px',
-          borderRadius: radii.full, letterSpacing: 0.5,
-        }}>
-          {isFull ? 'FULL' : 'ALMOST FULL'}
+      {/* Top row: type left, proof right */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isMobile ? 4 : 6, minHeight: 24 }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div style={{
+            background: `${JOB_TYPE_CONFIGS[job.type]?.color || colors.gold}18`,
+            color: JOB_TYPE_CONFIGS[job.type]?.color || colors.gold,
+            padding: isMobile ? '1px 6px' : '3px 10px',
+            borderRadius: radii.full,
+            fontSize: isMobile ? fontSizes.xs : fontSizes.sm,
+            fontWeight: 600,
+          }}>
+            {JOB_TYPE_CONFIGS[job.type]?.label || job.type}
+          </div>
+          {(isFull || isAlmostFull) && (
+            <div style={{
+              background: isFull ? '#0d2e1a' : '#2a1500',
+              border: `1px solid ${isFull ? colors.green : colors.orange}`,
+              color: isFull ? colors.green : colors.orange,
+              fontSize: 9, fontWeight: 700, padding: '2px 7px',
+              borderRadius: radii.full, letterSpacing: 0.5,
+            }}>
+              {isFull ? 'FULL' : 'ALMOST FULL'}
+            </div>
+          )}
         </div>
-      )}
-
-      {/* Category + Job Type badges */}
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: isMobile ? 4 : 6, flexWrap: 'wrap' }}>
         <div style={{
-          background: `${JOB_TYPE_CONFIGS[job.type]?.color || colors.gold}18`,
-          color: JOB_TYPE_CONFIGS[job.type]?.color || colors.gold,
+          background: (job.type === 'ZK' || job.verificationMethod === 'zk-proof') ? 'rgba(167,139,250,0.12)' : 'rgba(74,222,128,0.08)',
+          color: (job.type === 'ZK' || job.verificationMethod === 'zk-proof') ? '#a78bfa' : colors.green,
           padding: isMobile ? '1px 6px' : '3px 10px',
           borderRadius: radii.full,
           fontSize: isMobile ? fontSizes.xs : fontSizes.sm,
           fontWeight: 600,
+          border: `1px solid ${(job.type === 'ZK' || job.verificationMethod === 'zk-proof') ? 'rgba(167,139,250,0.25)' : 'rgba(74,222,128,0.15)'}`,
+          whiteSpace: 'nowrap',
         }}>
-          {JOB_TYPE_CONFIGS[job.type]?.label || job.type}
-        </div>
-        {/* Job type ZK/Standard pill */}
-        <div style={{
-          background: job.type === 'ZK' ? 'rgba(167,139,250,0.12)' : 'rgba(74,222,128,0.08)',
-          color: job.type === 'ZK' ? '#a78bfa' : colors.green,
-          padding: isMobile ? '1px 6px' : '3px 10px',
-          borderRadius: radii.full,
-          fontSize: isMobile ? fontSizes.xs : fontSizes.sm,
-          fontWeight: 600,
-          border: `1px solid ${job.type === 'ZK' ? 'rgba(167,139,250,0.25)' : 'rgba(74,222,128,0.15)'}`,
-        }}>
-          {job.type === 'ZK' ? '⚡ ZK' : '✓ Standard'}
+          {(job.type === 'ZK' || job.verificationMethod === 'zk-proof') ? '⚡ ZK Proof' : '✓ Standard'}
         </div>
       </div>
 
@@ -368,7 +367,7 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
       <div style={{
         fontSize: isMobile ? fontSizes.xs : fontSizes.sm,
         marginBottom: isMobile ? 4 : 6,
-        display: 'flex', alignItems: 'center', gap: 4,
+        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4,
       }}>
         {isUrgent && <span style={{ color: colors.red, fontSize: 10, fontWeight: 700 }}>🔥 URGENT</span>}
         <DeadlineValue createdAt={job.createdAt} deadline={job.deadline} />
@@ -425,6 +424,7 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
             cursor: 'pointer', borderRadius: radii.sm,
             fontWeight: 600,
             fontSize: isMobile ? fontSizes.xs : fontSizes.sm,
+            minHeight: isMobile ? 44 : 'auto',
           }}
         >
           DETAILS
@@ -455,7 +455,7 @@ function JobCard({ job, onClaim, onDetail, claimingJobId }: { job: Job; onClaim:
 
 // Di mobile, list view jadi card sederhana agar mudah dibaca
 function JobCardList({ job, onClaim, onDetail, claimingJobId, isMobile }: { job: Job; onClaim: (job: Job) => void; onDetail: (job: Job) => void; claimingJobId?: number | null; isMobile: boolean }) {
-  const rewardStr = job.reward.toLocaleString(undefined, { maximumFractionDigits: 0 })
+  const rewardStr = job.reward.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 4 })
   const claimedRatio = job.maxWorkers > 0 ? job.claimedCount / job.maxWorkers : 0
 
   const sep = <div style={{ width: 1, height: 22, background: colors.border, flexShrink: 0 }} />

@@ -1,6 +1,6 @@
 import { createConfig, http } from 'wagmi'
-import { injected } from 'wagmi/connectors'
-import { type Chain } from 'wagmi/chains'
+import { getDefaultConfig } from 'connectkit'
+import type { Chain } from 'viem/chains'
 
 export const litforge = {
   id: 4441,
@@ -20,10 +20,13 @@ export const litforge = {
 export const CONTRACT_ADDRESS = '0xaaf4555aad78b7981e4e619124a28fc137faffd8'
 export const USDC_ADDRESS = '0xd5118dEe968d1533B2A57aB66C266010AD8957fa'
 
-export const config = createConfig({
-  chains: [litforge],
-  connectors: [injected()],
-  transports: {
-    [litforge.id]: http()
-  }
-})
+export const config = createConfig(
+  getDefaultConfig({
+    chains: [litforge],
+    transports: {
+      [litforge.id]: http()
+    },
+    appName: 'zkCompute Hub',
+    walletConnectProjectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '',
+  })
+)

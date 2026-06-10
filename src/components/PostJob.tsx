@@ -79,11 +79,11 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
   const editCanSave = !editTitleEmpty && !editDeadlinePast && !editDeadlineInvalid && !editDeadlineEmpty
 
   return (
-    <div>
+    <div style={{ paddingTop: 8 }}>
       <div style={{ marginBottom: 24, textAlign: 'center' }}>
-        <h2 style={{ fontSize: 20, margin: 0, marginBottom: 12 }}>
-          {postSubTab === 'new' ? 'Post New Compute Job' : 'Manage Posted Jobs'}
-        </h2>
+<h1 style={{ fontSize: isMobile ? 20 : fontSizes.heading, margin: 0, marginBottom: 20, color: colors.gold, lineHeight: 1.3 }}>
+  {postSubTab === 'new' ? 'Post New Compute Job' : 'Manage Posted Jobs'}
+</h1>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <div style={{ display: 'flex', gap: 4, background: colors.bgElevated, borderRadius: radii.md, padding: 4 }}>
 
@@ -126,8 +126,8 @@ export function PostJob({ postSubTab, setPostSubTab, newJob, setNewJob, postedJo
                   <option value="deadline">Deadline</option>
                   <option value="type">Type</option>
                 </select>
-                <button onClick={() => setPostedViewMode('grid')} aria-label="Grid view" style={{ background: postedViewMode === 'grid' ? colors.gold : colors.bgElevated, color: postedViewMode === 'grid' ? '#000' : colors.textMuted, border: 'none', padding: '4px 10px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Grid view">⊞ Grid</button>
-                <button onClick={() => setPostedViewMode('list')} aria-label="List view" style={{ background: postedViewMode === 'list' ? colors.gold : colors.bgElevated, color: postedViewMode === 'list' ? '#000' : colors.textMuted, border: 'none', padding: '4px 10px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="List view">≡ List</button>
+                <button onClick={() => setPostedViewMode('grid')} aria-label="Grid view" style={{ background: postedViewMode === 'grid' ? colors.gold : colors.bgElevated, color: postedViewMode === 'grid' ? '#000' : colors.textMuted, border: 'none', padding: '4px 10px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: isMobile ? 44 : 'auto' }} title="Grid view">⊞ Grid</button>
+                <button onClick={() => setPostedViewMode('list')} aria-label="List view" style={{ background: postedViewMode === 'list' ? colors.gold : colors.bgElevated, color: postedViewMode === 'list' ? '#000' : colors.textMuted, border: 'none', padding: '4px 10px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: isMobile ? 44 : 'auto' }} title="List view">≡ List</button>
               </div>
                {(() => {
                 const query = postSearch.toLowerCase()
@@ -502,7 +502,7 @@ function DynamicJobFields({ newJob, setNewJob }: {
                 key={opt.value}
                 style={{
                   flex: 1,
-                  minWidth: 120,
+                  minWidth: 90,
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
@@ -567,19 +567,34 @@ function NewJobForm({ newJob, setNewJob, onPost, loading, isMobile }: {
     <div style={{ maxWidth: 600, margin: '0 auto' }}>
       <form onSubmit={e => { e.preventDefault(); setTouched({ title: true, reward: true, workers: true }); if (!canSubmit) return; setShowPreview(true) }} style={{ background: colors.bgCard, padding: 24, border: `1px solid ${colors.borderLight}`, borderRadius: radii.lg, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
         {/* 1. Title */}
-        {touched.title && titleEmpty && <div style={{ fontSize: 9, color: colors.red, marginBottom: 4 }}>Title is required</div>}
-        <div style={{ position: 'relative', marginBottom: 10 }}>
-          <input placeholder="Job Title" maxLength={120} value={newJob.title} onChange={e => update({ title: e.target.value })} onBlur={() => setTouched(p => ({ ...p, title: true }))} aria-label="Job title" style={{ width: '100%', background: '#000', border: `1px solid ${touched.title && titleEmpty ? colors.red : colors.border}`, padding: 10, color: colors.textPrimary, fontSize: fontSizes.md, boxSizing: 'border-box', borderRadius: radii.sm, paddingRight: 40 }} />
-          <span style={{ position: 'absolute', right: 8, bottom: 8, fontSize: 9, opacity: 0.35 }}>{newJob.title.length}/{120}</span>
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: fontSizes.sm, opacity: 0.6, marginBottom: 6 }}>Title</div>
+          {touched.title && titleEmpty && <div style={{ fontSize: 9, color: colors.red, marginBottom: 4 }}>Title is required</div>}
+          <div style={{ position: 'relative' }}>
+            <input placeholder="Job Title" maxLength={120} value={newJob.title} onChange={e => update({ title: e.target.value })} onBlur={() => setTouched(p => ({ ...p, title: true }))} aria-label="Job title" style={{ width: '100%', background: '#000', border: `1px solid ${touched.title && titleEmpty ? colors.red : colors.border}`, padding: 10, color: colors.textPrimary, fontSize: fontSizes.md, boxSizing: 'border-box', borderRadius: radii.sm, paddingRight: 40 }} />
+            <span style={{ position: 'absolute', right: 8, bottom: 8, fontSize: 9, opacity: 0.35 }}>{newJob.title.length}/{120}</span>
+          </div>
         </div>
 
         {/* 2. Description */}
-        <div style={{ position: 'relative', marginBottom: 10 }}>
-          <textarea placeholder="Job Description — explain what needs to be done, including context and expected approach" maxLength={2000} value={newJob.description} onChange={e => update({ description: e.target.value })} aria-label="Job description" style={{ width: '100%', background: '#000', border: `1px solid ${colors.border}`, padding: 10, color: colors.textPrimary, fontSize: fontSizes.md, minHeight: 70, boxSizing: 'border-box', borderRadius: radii.sm, resize: 'none' }} />
-          <span style={{ position: 'absolute', right: 8, bottom: 8, fontSize: 9, opacity: 0.35 }}>{newJob.description.length}/{2000}</span>
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: fontSizes.sm, opacity: 0.6, marginBottom: 6 }}>Description</div>
+          <div style={{ position: 'relative' }}>
+            <textarea placeholder="Job Description — explain what needs to be done, including context and expected approach" maxLength={2000} value={newJob.description} onChange={e => update({ description: e.target.value })} aria-label="Job description" style={{ width: '100%', background: '#000', border: `1px solid ${colors.border}`, padding: 10, color: colors.textPrimary, fontSize: fontSizes.md, minHeight: 70, boxSizing: 'border-box', borderRadius: radii.sm, resize: 'none' }} />
+            <span style={{ position: 'absolute', right: 8, bottom: 8, fontSize: 9, opacity: 0.35 }}>{newJob.description.length}/{2000}</span>
+          </div>
         </div>
 
-        {/* 3. Job Type + Dynamic Config */}
+        {/* 3. Requirements */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: fontSizes.sm, opacity: 0.6, marginBottom: 6 }}>Requirements</div>
+          <div style={{ position: 'relative' }}>
+            <textarea placeholder="Hardware / Environment Requirements — e.g. CPU cores, RAM, GPU model, OS, software dependencies" maxLength={1000} value={newJob.requirements} onChange={e => update({ requirements: e.target.value })} aria-label="Job requirements" style={{ width: '100%', background: '#000', border: `1px solid ${colors.border}`, padding: 10, color: colors.textPrimary, fontSize: fontSizes.md, minHeight: 60, boxSizing: 'border-box', borderRadius: radii.sm, resize: 'none' }} />
+            <span style={{ position: 'absolute', right: 8, bottom: 8, fontSize: 9, opacity: 0.35 }}>{newJob.requirements.length}/{1000}</span>
+          </div>
+        </div>
+
+        {/* 4. Job Type + Dynamic Config */}
         <div style={{ marginBottom: 10 }}>
           <div style={{ fontSize: fontSizes.sm, opacity: 0.6, marginBottom: 6 }}>Job Type</div>
           <SearchableTypeSelect
@@ -595,12 +610,6 @@ function NewJobForm({ newJob, setNewJob, onPost, loading, isMobile }: {
           />
         </div>
         <DynamicJobFields key={newJob.type} newJob={newJob} setNewJob={setNewJob} />
-
-        {/* 4. Requirements */}
-        <div style={{ position: 'relative', marginBottom: 10 }}>
-          <textarea placeholder="Hardware / Environment Requirements — e.g. CPU cores, RAM, GPU model, OS, software dependencies" maxLength={1000} value={newJob.requirements} onChange={e => update({ requirements: e.target.value })} aria-label="Job requirements" style={{ width: '100%', background: '#000', border: `1px solid ${colors.border}`, padding: 10, color: colors.textPrimary, fontSize: fontSizes.md, minHeight: 60, boxSizing: 'border-box', borderRadius: radii.sm, resize: 'none' }} />
-          <span style={{ position: 'absolute', right: 8, bottom: 8, fontSize: 9, opacity: 0.35 }}>{newJob.requirements.length}/{1000}</span>
-        </div>
 
         {/* 5. Reward + Token */}
         <div style={{ ...flexRow(), marginBottom: 10 }}>

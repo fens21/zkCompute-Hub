@@ -153,12 +153,13 @@ export function Dashboard({ myJobs, onChainJobs, leaderboard, ltcPrice, address,
 
   return (
     <div style={{ paddingBottom: 32 }} aria-live="polite" aria-label="Dashboard overview">
+      <h1 style={{ fontSize: isMobile ? 20 : fontSizes.heading, margin: 0, marginBottom: 24, color: colors.gold, lineHeight: 1.3 }}>Dashboard</h1>
       <div style={{ width: '100%' }}>
 
         {/* ── 5 STAT CARDS ── */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)',
+          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
           gap: 10,
           marginBottom: 18,
           alignItems: 'stretch'
@@ -512,7 +513,7 @@ function DashboardSkeleton({ isMobile }: { isMobile: boolean }) {
   const block = (h = 14, w = '100%') => ({ ...shimmer, height: h, width: w })
   return (
     <div style={{ paddingBottom: 32 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)', gap: 10, marginBottom: 18 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: 10, marginBottom: 18 }}>
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} style={{ background: 'rgba(26,41,48,0.8)', border: '1px solid rgba(197,193,192,0.06)', borderRadius: 16, padding: '14px 16px', minHeight: 90 }}>
             <div style={block(10, '60%')} />

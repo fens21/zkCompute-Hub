@@ -7,11 +7,13 @@ import { config, CONTRACT_ADDRESS } from '../config/chain'
 import type { Job } from '../types'
 import { shorten, formatDeadlineDate, getDeadlineMs } from '../utils'
 import { colors, radii, fontSizes } from '../styles/tokens'
+import { useIsMobile } from '../hooks/useIsMobile'
 import { JOB_TYPE_CONFIGS } from '../constants/jobTypes'
 import { getProofUrl, discoverProofUrl } from '../hooks/useWorkerProfiles'
 import { fetchProofUrl, fetchProofHash } from '../hooks/useMyJobs'
 
 export function PostedJobCard({ job, onRelease, onDeactivate, onDispute, loading, deactivating, onEdit, view = 'grid', releaseRefreshKey }: { job: Job; onRelease: (worker: string, j: Job) => void; onDeactivate: (j: Job) => void; onDispute: (j: Job, worker?: string) => void; loading: boolean; deactivating?: boolean; onEdit?: (j: Job) => void; view?: 'grid' | 'list'; releaseRefreshKey?: number }) {
+  const isMobile = useIsMobile()
   const [claimantsList, setClaimantsList] = useState<string[]>([])
   const [claimantsLoading, setClaimantsLoading] = useState(true)
   const [claimantsRefreshKey, setClaimantsRefreshKey] = useState(0)
@@ -60,32 +62,34 @@ export function PostedJobCard({ job, onRelease, onDeactivate, onDispute, loading
     <>
       {view === 'list' ? (
     <>
-      <div onClick={() => claimantsList.length > 0 && setListOpen(!listOpen)} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); claimantsList.length > 0 && setListOpen(!listOpen) } }} aria-expanded={claimantsList.length > 0 ? listOpen : undefined} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: fontSizes.base, padding: '10px 16px', cursor: claimantsList.length > 0 ? 'pointer' : 'default', outline: 'none' }} onFocus={e => e.currentTarget.style.outline = '2px solid ' + colors.gold} onBlur={e => e.currentTarget.style.outline = 'none'}>
-        <span style={{ color: colors.textMuted, fontSize: fontSizes.xs, width: 16, flexShrink: 0, textAlign: 'center' }}>
-          {claimantsList.length > 0 ? (listOpen ? 'v' : '>') : ''}
-        </span>
-        <div style={{ fontWeight: 700, flex: '1 1 140px', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: isExpired ? 0.5 : 1 }}>{job.title}{isExpired ? ' (expired)' : ''}</div>
-        <div style={{ flex: '0 0 100px', fontSize: fontSizes.xs, color: JOB_TYPE_CONFIGS[job.type]?.color || colors.gold, background: isExpired ? colors.borderLight : colors.borderLight, padding: '2px 6px', borderRadius: radii.full, textAlign: 'center', opacity: isExpired ? 0.6 : 1 }}>{isExpired ? 'EXPIRED' : JOB_TYPE_CONFIGS[job.type]?.label || job.type}</div>
-        {sep}
-        <div style={{ flex: '0 0 100px', whiteSpace: 'nowrap', color: colors.gold, fontWeight: 600 }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
-        {sep}
-        <div style={{ flex: '0 0 70px', opacity: 0.6 }}>{job.claimedCount}/{job.maxWorkers} claimed</div>
-        {sep}
-        <div style={{ flex: '0 0 140px', opacity: 0.5, fontSize: fontSizes.xs, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{formatDeadlineDate(job.createdAt, job.deadline)}</div>
-        {sep}
-        <div style={{ flex: '1 1 100px', minWidth: 0, display: 'flex', gap: 4, overflow: 'hidden' }}>
-          {claimantsLoading ? (
-            <span style={{ opacity: 0.4 }}>Loading...</span>
-          ) : claimantsList.length > 0 ? (
-            <span style={{ opacity: 0.4, fontSize: fontSizes.xs }}>{claimantsList.length} worker{claimantsList.length > 1 ? 's' : ''}</span>
-          ) : (
-            <span style={{ opacity: 0.4 }}>No workers</span>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-          {onEdit && <button type="button" onClick={() => onEdit(job)} disabled={isExpired} aria-label={`Edit job: ${job.title}`} style={{ background: 'transparent', color: isExpired ? '#555' : colors.gold, border: `1px solid ${isExpired ? '#444' : colors.gold}`, padding: '3px 10px', borderRadius: radii.sm, cursor: isExpired ? 'not-allowed' : 'pointer', fontSize: fontSizes.xs, fontWeight: 600, opacity: isExpired ? 0.4 : 1 }} title={isExpired ? 'Cannot edit expired jobs' : ''}>EDIT</button>}
-          <button type="button" onClick={() => navigate(`/chat/${job.id}`, { state: { posterAddress: job.poster, jobTitle: job.title, hasClaimed: false, workerAddress: claimantsList[0] || '' } })} style={{ background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.border}`, padding: '3px 10px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 600 }}>CHAT</button>
-          <button type="button" onClick={() => onDeactivate(job)} disabled={deactivating} aria-label={`Cancel and refund job: ${job.title}`} style={{ background: colors.red, color: '#000', border: 'none', padding: '4px 10px', borderRadius: radii.sm, cursor: deactivating ? 'not-allowed' : 'pointer', fontSize: fontSizes.xs, fontWeight: 700, opacity: deactivating ? 0.5 : 1 }}>{deactivating ? 'CANCELLING...' : 'CANCEL & REFUND'}</button>
+      <div style={{ overflowX: isMobile ? 'auto' : 'visible' }}>
+        <div onClick={() => claimantsList.length > 0 && setListOpen(!listOpen)} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); claimantsList.length > 0 && setListOpen(!listOpen) } }} aria-expanded={claimantsList.length > 0 ? listOpen : undefined} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: fontSizes.base, padding: '10px 16px', cursor: claimantsList.length > 0 ? 'pointer' : 'default', outline: 'none', minWidth: isMobile ? 640 : 'auto' }} onFocus={e => e.currentTarget.style.outline = '2px solid ' + colors.gold} onBlur={e => e.currentTarget.style.outline = 'none'}>
+          <span style={{ color: colors.textMuted, fontSize: fontSizes.xs, width: 16, flexShrink: 0, textAlign: 'center' }}>
+            {claimantsList.length > 0 ? (listOpen ? 'v' : '>') : ''}
+          </span>
+          <div style={{ fontWeight: 700, flex: '1 1 140px', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: isExpired ? 0.5 : 1 }}>{job.title}{isExpired ? ' (expired)' : ''}</div>
+          <div style={{ flex: '0 0 100px', fontSize: fontSizes.xs, color: JOB_TYPE_CONFIGS[job.type]?.color || colors.gold, background: isExpired ? colors.borderLight : colors.borderLight, padding: '2px 6px', borderRadius: radii.full, textAlign: 'center', opacity: isExpired ? 0.6 : 1 }}>{isExpired ? 'EXPIRED' : JOB_TYPE_CONFIGS[job.type]?.label || job.type}</div>
+          {sep}
+          <div style={{ flex: '0 0 100px', whiteSpace: 'nowrap', color: colors.gold, fontWeight: 600 }}>{rewardStr} {job.tokenSymbol || 'zkLTC'}</div>
+          {sep}
+          <div style={{ flex: '0 0 70px', opacity: 0.6 }}>{job.claimedCount}/{job.maxWorkers} claimed</div>
+          {sep}
+          <div style={{ flex: '0 0 140px', opacity: 0.5, fontSize: fontSizes.xs, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{formatDeadlineDate(job.createdAt, job.deadline)}</div>
+          {sep}
+          <div style={{ flex: '1 1 100px', minWidth: 0, display: 'flex', gap: 4, overflow: 'hidden' }}>
+            {claimantsLoading ? (
+              <span style={{ opacity: 0.4 }}>Loading...</span>
+            ) : claimantsList.length > 0 ? (
+              <span style={{ opacity: 0.4, fontSize: fontSizes.xs }}>{claimantsList.length} worker{claimantsList.length > 1 ? 's' : ''}</span>
+            ) : (
+              <span style={{ opacity: 0.4 }}>No workers</span>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+            {onEdit && <button type="button" onClick={() => onEdit(job)} disabled={isExpired} aria-label={`Edit job: ${job.title}`} style={{ background: 'transparent', color: isExpired ? '#555' : colors.gold, border: `1px solid ${isExpired ? '#444' : colors.gold}`, padding: '3px 10px', borderRadius: radii.sm, cursor: isExpired ? 'not-allowed' : 'pointer', fontSize: fontSizes.xs, fontWeight: 600, opacity: isExpired ? 0.4 : 1, minHeight: isMobile ? 44 : 'auto' }} title={isExpired ? 'Cannot edit expired jobs' : ''}>EDIT</button>}
+            <button type="button" onClick={() => navigate(`/chat/${job.id}`, { state: { posterAddress: job.poster, jobTitle: job.title, hasClaimed: false, workerAddress: claimantsList[0] || '' } })} style={{ background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.border}`, padding: '3px 10px', borderRadius: radii.sm, cursor: 'pointer', fontSize: fontSizes.xs, fontWeight: 600, minHeight: isMobile ? 44 : 'auto' }}>CHAT</button>
+            <button type="button" onClick={() => onDeactivate(job)} disabled={deactivating} aria-label={`Cancel and refund job: ${job.title}`} style={{ background: colors.red, color: '#000', border: 'none', padding: '4px 10px', borderRadius: radii.sm, cursor: deactivating ? 'not-allowed' : 'pointer', fontSize: fontSizes.xs, fontWeight: 700, opacity: deactivating ? 0.5 : 1, minHeight: isMobile ? 44 : 'auto' }}>{deactivating ? 'CANCELLING...' : 'CANCEL & REFUND'}</button>
+          </div>
         </div>
       </div>
 
