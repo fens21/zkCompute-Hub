@@ -45,6 +45,7 @@ export interface Toast {
   id: number
   message: string
   type: 'success' | 'info' | 'error'
+  txHash?: string
 }
 
 export interface WorkerEvent {

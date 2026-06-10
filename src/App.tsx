@@ -243,7 +243,7 @@ function AppContent() {
           functionName: 'approve',
           args: [CONTRACT_ADDRESS as `0x${string}`, totalBase],
         })
-        showToast(`Approving ${rewardPerWorker * maxWorkers} USDC... Tx: ${approveHash.slice(0, 10)}...`, 'success')
+        showToast(`Approving ${rewardPerWorker * maxWorkers} USDC`, 'success', approveHash)
 
         hash = await writeContractAsync({
           address: CONTRACT_ADDRESS as `0x${string}`,
@@ -322,7 +322,7 @@ function AppContent() {
       }
       const tokenLabel = newJob.token === 'USDC' ? 'USDC' : 'zkLTC'
       setNewJob({ title: '', type: 'ML', reward: NaN, deadline: '', description: '', requirements: '', maxWorkers: NaN, token: 'zkLTC', customToken: '', difficulty: 'Medium', parameters: {}, inputData: '', expectedOutput: '', verificationMethod: 'hash-check' })
-      showToast(`Job posted! ${rewardPerWorker * maxWorkers} ${tokenLabel} escrowed | Tx: ${hash.slice(0, 10)}...`, 'success')
+      showToast(`Job posted! ${rewardPerWorker * maxWorkers} ${tokenLabel} escrowed`, 'success', hash)
       addNotification(`Job posted: "${job.title}" — ${rewardPerWorker * maxWorkers} ${tokenLabel} escrowed`, 'post', job.title)
       scheduleRefresh(refetchJobs)
     } catch (e: unknown) {
@@ -365,7 +365,7 @@ function AppContent() {
       }).then(({ error }) => {
         if (error) console.warn('Failed to create chat room on claim:', error)
       })
-      showToast(`Job claimed! Tx: ${hash.slice(0, 10)}...`, 'success')
+      showToast(`Job claimed!`, 'success', hash)
       addNotification(`Job claimed: "${job.title}" — +${job.reward} ${job.tokenSymbol || 'zkLTC'}`, 'claim', job.title)
       scheduleRefresh(refetchJobs)
     } catch (e: unknown) {
@@ -433,7 +433,7 @@ function AppContent() {
         j.id === job.id && j.status !== 'paid' ? { ...j, status: 'completed' } : j
       ))
       saveWorkerEvent('completed', job, address, proofUrl, proofHash)
-      showToast(`Proof submitted! Tx: ${hash.slice(0, 10)}...`, 'success')
+      showToast(`Proof submitted!`, 'success', hash)
       addNotification(`Proof submitted: "${job.title}"`, 'proof', job.title)
       setTimeout(() => showToast('Stats updated: +1 job completed', 'info'), 800)
       scheduleRefresh(refetchJobs)
@@ -497,7 +497,7 @@ function AppContent() {
       ))
       // Record the solution privately in activity (it is never revealed on-chain thanks to ZK)
       saveWorkerEvent('paid', job, address, '', `zk-solution:${usedSolution.slice(0, 10)}... target:${expectedOutput.slice(0, 10)}...`)
-      showToast(`ZK proof verified & auto-paid! Tx: ${hash.slice(0, 10)}...`, 'success')
+      showToast(`ZK proof verified & auto-paid!`, 'success', hash)
       addNotification(`ZK proof auto-paid: "${job.title}" (solution proven)`, 'payment', job.title)
       setTimeout(() => showToast('Stats updated: +1 job completed & paid', 'info'), 800)
       scheduleRefresh(() => { refetchJobs(); fetchLeaderboard(onChainJobs, true) })
@@ -526,7 +526,7 @@ function AppContent() {
         j.id === job.id ? { ...j, status: 'paid' } : j
       ))
       setReleaseRefreshKey(k => k + 1)
-      showToast(`Payment released to ${workerAddr.slice(0, 6)}...${workerAddr.slice(-4)}! +${job.reward} ${job.tokenSymbol || 'zkLTC'} | Tx: ${hash.slice(0, 10)}...`, 'success')
+      showToast(`Payment released to ${workerAddr.slice(0, 6)}...${workerAddr.slice(-4)}! +${job.reward} ${job.tokenSymbol || 'zkLTC'}`, 'success', hash)
       scheduleRefresh(() => { refetchJobs(); fetchLeaderboard(onChainJobs, true) })
     } catch (e: unknown) {
       handleTxError(e, 'Release payment for worker', showToast)
@@ -548,7 +548,7 @@ function AppContent() {
       })
       setJobs(prev => prev.filter(j => j.id !== job.id))
       setMyJobs(prev => prev.filter(j => j.id !== job.id))
-      showToast(`Job cancelled! +${refundAmount} ${token} refunded | Tx: ${hash.slice(0, 10)}...`, 'success')
+      showToast(`Job cancelled! +${refundAmount} ${token} refunded`, 'success', hash)
       addNotification(`Job cancelled & refunded: "${job.title}" — +${refundAmount} ${token}`, 'payment', job.title)
       scheduleRefresh(refetchJobs)
     } catch (e: unknown) {
@@ -591,7 +591,7 @@ function AppContent() {
       setMyJobs(prev => prev.map(j =>
         j.id === job.id ? { ...j, status: 'disputed' } : j
       ))
-      showToast(`Dispute filed! Tx: ${hash.slice(0, 10)}...`, 'success')
+      showToast(`Dispute filed!`, 'success', hash)
       addNotification(`Dispute filed for "${job.title}"`, 'dispute', job.title)
       scheduleRefresh(refetchJobs)
     } catch (e: unknown) {
@@ -616,7 +616,7 @@ function AppContent() {
         args: [BigInt(job.id), address as `0x${string}`, false],
       })
       setMyJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'claimed' } : j))
-      showToast(`Dispute rejected! Tx: ${hash.slice(0, 10)}...`, 'success')
+      showToast(`Dispute rejected!`, 'success', hash)
     } catch (e: unknown) {
       handleTxError(e, 'Resolve dispute', showToast)
     }
@@ -635,7 +635,7 @@ function AppContent() {
       })
       setMyJobs(prev => prev.filter(j => confirmAction.job && j.id !== confirmAction.job.id))
       if (confirmAction.job) markClaimRevoked(confirmAction.job.id)
-      showToast(`Claim cancelled! Tx: ${hash.slice(0, 10)}...`, 'success')
+      showToast(`Claim cancelled!`, 'success', hash)
       scheduleRefresh(refetchJobs)
     } catch (e: unknown) {
       handleTxError(e, 'Resolve cancel', showToast)
@@ -778,7 +778,7 @@ function AppContent() {
         boosted_until: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
       } as any)
 
-      showToast(`Job #${jobId} boosted! Paid ${boostAmount} zkLTC platform fee. Tx: ${hash.slice(0, 10)}...`, 'success')
+      showToast(`Job #${jobId} boosted! Paid ${boostAmount} zkLTC platform fee`, 'success', hash)
       scheduleRefresh(refetchJobs)
     } catch (e: unknown) {
       handleTxError(e, 'Boost job', showToast)
